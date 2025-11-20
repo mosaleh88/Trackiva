@@ -4,7 +4,7 @@ import { Card, Button, Input, Select, Badge } from './ui';
 import { store, User } from '../services/store';
 import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions } from '../types';
 import { TRANSLATIONS, ROLES_LIST, AVAILABLE_ICONS, COLOR_THEMES, NAV_ITEMS } from '../constants';
-import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, FileJson, Search, Filter, ArrowUpDown, IdCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert } from 'lucide-react';
+import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, FileJson, Search, Filter, ArrowUpDown, IdCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye } from 'lucide-react';
 import QRCode from 'qrcode';
 import * as LucideIcons from 'lucide-react';
 
@@ -12,7 +12,7 @@ interface ManagementProps {
   lang: Language;
 }
 
-type Tab = 'users' | 'students' | 'classes' | 'timetable' | 'epass' | 'access';
+type Tab = 'users' | 'students' | 'classes' | 'timetable' | 'epass' | 'access' | 'notifications';
 
 export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const t = TRANSLATIONS[lang];
@@ -46,6 +46,18 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
   // Settings State
   const [maxPasses, setMaxPasses] = useState<number>(4);
+  const [telegramToken, setTelegramToken] = useState("");
+  const [telegramChatId, setTelegramChatId] = useState("");
+  const [elTelegramToken, setElTelegramToken] = useState("");
+  const [elTelegramChatId, setElTelegramChatId] = useState("");
+  
+  // Watchlist Settings
+  const [wlTelegramToken, setWlTelegramToken] = useState("");
+  const [wlTelegramChatId, setWlTelegramChatId] = useState("");
+
+  // Notification Rules
+  const [notificationRules, setNotificationRules] = useState<Record<string, boolean>>({});
+  
   const [rolePermissions, setRolePermissions] = useState<RolePermissions>({});
   const [selectedRoleForAccess, setSelectedRoleForAccess] = useState<string>(UserRole.TEACHER);
 
@@ -71,6 +83,13 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     setDestinations(store.getDestinations());
     const settings = store.getSettings();
     setMaxPasses(settings.maxPassesPerDay);
+    setTelegramToken(settings.telegramBotToken || "");
+    setTelegramChatId(settings.telegramChatId || "");
+    setElTelegramToken(settings.earlyLeaveBotToken || "");
+    setElTelegramChatId(settings.earlyLeaveChatId || "");
+    setWlTelegramToken(settings.watchlistBotToken || "");
+    setWlTelegramChatId(settings.watchlistChatId || "");
+    setNotificationRules(settings.notificationRules || {});
     setRolePermissions(settings.rolePermissions);
   };
 
@@ -324,9 +343,31 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       }
   };
 
-  const handleUpdateSettings = () => {
-      store.updateSettings({ maxPassesPerDay: maxPasses });
-      alert("Settings updated successfully!");
+  const handleUpdateEPassSettings = () => {
+      store.updateSettings({ 
+          maxPassesPerDay: maxPasses,
+      });
+      alert("Limit updated successfully!");
+  };
+
+  const handleUpdateNotificationSettings = () => {
+      store.updateSettings({ 
+          telegramBotToken: telegramToken,
+          telegramChatId: telegramChatId,
+          earlyLeaveBotToken: elTelegramToken,
+          earlyLeaveChatId: elTelegramChatId,
+          watchlistBotToken: wlTelegramToken,
+          watchlistChatId: wlTelegramChatId,
+          notificationRules: notificationRules
+      });
+      alert("Notification credentials saved successfully!");
+  };
+
+  const toggleNotificationRule = (key: string) => {
+      setNotificationRules(prev => ({
+          ...prev,
+          [key]: !prev[key]
+      }));
   };
 
   // --- Access Control Handlers ---
@@ -372,7 +413,12 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                             
                             <div className="p-8">
                                 <div className="mb-6">
-                                    <h1 className="text-3xl font-bold text-slate-900">{lang === 'en' ? viewingCard.name_en : viewingCard.name_ar}</h1>
+                                    <div className="flex justify-between items-start">
+                                        <h1 className="text-3xl font-bold text-slate-900">{lang === 'en' ? viewingCard.name_en : viewingCard.name_ar}</h1>
+                                        {viewingCard.isWatchlisted && (
+                                            <Eye className="text-red-500 animate-pulse" />
+                                        )}
+                                    </div>
                                     {lang === 'en' && viewingCard.name_ar && <h2 className="text-lg text-slate-500 font-medium">{viewingCard.name_ar}</h2>}
                                     {lang === 'ar' && viewingCard.name_en && <h2 className="text-lg text-slate-500 font-medium">{viewingCard.name_en}</h2>}
                                 </div>
@@ -488,6 +534,20 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                     onChange={e => setFormData({...formData, section: e.target.value})} 
                 />
             </div>
+        </div>
+        <div className="col-span-1 md:col-span-3 bg-red-50 p-4 rounded-lg border border-red-100">
+            <label className="flex items-center gap-3 cursor-pointer">
+                <input 
+                    type="checkbox"
+                    className="w-5 h-5 rounded text-red-600 focus:ring-red-500"
+                    checked={formData.isWatchlisted || false}
+                    onChange={e => setFormData({...formData, isWatchlisted: e.target.checked})}
+                />
+                <div>
+                    <span className="font-bold text-red-800 text-sm block">{t.watchlist}</span>
+                    <span className="text-xs text-red-600">Flag this student for strict monitoring and targeted alerts.</span>
+                </div>
+            </label>
         </div>
     </div>
     {formData.transportMode === 'Bus' && (
@@ -646,6 +706,12 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             onClick={() => setActiveTab('access')}
         >
             <Shield size={18} /> {t.accessControl}
+        </Button>
+        <Button 
+            variant={activeTab === 'notifications' ? 'primary' : 'ghost'} 
+            onClick={() => setActiveTab('notifications')}
+        >
+            <Bell size={18} /> {t.notifications}
         </Button>
       </div>
 
@@ -873,7 +939,10 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                 <tr key={student.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
                                     <td className="p-3 font-mono text-slate-600 text-sm text-start">{student.studentNumber}</td>
                                     <td className="p-3 font-medium text-start">
-                                        <div className="text-slate-900">{lang === 'en' ? student.name_en : student.name_ar}</div>
+                                        <div className="text-slate-900 flex items-center gap-2">
+                                            {lang === 'en' ? student.name_en : student.name_ar}
+                                            {student.isWatchlisted && <Eye size={14} className="text-red-500" />}
+                                        </div>
                                         {lang === 'en' && <div className="text-xs text-slate-500">{student.name_ar}</div>}
                                     </td>
                                     <td className="p-3 text-start">
@@ -1060,23 +1129,23 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       {/* E-PASS DESTINATIONS TAB */}
       {activeTab === 'epass' && (
           <div className="space-y-6">
-              {/* Global Settings Card */}
+              {/* Global Settings Card - Only Max Passes Now */}
               <Card>
                   <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2 mb-4">
                       <Settings className="text-slate-500" size={20} /> {t.globalSettings}
                   </h3>
-                  <div className="flex items-end gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200 max-w-md">
-                      <div className="flex-1">
-                          <label className="block text-xs font-bold text-slate-500 mb-1">{t.maxPasses}</label>
-                          <Input 
-                              type="number" 
-                              min="1" 
-                              max="20" 
-                              value={maxPasses} 
-                              onChange={(e) => setMaxPasses(parseInt(e.target.value) || 1)} 
-                          />
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 max-w-md">
+                      <label className="block text-xs font-bold text-slate-500 mb-2">{t.maxPasses}</label>
+                      <div className="flex gap-2">
+                        <Input 
+                            type="number" 
+                            min="1" 
+                            max="20" 
+                            value={maxPasses} 
+                            onChange={(e) => setMaxPasses(parseInt(e.target.value) || 1)} 
+                        />
+                        <Button onClick={handleUpdateEPassSettings}>{t.updateLimit}</Button>
                       </div>
-                      <Button onClick={handleUpdateSettings}>{t.updateLimit}</Button>
                   </div>
               </Card>
 
@@ -1138,6 +1207,161 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   </div>
               </Card>
           </div>
+      )}
+
+      {/* NOTIFICATIONS TAB */}
+      {activeTab === 'notifications' && (
+          <Card>
+              <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-blue-50 p-3 rounded-lg text-blue-600">
+                      <Bell size={24} />
+                  </div>
+                  <div>
+                      <h2 className="text-xl font-bold text-slate-800">{t.telegramSettings}</h2>
+                      <p className="text-slate-500 text-sm">Configure alerting channels for different modules.</p>
+                  </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Security / E-Pass Alerts */}
+                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                       <div className="flex items-center gap-2 mb-4">
+                           <ShieldAlert className="text-red-500" size={20} />
+                           <h3 className="font-bold text-slate-700">{t.securityAlerts}</h3>
+                       </div>
+                       <p className="text-xs text-slate-500 mb-4">Used for unauthorized exits and security breaches.</p>
+                       
+                       <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">{t.botToken}</label>
+                                <Input 
+                                    placeholder="123456:ABC-..." 
+                                    value={telegramToken} 
+                                    onChange={(e) => setTelegramToken(e.target.value)}
+                                    className="bg-white"
+                                    type="password"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">{t.chatId}</label>
+                                <Input 
+                                    placeholder="-100123..." 
+                                    value={telegramChatId} 
+                                    onChange={(e) => setTelegramChatId(e.target.value)}
+                                    className="bg-white"
+                                />
+                            </div>
+                       </div>
+                  </div>
+
+                  {/* Reception / Early Leave Alerts */}
+                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                       <div className="flex items-center gap-2 mb-4">
+                           <LogOut className="text-orange-500" size={20} />
+                           <h3 className="font-bold text-slate-700">{t.receptionAlerts}</h3>
+                       </div>
+                       <p className="text-xs text-slate-500 mb-4">Used for notifying parents/admins about Early Leave.</p>
+                       
+                       <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">{t.botToken}</label>
+                                <Input 
+                                    placeholder="123456:ABC-..." 
+                                    value={elTelegramToken} 
+                                    onChange={(e) => setElTelegramToken(e.target.value)}
+                                    className="bg-white"
+                                    type="password"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">{t.chatId}</label>
+                                <Input 
+                                    placeholder="-100123..." 
+                                    value={elTelegramChatId} 
+                                    onChange={(e) => setElTelegramChatId(e.target.value)}
+                                    className="bg-white"
+                                />
+                            </div>
+                       </div>
+                  </div>
+
+                   {/* Targeted / Watchlist Alerts */}
+                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                       <div className="flex items-center gap-2 mb-4">
+                           <Eye className="text-purple-500" size={20} />
+                           <h3 className="font-bold text-slate-700">{t.watchlistAlerts}</h3>
+                       </div>
+                       <p className="text-xs text-slate-500 mb-4">{t.watchlistDesc}</p>
+                       
+                       <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">{t.botToken}</label>
+                                <Input 
+                                    placeholder="123456:ABC-..." 
+                                    value={wlTelegramToken} 
+                                    onChange={(e) => setWlTelegramToken(e.target.value)}
+                                    className="bg-white"
+                                    type="password"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">{t.chatId}</label>
+                                <Input 
+                                    placeholder="-100123..." 
+                                    value={wlTelegramChatId} 
+                                    onChange={(e) => setWlTelegramChatId(e.target.value)}
+                                    className="bg-white"
+                                />
+                            </div>
+                       </div>
+                  </div>
+
+                  {/* Notification Rules */}
+                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                       <div className="flex items-center gap-2 mb-4">
+                           <Settings className="text-slate-600" size={20} />
+                           <h3 className="font-bold text-slate-700">{t.notificationRules}</h3>
+                       </div>
+                       <p className="text-xs text-slate-500 mb-4">{t.enableNotificationsFor}</p>
+
+                       <div className="space-y-2">
+                           {/* Unauthorized Toggle */}
+                           <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors">
+                               <span className="text-sm font-bold text-red-600 flex items-center gap-2">
+                                   <ShieldAlert size={16} /> {t.unauthorized}
+                               </span>
+                               <input 
+                                   type="checkbox" 
+                                   checked={notificationRules['UNAUTHORIZED'] ?? true}
+                                   onChange={() => toggleNotificationRule('UNAUTHORIZED')}
+                                   className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                               />
+                           </label>
+
+                           {/* Destinations Toggles */}
+                           {destinations.map(dest => (
+                               <label key={dest.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors">
+                                   <span className="text-sm font-medium text-slate-700">
+                                       {lang === 'en' ? dest.label_en : dest.label_ar}
+                                   </span>
+                                   <input 
+                                       type="checkbox" 
+                                       checked={notificationRules[dest.id] === true}
+                                       onChange={() => toggleNotificationRule(dest.id)}
+                                       className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                   />
+                               </label>
+                           ))}
+                       </div>
+                  </div>
+              </div>
+
+              <div className="mt-6 flex justify-end border-t border-slate-100 pt-4">
+                   <Button onClick={handleUpdateNotificationSettings}>
+                       <Check size={18} /> {t.saveCredentials}
+                   </Button>
+              </div>
+          </Card>
       )}
 
       {/* ACCESS CONTROL TAB */}

@@ -5,6 +5,7 @@ import { store } from '../services/store';
 import { Language, EPass as EPassType, Student, EPassDestination } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { Search, Filter, Ticket, Library, Stethoscope, Armchair, Briefcase, Clock, AlertTriangle, Coffee, Gamepad2, Music, Dumbbell, Beaker, BookOpen, Users, Ban, AlertOctagon, LayoutDashboard } from 'lucide-react';
+import { sendUnauthorizedAlert, sendPassCreatedAlert } from '../services/telegramService';
 
 interface EPassProps {
   lang: Language;
@@ -115,6 +116,22 @@ export const EPass: React.FC<EPassProps> = ({ lang }) => {
         studentId,
         type,
     });
+
+    const student = students.find(s => s.id === studentId);
+    
+    // --- TELEGRAM ALERT TRIGGERS ---
+    if (student) {
+        if (type === UNAUTHORIZED_TYPE) {
+            sendUnauthorizedAlert(student);
+        } else {
+            // Standard Pass
+            const dest = destinations.find(d => d.id === type);
+            if (dest) {
+                sendPassCreatedAlert(student, dest);
+            }
+        }
+    }
+    // -----------------------------
 
     if (overrideMap[studentId]) {
         setOverrideMap(prev => {

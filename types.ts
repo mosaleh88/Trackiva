@@ -30,6 +30,7 @@ export interface Student {
   section: string;
   busRoute?: string;
   transportMode: 'Bus' | 'Car' | 'Walker';
+  isWatchlisted?: boolean; // Targeted student for specific alerts
 }
 
 export interface AttendanceRecord {
@@ -66,6 +67,21 @@ export type RolePermissions = Record<string, string[]>;
 export interface AppSettings {
   maxPassesPerDay: number;
   rolePermissions: RolePermissions;
+  
+  // Default Security/Unauthorized Alerts
+  telegramBotToken?: string;
+  telegramChatId?: string;
+  
+  // Early Leave Alerts
+  earlyLeaveBotToken?: string;
+  earlyLeaveChatId?: string;
+
+  // Targeted/Watchlist Student Alerts
+  watchlistBotToken?: string;
+  watchlistChatId?: string;
+
+  // Notification Toggles (Key = Pass Type ID or 'UNAUTHORIZED', Value = Enabled)
+  notificationRules: Record<string, boolean>;
 }
 
 export interface ReceptionLog {

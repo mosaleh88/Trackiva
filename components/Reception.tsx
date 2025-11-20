@@ -6,6 +6,7 @@ import { Student, Language } from '../types';
 import { TRANSLATIONS, EARLY_LEAVE_REASONS, PICKUP_RELATIONS } from '../constants';
 import { Search, ArrowRight, UserCheck, LogOut, Clock, MapPin, Bus, User, X, Filter, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 import QRCode from 'qrcode';
+import { sendEarlyLeaveAlert } from '../services/telegramService';
 
 interface ReceptionProps {
   lang: Language;
@@ -103,6 +104,7 @@ export const Reception: React.FC<ReceptionProps> = ({ lang }) => {
 
   const handleLog = () => {
     if (!selectedStudentId) return;
+    const currentStudent = students.find(s => s.id === selectedStudentId);
     
     const finalReason = reasonSelect === 'Other' ? reasonText : reasonSelect;
 
@@ -113,6 +115,12 @@ export const Reception: React.FC<ReceptionProps> = ({ lang }) => {
       pickupBy: mode === 'EarlyLeave' ? pickedBy : undefined,
       pickupId: mode === 'EarlyLeave' ? pickerId : undefined,
     });
+
+    // --- TELEGRAM ALERT TRIGGER ---
+    if (mode === 'EarlyLeave' && currentStudent) {
+        sendEarlyLeaveAlert(currentStudent, finalReason, pickedBy, pickerId);
+    }
+    // -----------------------------
 
     setLastLog(log);
     // Soft Reset

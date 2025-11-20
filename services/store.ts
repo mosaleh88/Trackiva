@@ -45,7 +45,7 @@ const generateDefaultPermissions = () => {
 };
 
 class MockStore {
-  private readonly STORAGE_KEY = 'trackiva_db_v7'; // Increment version
+  private readonly STORAGE_KEY = 'trackiva_db_v8'; // Increment version
   
   private data: {
     students: Student[];
@@ -76,11 +76,21 @@ class MockStore {
       if (!this.data.settings) {
           this.data.settings = { 
               maxPassesPerDay: 4,
-              rolePermissions: generateDefaultPermissions()
+              rolePermissions: generateDefaultPermissions(),
+              telegramBotToken: '',
+              telegramChatId: '',
+              earlyLeaveBotToken: '',
+              earlyLeaveChatId: '',
+              watchlistBotToken: '',
+              watchlistChatId: '',
+              notificationRules: { 'UNAUTHORIZED': true }
           };
       }
       if (!this.data.settings.rolePermissions) {
           this.data.settings.rolePermissions = generateDefaultPermissions();
+      }
+      if (!this.data.settings.notificationRules) {
+          this.data.settings.notificationRules = { 'UNAUTHORIZED': true };
       }
       if (!this.data.clinicVisits) {
           this.data.clinicVisits = [];
@@ -99,7 +109,14 @@ class MockStore {
         destinations: DEFAULT_DESTINATIONS,
         settings: { 
             maxPassesPerDay: 4,
-            rolePermissions: generateDefaultPermissions()
+            rolePermissions: generateDefaultPermissions(),
+            telegramBotToken: '',
+            telegramChatId: '',
+            earlyLeaveBotToken: '',
+            earlyLeaveChatId: '',
+            watchlistBotToken: '',
+            watchlistChatId: '',
+            notificationRules: { 'UNAUTHORIZED': true }
         },
         clinicVisits: []
       };
