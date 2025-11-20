@@ -1,0 +1,270 @@
+
+import React, { useEffect, useState } from 'react';
+import { Card, Button, Badge } from './ui';
+import { UserRole, Language, EPassDestination } from '../types';
+import { store } from '../services/store';
+import { generateSchoolInsights } from '../services/geminiService';
+import { TRANSLATIONS } from '../constants';
+import { 
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend
+} from 'recharts';
+import { BrainCircuit, AlertTriangle, Activity, Users, Clock, Stethoscope, LogOut, Ticket } from 'lucide-react';
+
+interface DashboardProps {
+  role: UserRole;
+  lang: Language;
+}
+
+export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
+  const t = TRANSLATIONS[lang];
+  const [summary, setSummary] = useState<any>(null);
+  const [destinations, setDestinations] = useState<EPassDestination[]>([]);
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+
+  // Refresh data on mount
+  useEffect(() => {
+    const data = store.getDataSummary();
+    setSummary(data);
+    setDestinations(store.getDestinations());
+  }, []);
+
+  const handleAskAi = async () => {
+    setLoadingAi(true);
+    try {
+      const insight = await generateSchoolInsights(summary, role, lang);
+      setAiInsight(insight);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
+  if (!summary) return <div>Loading...</div>;
+
+  // Attendance Calculations for Custom Stacked Bar (3 Groups)
+  const total = summary.totalStudents || 1; // Avoid division by zero
+  
+  // 1. Present on Campus (Present + Late + Early Leave)
+  const onCampusCount = summary.presentToday + summary.lateToday + summary.earlyLeaveToday;
+  const onCampusPct = (onCampusCount / total) * 100;
+  
+  // 2. Excused Absent
+  const excusedAbsentPct = (summary.excusedAbsentToday / total) * 100;
+  
+  // 3. Unexcused Absent (Remainder)
+  const unexcusedAbsentCount = summary.totalStudents - onCampusCount - summary.excusedAbsentToday;
+  const unexcusedAbsentPct = (unexcusedAbsentCount / total) * 100;
+
+  // Active E-Pass Destinations Data
+  const passData = Object.entries(summary.ePassBreakdown).map(([type, count]) => {
+     if (type === 'UNAUTHORIZED') return { name: t.unauthorized, value: count, color: '#ef4444' };
+     const dest = destinations.find(d => d.id === type);
+     // Map basic colors
+     const colorMap: Record<string, string> = {
+         blue: '#3b82f6', red: '#ef4444', yellow: '#eab308', green: '#22c55e', 
+         purple: '#a855f7', orange: '#f97316', slate: '#64748b'
+     };
+     return {
+         name: dest ? (lang === 'en' ? dest.label_en : dest.label_ar) : type,
+         value: count,
+         color: dest ? colorMap[dest.colorTheme] : '#94a3b8'
+     };
+  });
+
+  if (passData.length === 0) {
+      passData.push({ name: 'No Active Passes', value: 1, color: '#94a3b8' });
+  }
+
+  return (
+    <div className="space-y-6 animate-in fade-in">
+      {/* Row 1: KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-500 mb-1">{t.onCampus}</p>
+            <div className="flex items-baseline gap-2">
+                <h3 className="text-2xl font-bold text-slate-800">{onCampusCount}</h3>
+                <span className="text-xs text-slate-400">/ {summary.totalStudents}</span>
+            </div>
+          </div>
+          <div className="p-3 bg-green-100 text-green-600 rounded-full">
+            <Users size={24} />
+          </div>
+        </Card>
+        
+        <Card className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-500 mb-1">{t.activePasses}</p>
+            <div className="flex items-baseline gap-2">
+                <h3 className="text-2xl font-bold text-slate-800">{summary.activePasses}</h3>
+                {summary.overduePasses > 0 && (
+                    <span className="text-xs font-bold text-red-500 flex items-center gap-0.5">
+                        <AlertTriangle size={10} /> {summary.overduePasses} Overdue
+                    </span>
+                )}
+            </div>
+          </div>
+          <div className="p-3 bg-blue-100 text-blue-600 rounded-full">
+            <Ticket size={24} />
+          </div>
+        </Card>
+
+        <Card className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-500 mb-1">{t.clinic} {t.todayVisits}</p>
+            <h3 className="text-2xl font-bold text-slate-800">{summary.clinicVisitsToday}</h3>
+          </div>
+          <div className="p-3 bg-red-100 text-red-600 rounded-full">
+            <Stethoscope size={24} />
+          </div>
+        </Card>
+
+        <Card className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-500 mb-1">{t.late} / {t.earlyLeave}</p>
+            <div className="flex items-center gap-3">
+                <span className="text-xl font-bold text-yellow-600">{summary.lateToday}</span>
+                <span className="text-slate-300">|</span>
+                <span className="text-xl font-bold text-orange-600">{summary.earlyLeaveToday}</span>
+            </div>
+          </div>
+          <div className="p-3 bg-orange-100 text-orange-600 rounded-full">
+            <Clock size={24} />
+          </div>
+        </Card>
+      </div>
+
+      {/* Row 2: AI & Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left Column: AI + Recent Activity */}
+        <div className="space-y-6">
+             {/* AI Action Card */}
+            <Card className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none shadow-lg">
+                <div className="flex items-center gap-3 mb-2">
+                    <BrainCircuit className="text-white/80" />
+                    <h3 className="font-bold">{t.insight}</h3>
+                </div>
+                {aiInsight ? (
+                    <p className="text-sm text-white/90 leading-relaxed animate-in fade-in">{aiInsight}</p>
+                ) : (
+                    <Button 
+                        onClick={handleAskAi} 
+                        disabled={loadingAi}
+                        className="w-full bg-white/20 hover:bg-white/30 text-white border-none text-sm mt-2"
+                    >
+                        {loadingAi ? t.aiThinking : t.askAi}
+                    </Button>
+                )}
+            </Card>
+
+            {/* Recent Activity Feed */}
+            <Card className="flex-1 overflow-y-auto max-h-[22rem]">
+                <h3 className="font-bold text-lg mb-4 text-slate-800">{t.recentActivity}</h3>
+                <div className="space-y-4">
+                    {summary.recentIncidents.length === 0 ? (
+                        <p className="text-slate-400 text-center py-4">No recent activity</p>
+                    ) : (
+                    summary.recentIncidents.map((log: any) => (
+                        <div key={log.id} className="flex gap-3 border-b border-slate-50 pb-3 last:border-0 items-start">
+                            <div className={`mt-1 p-1.5 rounded-full shrink-0 ${log.type === 'LateArrival' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
+                                {log.type === 'LateArrival' ? <Clock size={14} /> : <LogOut size={14} />}
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-slate-700">
+                                    {log.type === 'LateArrival' ? t.lateArrival : t.earlyLeave}
+                                </p>
+                                <p className="text-xs text-slate-500 font-mono">
+                                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                                {log.reason && <p className="text-xs text-slate-600 mt-1 bg-slate-50 px-2 py-0.5 rounded inline-block">{log.reason}</p>}
+                                {log.transportConflict && (
+                                    <span className="text-xs text-red-500 font-bold block mt-1">{t.transportConflict}</span>
+                                )}
+                            </div>
+                        </div>
+                    ))
+                    )}
+                </div>
+            </Card>
+        </div>
+
+        {/* Center: Attendance Horizontal Stacked Bar (3 Groups) */}
+        <Card className="lg:col-span-1 h-full flex flex-col justify-center min-h-[22rem]">
+          <h3 className="font-bold text-lg mb-6 text-slate-800">Attendance Overview</h3>
+          
+          <div className="flex-1 flex flex-col justify-center">
+              {/* Progress Bar - 3 Segments */}
+              <div className="w-full h-8 bg-slate-100 rounded-full flex overflow-hidden shadow-inner mb-8 relative">
+                  {onCampusPct > 0 && <div style={{ width: `${onCampusPct}%` }} className="bg-green-500 h-full transition-all duration-500" />}
+                  {excusedAbsentPct > 0 && <div style={{ width: `${excusedAbsentPct}%` }} className="bg-blue-500 h-full transition-all duration-500" />}
+                  {unexcusedAbsentPct > 0 && <div style={{ width: `${unexcusedAbsentPct}%` }} className="bg-red-500 h-full transition-all duration-500" />}
+              </div>
+
+              {/* Horizontal Grid Legend - 3 Items */}
+              <div className="grid grid-cols-3 gap-4">
+                  {/* 1. Present on Campus */}
+                  <div className="flex flex-col">
+                      <div className="flex items-center gap-2 mb-1">
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <span className="text-xs text-slate-500 font-bold uppercase">{t.onCampus}</span>
+                      </div>
+                      <span className="text-2xl font-bold text-slate-800">{onCampusCount}</span>
+                  </div>
+                  
+                  {/* 2. Excused */}
+                  <div className="flex flex-col">
+                      <div className="flex items-center gap-2 mb-1">
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                          <span className="text-xs text-slate-500 font-bold uppercase">{t.excused}</span>
+                      </div>
+                      <span className="text-2xl font-bold text-slate-800">{summary.excusedAbsentToday}</span>
+                  </div>
+
+                  {/* 3. Absent */}
+                  <div className="flex flex-col">
+                      <div className="flex items-center gap-2 mb-1">
+                          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                          <span className="text-xs text-slate-500 font-bold uppercase">{t.absent}</span>
+                      </div>
+                      <span className="text-2xl font-bold text-slate-800">{unexcusedAbsentCount}</span>
+                  </div>
+              </div>
+          </div>
+        </Card>
+
+        {/* Right: E-Pass Pie Chart */}
+        <Card className="lg:col-span-1 h-full min-h-[22rem]">
+            <h3 className="font-bold text-lg mb-4 text-slate-800">{t.destinationBreakdown}</h3>
+            <div className="relative h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={passData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                        >
+                            {passData.map((entry: any, index: number) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{fontSize: '12px', paddingTop: '20px'}} />
+                    </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none pb-8">
+                    <p className="text-3xl font-bold text-slate-800">{summary.activePasses}</p>
+                    <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Active</p>
+                </div>
+            </div>
+        </Card>
+      </div>
+    </div>
+  );
+};

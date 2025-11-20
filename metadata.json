@@ -1,0 +1,8 @@
+{
+  "name": "Trackiva - Smart School Management",
+  "description": "A comprehensive, bilingual (EN/AR) school management system featuring real-time dashboards, attendance tracking, reception management, and digital e-passes with Gemini AI insights.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

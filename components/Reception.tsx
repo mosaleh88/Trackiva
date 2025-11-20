@@ -1,0 +1,384 @@
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, Button, Input, Select, Badge } from './ui';
+import { store } from '../services/store';
+import { Student, Language } from '../types';
+import { TRANSLATIONS, EARLY_LEAVE_REASONS, PICKUP_RELATIONS } from '../constants';
+import { Search, ArrowRight, UserCheck, LogOut, Clock, MapPin, Bus, User, X, Filter, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import QRCode from 'qrcode';
+
+interface ReceptionProps {
+  lang: Language;
+}
+
+export const Reception: React.FC<ReceptionProps> = ({ lang }) => {
+  const t = TRANSLATIONS[lang];
+  const [mode, setMode] = useState<'LateArrival' | 'EarlyLeave'>('LateArrival');
+  const [lastLog, setLastLog] = useState<any>(null);
+  const [students, setStudents] = useState<Student[]>([]);
+
+  // Filter States
+  const [selectedGender, setSelectedGender] = useState<string>("");
+  const [selectedGrade, setSelectedGrade] = useState<string>("");
+  const [selectedSection, setSelectedSection] = useState<string>("");
+  const [searchNumber, setSearchNumber] = useState("");
+  
+  // Selected Student
+  const [selectedStudentId, setSelectedStudentId] = useState<string>("");
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+
+  // Form States
+  const [reasonSelect, setReasonSelect] = useState("");
+  const [reasonText, setReasonText] = useState("");
+  const [pickedBy, setPickedBy] = useState("");
+  const [pickerId, setPickerId] = useState("");
+
+  useEffect(() => {
+    setStudents(store.getStudents());
+  }, []);
+
+  // Generate QR Code for ID Card (keeping logic in case needed later, but removed from display)
+  useEffect(() => {
+    if (selectedStudentId) {
+        const student = students.find(s => s.id === selectedStudentId);
+        if (student) {
+            const dataToEncode = JSON.stringify({ id: student.id, no: student.studentNumber });
+            QRCode.toDataURL(dataToEncode, { width: 100, margin: 0 })
+                .then(url => setQrDataUrl(url))
+                .catch(err => console.error(err));
+        }
+    }
+  }, [selectedStudentId, students]);
+
+  // --- Filter Logic ---
+  const filteredStudents = useMemo(() => {
+    // 1. Search takes priority and ignores class filters
+    if (searchNumber) {
+        return students.filter(s => s.studentNumber.includes(searchNumber));
+    }
+
+    // 2. Filter requires Gender, Grade AND Section to be selected
+    if (selectedGender && selectedGrade && selectedSection) {
+        return students.filter(s => 
+            s.gender === selectedGender && 
+            s.grade === selectedGrade && 
+            s.section === selectedSection
+        );
+    }
+
+    // 3. Otherwise return empty
+    return [];
+  }, [students, searchNumber, selectedGender, selectedGrade, selectedSection]);
+
+  const availableGrades = useMemo(() => {
+    if (!selectedGender) return [];
+    return Array.from(new Set(students.filter(s => s.gender === selectedGender).map(s => s.grade))).sort();
+  }, [students, selectedGender]);
+
+  const availableSections = useMemo(() => {
+    if (!selectedGender || !selectedGrade) return [];
+    return Array.from(new Set(students.filter(s => s.gender === selectedGender && s.grade === selectedGrade).map(s => s.section))).sort();
+  }, [students, selectedGender, selectedGrade]);
+
+  const isCriteriaActive = !!searchNumber || (!!selectedGender && !!selectedGrade && !!selectedSection);
+
+  // --- Handlers ---
+
+  const handleReset = () => {
+    setSelectedGender("");
+    setSelectedGrade("");
+    setSelectedSection("");
+    setSearchNumber("");
+    setSelectedStudentId("");
+    setReasonSelect("");
+    setReasonText("");
+    setPickedBy("");
+    setPickerId("");
+  };
+
+  const handleModeSwitch = (newMode: 'LateArrival' | 'EarlyLeave') => {
+      setMode(newMode);
+      handleReset();
+  };
+
+  const handleLog = () => {
+    if (!selectedStudentId) return;
+    
+    const finalReason = reasonSelect === 'Other' ? reasonText : reasonSelect;
+
+    const log = store.logReception({
+      studentId: selectedStudentId,
+      type: mode,
+      reason: mode === 'EarlyLeave' ? finalReason : undefined,
+      pickupBy: mode === 'EarlyLeave' ? pickedBy : undefined,
+      pickupId: mode === 'EarlyLeave' ? pickerId : undefined,
+    });
+
+    setLastLog(log);
+    // Soft Reset
+    setSelectedStudentId("");
+    setReasonSelect("");
+    setReasonText("");
+    setPickedBy("");
+    setPickerId("");
+    
+    setTimeout(() => setLastLog(null), 4000);
+  };
+
+  const currentStudent = students.find(s => s.id === selectedStudentId);
+  const themeColor = mode === 'LateArrival' ? 'blue' : 'orange';
+  const themeBg = mode === 'LateArrival' ? 'bg-blue-50' : 'bg-orange-50';
+
+  return (
+    <div className="h-[calc(100vh-9rem)] min-h-[600px] flex gap-6 overflow-hidden">
+      
+      {/* LEFT SIDEBAR: Search & List */}
+      <div className="w-96 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden shrink-0">
+        {/* Mode Toggles */}
+        <div className="p-2 grid grid-cols-2 gap-1 bg-slate-100/50 border-b border-slate-200">
+            <button
+                onClick={() => handleModeSwitch('LateArrival')}
+                className={`flex flex-col items-center justify-center py-3 px-2 rounded-xl transition-all duration-200 ${mode === 'LateArrival' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:bg-white/50'}`}
+            >
+                <Clock size={20} className="mb-1" />
+                <span className="text-xs font-bold uppercase">{t.lateArrival}</span>
+            </button>
+            <button
+                onClick={() => handleModeSwitch('EarlyLeave')}
+                className={`flex flex-col items-center justify-center py-3 px-2 rounded-xl transition-all duration-200 ${mode === 'EarlyLeave' ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200' : 'text-slate-500 hover:bg-white/50'}`}
+            >
+                <LogOut size={20} className="mb-1" />
+                <span className="text-xs font-bold uppercase">{t.earlyLeave}</span>
+            </button>
+        </div>
+
+        {/* Search & Filter Header */}
+        <div className="p-4 space-y-3 border-b border-slate-100">
+            <div className="relative group">
+                <Search className={`absolute top-3 text-slate-400 group-focus-within:text-primary transition-colors ${lang === 'ar' ? 'right-3' : 'left-3'}`} size={18} />
+                <input 
+                    autoFocus
+                    type="text"
+                    placeholder={t.searchPlaceholder}
+                    className={`w-full py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono text-sm ${lang === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'}`}
+                    value={searchNumber}
+                    onChange={(e) => { setSearchNumber(e.target.value); setSelectedStudentId(""); }}
+                />
+            </div>
+
+            {/* Filters - Always Open */}
+            <div className="border border-slate-200 rounded-lg bg-slate-50/50">
+                <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-200 text-sm font-medium text-slate-600">
+                    <Filter size={16} /> 
+                    <span>{t.filterBy}</span>
+                </div>
+                
+                <div className="p-3 space-y-2">
+                    <Select value={selectedGender} onChange={(e) => { setSelectedGender(e.target.value); setSelectedGrade(""); setSelectedSection(""); }} className="bg-white text-sm py-1.5">
+                        <option value="">{t.gender}</option>
+                        <option value="Male">{t.male}</option>
+                        <option value="Female">{t.female}</option>
+                    </Select>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Select value={selectedGrade} onChange={(e) => { setSelectedGrade(e.target.value); setSelectedSection(""); }} disabled={!selectedGender} className="bg-white text-sm py-1.5">
+                            <option value="">{t.grade}</option>
+                            {availableGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                        </Select>
+                        <Select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} disabled={!selectedGrade} className="bg-white text-sm py-1.5">
+                            <option value="">{t.section}</option>
+                            {availableSections.map(s => <option key={s} value={s}>{s}</option>)}
+                        </Select>
+                    </div>
+                    {(selectedGender || selectedGrade || selectedSection) && (
+                        <button onClick={handleReset} className="w-full text-xs text-red-500 hover:text-red-600 hover:bg-red-50 py-1 rounded mt-1">
+                            {t.clearFilters}
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+
+        {/* Student List */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-1 bg-slate-50/50">
+             {!isCriteriaActive ? (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
+                    <Search size={48} className="opacity-20 mb-4" />
+                    <p className="text-sm">{t.selectClassMsg}</p>
+                </div>
+             ) : filteredStudents.length === 0 ? (
+                <div className="p-8 text-center text-slate-400">
+                    <p>{t.noStudentsFound}</p>
+                </div>
+             ) : (
+                 filteredStudents.map(s => (
+                    <button
+                        key={s.id}
+                        onClick={() => setSelectedStudentId(s.id)}
+                        className={`w-full text-start p-3 rounded-xl border transition-all group ${
+                            selectedStudentId === s.id 
+                            ? `bg-white border-${themeColor}-500 ring-1 ring-${themeColor}-500 shadow-md z-10` 
+                            : 'bg-white border-transparent hover:border-slate-200 shadow-sm'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className={`font-bold text-sm ${selectedStudentId === s.id ? `text-${themeColor}-700` : 'text-slate-700'}`}>
+                                    {lang === 'en' ? s.name_en : s.name_ar}
+                                </p>
+                                <p className="text-xs text-slate-400 font-mono">{s.studentNumber}</p>
+                            </div>
+                            <Badge color="gray" className="text-[10px]">{s.grade}-{s.section}</Badge>
+                        </div>
+                    </button>
+                 ))
+             )}
+        </div>
+      </div>
+
+      {/* RIGHT PANEL: Context & Action */}
+      <div className={`flex-1 rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden ${themeBg}`}>
+        
+        {/* Top Bar: Status & Info */}
+        <div className="h-14 shrink-0 border-b border-white/50 flex items-center justify-between px-6 bg-white/50 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${mode === 'LateArrival' ? 'bg-blue-500' : 'bg-orange-500'}`}></div>
+                <span className="font-bold text-sm text-slate-600 uppercase tracking-wider">
+                    {mode === 'LateArrival' ? t.lateArrival : t.earlyLeave}
+                </span>
+            </div>
+            {currentStudent && (
+                <Badge color={mode === 'LateArrival' ? 'blue' : 'yellow'} className="shadow-sm">
+                    {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Badge>
+            )}
+        </div>
+
+        {/* Content Area */}
+        {!currentStudent ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+                <div className="w-32 h-32 rounded-full bg-white/80 flex items-center justify-center mb-4 shadow-sm">
+                    <UserCheck size={64} className="opacity-20" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-500">{t.readyToProcess}</h2>
+                <p className="text-sm opacity-70">{t.selectStudentMsg}</p>
+            </div>
+        ) : (
+            <div className="flex-1 flex flex-col min-h-0">
+                
+                {/* 1. Digital ID Card (Sticky Top) */}
+                <div className="p-6 pb-2 shrink-0">
+                    <div 
+                        className="bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden relative border-t-[10px]"
+                        style={{ borderTopColor: '#458489' }}
+                    >
+                        <div className="px-6 pb-6 flex gap-6 relative pt-6">
+                            
+                            <div className="flex-1">
+                                <h2 className="text-2xl font-bold text-slate-800">{lang === 'en' ? currentStudent.name_en : currentStudent.name_ar}</h2>
+                                <div className="flex items-center gap-3 mt-1 text-sm text-slate-500 font-medium">
+                                    <span className="px-2 py-0.5 bg-slate-100 rounded text-slate-700 border border-slate-200">{currentStudent.grade} - {currentStudent.section}</span>
+                                    <span className="font-mono">#{currentStudent.studentNumber}</span>
+                                </div>
+
+                                <div className="mt-4 grid grid-cols-2 gap-4">
+                                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                                        {currentStudent.transportMode === 'Bus' ? <Bus size={16} /> : <MapPin size={16} />}
+                                        <span>{currentStudent.transportMode} {currentStudent.busRoute ? `(${currentStudent.busRoute})` : ''}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. Form Inputs (Scrollable Middle) */}
+                <div className="flex-1 overflow-y-auto px-6 py-2">
+                    {mode === 'LateArrival' ? (
+                         <div className="h-full flex flex-col justify-center items-center text-center space-y-4 bg-white/50 rounded-xl border border-white shadow-sm p-8">
+                            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center animate-pulse">
+                                <Clock size={32} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-700">{t.confirmLate}</h3>
+                                <p className="text-slate-500 text-sm mt-1 max-w-xs">
+                                    {t.confirmLateMsg}
+                                </p>
+                            </div>
+                         </div>
+                    ) : (
+                        <div className="space-y-4 pb-4">
+                             <Card className="border-0 shadow-sm bg-white/80">
+                                <h4 className="font-bold text-sm text-slate-700 mb-3 flex items-center gap-2">
+                                    <AlertTriangle size={16} className="text-orange-500" /> {t.reason}
+                                </h4>
+                                <Select value={reasonSelect} onChange={(e) => setReasonSelect(e.target.value)} className="mb-2">
+                                    <option value="">{t.selectReason}</option>
+                                    {EARLY_LEAVE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                </Select>
+                                {reasonSelect === 'Other' && (
+                                    <Input placeholder={t.pleaseSpecify} value={reasonText} onChange={(e) => setReasonText(e.target.value)} autoFocus />
+                                )}
+                             </Card>
+
+                             <Card className="border-0 shadow-sm bg-white/80">
+                                <h4 className="font-bold text-sm text-slate-700 mb-3 flex items-center gap-2">
+                                    <UserCheck size={16} className="text-slate-500" /> {t.guardianPickup}
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 block mb-1">{t.pickupBy}</label>
+                                        <Select value={pickedBy} onChange={(e) => setPickedBy(e.target.value)}>
+                                            <option value="">{t.selectRelation}</option>
+                                            {PICKUP_RELATIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 block mb-1">{t.pickupId}</label>
+                                        <Input placeholder="Emirates ID / National ID" value={pickerId} onChange={(e) => setPickerId(e.target.value)} />
+                                    </div>
+                                </div>
+                             </Card>
+
+                             <div className="flex items-start gap-3 p-4 rounded-lg bg-orange-100/50 border border-orange-200 text-orange-800 text-xs">
+                                <Info size={16} className="shrink-0 mt-0.5" />
+                                <p>{t.autoAttendance}</p>
+                             </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* 3. Footer Actions (Pinned Bottom) */}
+                <div className="shrink-0 p-6 bg-white border-t border-slate-200 flex justify-between items-center z-20">
+                    <Button variant="ghost" onClick={() => setSelectedStudentId("")} className="text-slate-400 hover:text-slate-600">
+                        {t.cancel}
+                    </Button>
+                    <Button 
+                        onClick={handleLog} 
+                        disabled={mode === 'EarlyLeave' && (!reasonSelect || !pickedBy || !pickerId)}
+                        className={`px-8 py-3 text-lg shadow-xl transition-transform active:scale-95 ${
+                            mode === 'LateArrival' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-200' : 'bg-orange-600 hover:bg-orange-700 shadow-orange-200'
+                        }`}
+                    >
+                        <span className="mx-2">{t.submit}</span> {lang === 'ar' ? <ArrowRight size={20} className="rotate-180" /> : <ArrowRight size={20} />}
+                    </Button>
+                </div>
+            </div>
+        )}
+      </div>
+
+      {/* Success Notification Toast */}
+      {lastLog && (
+         <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl border-2 animate-in fade-in slide-in-from-bottom-8 ${lastLog.transportConflict ? 'bg-red-50 border-red-100 text-red-900' : 'bg-white border-white text-slate-800'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${lastLog.transportConflict ? 'bg-red-200 text-red-700' : 'bg-green-100 text-green-600'}`}>
+                {lastLog.transportConflict ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
+            </div>
+            <div>
+                <h3 className="font-bold text-lg">{lastLog.type === 'LateArrival' ? t.lateArrival : t.earlyLeave}</h3>
+                {lastLog.transportConflict && <p className="text-sm text-red-600 font-bold">{t.transportConflict}</p>}
+            </div>
+         </div>
+      )}
+    </div>
+  );
+};
