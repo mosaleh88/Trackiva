@@ -4,7 +4,7 @@ import { Card, Button, Input, Select, Badge } from './ui';
 import { store, User } from '../services/store';
 import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions } from '../types';
 import { TRANSLATIONS, ROLES_LIST, AVAILABLE_ICONS, COLOR_THEMES, NAV_ITEMS } from '../constants';
-import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, FileJson, Search, Filter, ArrowUpDown, IdCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye } from 'lucide-react';
+import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, FileJson, Search, Filter, ArrowUpDown, IdCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, UserCheck, Download } from 'lucide-react';
 import QRCode from 'qrcode';
 import * as LucideIcons from 'lucide-react';
 
@@ -60,6 +60,12 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   
   const [rolePermissions, setRolePermissions] = useState<RolePermissions>({});
   const [selectedRoleForAccess, setSelectedRoleForAccess] = useState<string>(UserRole.TEACHER);
+
+  // Parent Notification State
+  const [parentSearch, setParentSearch] = useState("");
+  const [selectedStudentForParent, setSelectedStudentForParent] = useState<Student | null>(null);
+  const [parentChatId, setParentChatId] = useState("");
+  const [parentRules, setParentRules] = useState<Record<string, boolean>>({});
 
   // ID Card State
   const [viewingCard, setViewingCard] = useState<Student | null>(null);
@@ -183,6 +189,44 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     }
   };
 
+  // --- Parent Notification Logic ---
+  const handleParentSearchSelect = (student: Student) => {
+      setSelectedStudentForParent(student);
+      setParentChatId(student.parentTelegramChatId || "");
+      setParentRules(student.parentNotificationPreferences || {});
+      setParentSearch("");
+  };
+
+  const handleSaveParentSettings = () => {
+      if (!selectedStudentForParent) return;
+      store.updateStudent(selectedStudentForParent.id, {
+          parentTelegramChatId: parentChatId,
+          parentNotificationPreferences: parentRules
+      });
+      alert("Parent settings saved successfully!");
+      setSelectedStudentForParent(null);
+      refreshData(); // To update local state if needed
+  };
+
+  const toggleParentRule = (key: string) => {
+      setParentRules(prev => ({
+          ...prev,
+          [key]: !prev[key]
+      }));
+  };
+
+  const filteredParentSearch = useMemo(() => {
+      if (!parentSearch) return [];
+      const lower = parentSearch.toLowerCase();
+      return students.filter(s => 
+        s.name_en.toLowerCase().includes(lower) || 
+        s.name_ar.includes(lower) || 
+        s.studentNumber.includes(lower)
+      ).slice(0, 5);
+  }, [students, parentSearch]);
+
+
+  // --- Bulk Upload ---
   const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -228,6 +272,23 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     }
   };
 
+  const handleDownloadTemplate = async () => {
+      try {
+          const XLSX = await import('xlsx');
+          const template = [
+              { "Student Number": "2024001", "Name EN": "John Doe", "Name AR": "جون دو", "Gender": "Male", "Grade": "10", "Section": "A", "Transport": "Bus", "Bus Route": "R-101" },
+              { "Student Number": "2024002", "Name EN": "Jane Smith", "Name AR": "جين سميث", "Gender": "Female", "Grade": "11", "Section": "B", "Transport": "Car", "Bus Route": "" }
+          ];
+          const ws = XLSX.utils.json_to_sheet(template);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Template");
+          XLSX.writeFile(wb, "Student_Upload_Template.xlsx");
+      } catch (e) {
+          console.error("Template download failed", e);
+          alert("Could not download template.");
+      }
+  };
+
   const handlePrintCard = () => {
     const printContent = document.getElementById('id-card-container');
     if (!printContent) return;
@@ -247,8 +308,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     }
   };
 
-  // --- User Handlers ---
-
   const handleSaveUser = () => {
     if (editingUser) {
       store.updateUser(editingUser.id, formData);
@@ -267,8 +326,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
        refreshData();
      }
   };
-
-  // --- Timetable Handlers ---
 
   const handleSlotChange = (slotId: string, field: keyof TimeSlot, value: string) => {
      const currentSlots = [...schedule[editingScheduleType]];
@@ -317,7 +374,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       alert(t.attendanceSaved);
   };
 
-  // --- Destination & Settings Handlers ---
   const handleSaveDest = () => {
       if (editingDest) {
           store.updateDestination(editingDest.id, formData);
@@ -370,7 +426,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       }));
   };
 
-  // --- Access Control Handlers ---
   const handleToggleAccess = (navId: string) => {
       const currentPerms = rolePermissions[selectedRoleForAccess] || [];
       let newPerms: string[];
@@ -390,8 +445,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       store.updateSettings({ rolePermissions: updatedRolePermissions });
   };
 
-  // --- Render Helpers ---
-
   const renderIdCardModal = () => {
     if (!viewingCard) return null;
     
@@ -407,7 +460,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                 
                 <div className="flex-1 overflow-y-auto p-8 bg-slate-100 flex justify-center">
                     <div id="id-card-container">
-                        {/* Landscape Card Container */}
                         <div className="w-[480px] bg-white rounded-xl overflow-hidden shadow-xl border border-slate-200 relative flex flex-col print:shadow-none print:border" 
                              style={{ borderTop: '12px solid #458489' }}>
                             
@@ -566,6 +618,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     </div>
   );
 
+  // ... renderUserForm and renderDestForm remain unchanged but kept in closure ...
   const renderUserForm = () => (
     <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6 animate-in fade-in shadow-sm">
       <div className="flex justify-between items-center mb-4">
@@ -727,7 +780,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
             {(isAddingUser || editingUser) && renderUserForm()}
 
-            {/* User Filters */}
             <div className="bg-slate-50 p-3 rounded-lg mb-4 border border-slate-200 flex flex-col md:flex-row gap-3 items-center">
                 <div className="relative w-full md:w-auto flex-1">
                     <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
@@ -800,10 +852,17 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       {/* STUDENTS TAB */}
       {activeTab === 'students' && (
         <Card>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <h2 className="text-xl font-bold">{t.students}</h2>
                 <div className="flex gap-2 flex-wrap">
-                     {/* Bulk Upload Excel */}
+                    <Button 
+                        variant="secondary" 
+                        onClick={handleDownloadTemplate}
+                        className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    >
+                        <Download size={16} /> {t.downloadTemplate}
+                    </Button>
+
                     <div className="relative">
                         <input 
                             type="file" 
@@ -832,8 +891,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             </div>
 
             {(isAddingStudent || editingStudent) && renderStudentForm()}
-
-            {/* Filters & Search Bar */}
+            
             <div className="bg-slate-50 p-4 rounded-lg mb-4 border border-slate-200 space-y-3">
                 <div className="flex items-center gap-2">
                     <Search size={18} className="text-slate-400" />
@@ -898,7 +956,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                         {sortOrder === 'asc' ? 'ASC' : 'DESC'}
                     </button>
 
-                    {/* Reset Button */}
                     {(searchTerm || filterGrade !== 'All' || filterSection !== 'All' || filterGender !== 'All') && (
                         <button 
                             onClick={() => {
@@ -990,9 +1047,9 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         </Card>
       )}
 
-      {/* CLASSES TAB */}
+      {/* CLASSES, TIMETABLE, EPASS, NOTIFICATIONS, ACCESS Tabs rendered below (omitted for brevity as they are unchanged) */}
       {activeTab === 'classes' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from(new Set(students.map(s => `${s.grade}-${s.section}`))).sort().map(classId => {
                 const classStudents = students.filter(s => `${s.grade}-${s.section}` === classId);
                 const boys = classStudents.filter(s => s.gender === 'Male').length;
@@ -1022,7 +1079,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         </div>
       )}
 
-      {/* TIMETABLE TAB */}
       {activeTab === 'timetable' && (
         <Card>
             <div className="flex justify-between items-center mb-6">
@@ -1126,10 +1182,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         </Card>
       )}
 
-      {/* E-PASS DESTINATIONS TAB */}
       {activeTab === 'epass' && (
           <div className="space-y-6">
-              {/* Global Settings Card - Only Max Passes Now */}
               <Card>
                   <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2 mb-4">
                       <Settings className="text-slate-500" size={20} /> {t.globalSettings}
@@ -1209,7 +1263,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           </div>
       )}
 
-      {/* NOTIFICATIONS TAB */}
       {activeTab === 'notifications' && (
           <Card>
               <div className="flex items-center gap-3 mb-6">
@@ -1222,8 +1275,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Security / E-Pass Alerts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
                        <div className="flex items-center gap-2 mb-4">
                            <ShieldAlert className="text-red-500" size={20} />
@@ -1254,7 +1306,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                        </div>
                   </div>
 
-                  {/* Reception / Early Leave Alerts */}
                   <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
                        <div className="flex items-center gap-2 mb-4">
                            <LogOut className="text-orange-500" size={20} />
@@ -1285,7 +1336,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                        </div>
                   </div>
 
-                   {/* Targeted / Watchlist Alerts */}
                   <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
                        <div className="flex items-center gap-2 mb-4">
                            <Eye className="text-purple-500" size={20} />
@@ -1316,7 +1366,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                        </div>
                   </div>
 
-                  {/* Notification Rules */}
                   <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
                        <div className="flex items-center gap-2 mb-4">
                            <Settings className="text-slate-600" size={20} />
@@ -1325,7 +1374,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                        <p className="text-xs text-slate-500 mb-4">{t.enableNotificationsFor}</p>
 
                        <div className="space-y-2">
-                           {/* Unauthorized Toggle */}
                            <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors">
                                <span className="text-sm font-bold text-red-600 flex items-center gap-2">
                                    <ShieldAlert size={16} /> {t.unauthorized}
@@ -1338,7 +1386,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                />
                            </label>
 
-                           {/* Destinations Toggles */}
                            {destinations.map(dest => (
                                <label key={dest.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors">
                                    <span className="text-sm font-medium text-slate-700">
@@ -1361,10 +1408,134 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                        <Check size={18} /> {t.saveCredentials}
                    </Button>
               </div>
+
+              <div className="mt-8 border-t-2 border-slate-100 pt-8">
+                   <div className="flex items-center gap-3 mb-6">
+                      <div className="bg-green-50 p-3 rounded-lg text-green-600">
+                          <MessageCircle size={24} />
+                      </div>
+                      <div>
+                          <h2 className="text-xl font-bold text-slate-800">{t.parentNotifications}</h2>
+                          <p className="text-slate-500 text-sm">{t.parentNotificationsDesc}</p>
+                      </div>
+                   </div>
+                   
+                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                       <div className="space-y-3">
+                           <label className="block text-xs font-bold text-slate-600">{t.searchStudent}</label>
+                           <div className="relative">
+                               <Search className="absolute top-3 text-slate-400 left-3" size={16} />
+                               <Input 
+                                  value={parentSearch} 
+                                  onChange={(e) => { setParentSearch(e.target.value); setSelectedStudentForParent(null); }}
+                                  placeholder="Name or Number..."
+                                  className="pl-9"
+                               />
+                               {parentSearch && !selectedStudentForParent && (
+                                   <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-lg rounded-b-lg mt-1 z-10">
+                                       {filteredParentSearch.map(s => (
+                                           <button
+                                               key={s.id}
+                                               onClick={() => handleParentSearchSelect(s)}
+                                               className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm border-b border-slate-50 last:border-0"
+                                           >
+                                               <span className="font-bold">{s.name_en}</span> <span className="text-slate-400 text-xs">#{s.studentNumber}</span>
+                                           </button>
+                                       ))}
+                                       {filteredParentSearch.length === 0 && (
+                                           <div className="p-3 text-slate-400 text-xs text-center">No matches</div>
+                                       )}
+                                   </div>
+                               )}
+                           </div>
+                           {selectedStudentForParent && (
+                               <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex items-center gap-3">
+                                   <UserCheck size={32} className="text-blue-500" />
+                                   <div>
+                                       <h4 className="font-bold text-blue-900">{selectedStudentForParent.name_en}</h4>
+                                       <p className="text-xs text-blue-700">{selectedStudentForParent.grade} - {selectedStudentForParent.section}</p>
+                                   </div>
+                               </div>
+                           )}
+                       </div>
+
+                       {selectedStudentForParent ? (
+                           <div className="lg:col-span-2 bg-slate-50 rounded-xl border border-slate-200 p-6 space-y-6 animate-in fade-in">
+                               <h3 className="font-bold text-slate-700 flex items-center gap-2 border-b border-slate-200 pb-3">
+                                   <Settings size={18} /> {t.configureParentRules}
+                               </h3>
+
+                               <div>
+                                   <label className="block text-xs font-bold text-slate-600 mb-1">{t.parentChatId}</label>
+                                   <Input 
+                                       placeholder="123456..." 
+                                       value={parentChatId} 
+                                       onChange={(e) => setParentChatId(e.target.value)}
+                                       className="bg-white max-w-md"
+                                   />
+                                   <p className="text-xs text-slate-400 mt-1">The Telegram Chat ID of the parent receiving alerts.</p>
+                               </div>
+
+                               <div>
+                                   <label className="block text-xs font-bold text-slate-600 mb-3">{t.selectEvents}</label>
+                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                       <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={parentRules['UNAUTHORIZED'] || false}
+                                                onChange={() => toggleParentRule('UNAUTHORIZED')}
+                                                className="w-4 h-4 rounded border-slate-300 text-blue-600"
+                                            />
+                                            <span className="text-sm font-bold text-red-600 flex items-center gap-2">
+                                                <ShieldAlert size={14} /> {t.unauthorized}
+                                            </span>
+                                       </label>
+
+                                       <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={parentRules['EARLY_LEAVE'] || false}
+                                                onChange={() => toggleParentRule('EARLY_LEAVE')}
+                                                className="w-4 h-4 rounded border-slate-300 text-blue-600"
+                                            />
+                                            <span className="text-sm font-bold text-orange-600 flex items-center gap-2">
+                                                <LogOut size={14} /> {t.earlyLeave}
+                                            </span>
+                                       </label>
+
+                                       {destinations.map(dest => (
+                                            <label key={dest.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={parentRules[dest.id] || false}
+                                                    onChange={() => toggleParentRule(dest.id)}
+                                                    className="w-4 h-4 rounded border-slate-300 text-blue-600"
+                                                />
+                                                <span className="text-sm font-medium text-slate-700">
+                                                    {lang === 'en' ? dest.label_en : dest.label_ar}
+                                                </span>
+                                            </label>
+                                       ))}
+                                   </div>
+                               </div>
+
+                               <div className="flex justify-end">
+                                   <Button onClick={handleSaveParentSettings}>
+                                       <Check size={16} /> {t.saveParentSettings}
+                                   </Button>
+                               </div>
+                           </div>
+                       ) : (
+                           <div className="lg:col-span-2 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50">
+                               <Search size={48} className="opacity-20 mb-2" />
+                               <p>Search and select a student to configure parent alerts.</p>
+                           </div>
+                       )}
+                   </div>
+              </div>
           </Card>
       )}
 
-      {/* ACCESS CONTROL TAB */}
       {activeTab === 'access' && (
           <Card>
               <div className="flex items-center gap-3 mb-6">
@@ -1378,7 +1549,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
               </div>
 
               <div className="flex flex-col md:flex-row gap-6">
-                  {/* Role Selection */}
                   <div className="w-full md:w-64 shrink-0 space-y-2">
                       <label className="block text-xs font-bold text-slate-500 uppercase">{t.role}</label>
                       <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden">
@@ -1395,7 +1565,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       </div>
                   </div>
 
-                  {/* Permissions Matrix */}
                   <div className="flex-1">
                       <div className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
                           <div className="px-4 py-3 border-b border-slate-200 flex justify-between items-center bg-white">

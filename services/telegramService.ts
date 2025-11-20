@@ -43,14 +43,27 @@ const getCredentials = (student: Student, defaultToken?: string, defaultChat?: s
     return { token: defaultToken, chatId: defaultChat };
 };
 
+// Helper to notify parent if configured
+const notifyParent = async (student: Student, message: string, eventType: string) => {
+    // Check if parent chat ID is configured
+    if (!student.parentTelegramChatId) return;
+
+    // Check if notification for this event type is enabled for the parent
+    if (!student.parentNotificationPreferences || !student.parentNotificationPreferences[eventType]) return;
+
+    // Use the main bot token for parent notifications
+    const settings = store.getSettings();
+    const token = settings.telegramBotToken; 
+
+    if (token) {
+        await sendTelegramMessage(message, token, student.parentTelegramChatId);
+    }
+};
+
 export const sendUnauthorizedAlert = async (student: Student) => {
     const settings = store.getSettings();
+    const eventType = 'UNAUTHORIZED';
     
-    // Check if notification is enabled for UNAUTHORIZED
-    if (settings.notificationRules && settings.notificationRules['UNAUTHORIZED'] === false) {
-        return;
-    }
-
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
     const message = `
@@ -65,12 +78,19 @@ ${student.isWatchlisted ? '⚠️ <i>Targeted/Watchlist Student</i>' : ''}
 <i>This student has left the classroom without permission.</i>
     `;
 
-    const creds = getCredentials(student, settings.telegramBotToken, settings.telegramChatId);
-    await sendTelegramMessage(message, creds.token, creds.chatId);
+    // 1. Send to School Admin/Security (if enabled globally)
+    if (!settings.notificationRules || settings.notificationRules[eventType] !== false) {
+        const creds = getCredentials(student, settings.telegramBotToken, settings.telegramChatId);
+        await sendTelegramMessage(message, creds.token, creds.chatId);
+    }
+
+    // 2. Send to Parent (if enabled for this student)
+    await notifyParent(student, message, eventType);
 };
 
 export const sendEarlyLeaveAlert = async (student: Student, reason: string, pickupBy: string, pickupId?: string) => {
     const settings = store.getSettings();
+    const eventType = 'EARLY_LEAVE';
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     const message = `
@@ -88,20 +108,17 @@ ${student.isWatchlisted ? '⚠️ <i>Targeted/Watchlist Student</i>' : ''}
 <i>Attendance has been automatically updated.</i>
     `;
 
-    // Use Early Leave credentials, or check if targeted overrides are needed
-    // Logic: If targeted, send to targeted channel? Or Early Leave Channel?
-    // Requirement: "when targeted student left early send notification to a deferent chat id"
+    // 1. Send to School Admin/Reception
     const creds = getCredentials(student, settings.earlyLeaveBotToken, settings.earlyLeaveChatId);
     await sendTelegramMessage(message, creds.token, creds.chatId);
+
+    // 2. Send to Parent
+    await notifyParent(student, message, eventType);
 };
 
 export const sendPassCreatedAlert = async (student: Student, destination: EPassDestination) => {
     const settings = store.getSettings();
-    
-    // Check if notification is enabled for this specific destination ID
-    if (settings.notificationRules && settings.notificationRules[destination.id] !== true) {
-        return; 
-    }
+    const eventType = destination.id;
 
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
@@ -115,7 +132,13 @@ export const sendPassCreatedAlert = async (student: Student, destination: EPassD
 ${student.isWatchlisted ? '⚠️ <i>Targeted/Watchlist Student</i>' : ''}
     `;
     
-    // Use Default Security Channel for general pass alerts unless targeted
-    const creds = getCredentials(student, settings.telegramBotToken, settings.telegramChatId);
-    await sendTelegramMessage(message, creds.token, creds.chatId);
+    // 1. Send to School Admin (if enabled globally)
+    if (settings.notificationRules && settings.notificationRules[eventType] === true) {
+        // Use Default Security Channel for general pass alerts unless targeted
+        const creds = getCredentials(student, settings.telegramBotToken, settings.telegramChatId);
+        await sendTelegramMessage(message, creds.token, creds.chatId);
+    }
+
+    // 2. Send to Parent (if enabled for this student)
+    await notifyParent(student, message, eventType);
 }

@@ -269,6 +269,14 @@ export const TRANSLATIONS = {
     watchlistDesc: "Dedicated notifications for students marked as 'Targeted/Watchlisted'.",
     notificationRules: "E-Pass Notification Rules",
     enableNotificationsFor: "Enable Notifications For:",
+    // Parent Notification
+    parentNotifications: "Parent Notifications",
+    parentNotificationsDesc: "Configure Telegram alerts for specific students to notify parents directly.",
+    searchStudent: "Search Student...",
+    configureParentRules: "Configure Parent Rules",
+    parentChatId: "Parent Telegram Chat ID",
+    selectEvents: "Select Events to Notify Parent",
+    saveParentSettings: "Save Parent Settings",
     // Clinic
     incomingPatients: "Incoming Students",
     noIncoming: "No students currently en route.",
@@ -465,6 +473,14 @@ export const TRANSLATIONS = {
     watchlistDesc: "إشعارات مخصصة للطلاب المحدد لهم 'مراقبة/استهداف'.",
     notificationRules: "قواعد إشعارات التصريح الإلكتروني",
     enableNotificationsFor: "تفعيل الإشعارات لـ:",
+    // Parent Notifications
+    parentNotifications: "تنبيهات أولياء الأمور",
+    parentNotificationsDesc: "تكوين تنبيهات تيليجرام لطلاب محددين لإخطار أولياء الأمور مباشرة.",
+    searchStudent: "بحث عن طالب...",
+    configureParentRules: "إعدادات تنبيهات الوالدين",
+    parentChatId: "معرف محادثة الوالدين (Chat ID)",
+    selectEvents: "اختر الأحداث لتنبيه الوالدين",
+    saveParentSettings: "حفظ إعدادات الوالدين",
     // Clinic
     incomingPatients: "الطلاب القادمون",
     noIncoming: "لا يوجد طلاب قادمون حالياً.",

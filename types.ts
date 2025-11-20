@@ -31,6 +31,10 @@ export interface Student {
   busRoute?: string;
   transportMode: 'Bus' | 'Car' | 'Walker';
   isWatchlisted?: boolean; // Targeted student for specific alerts
+  
+  // Parent Notification Settings
+  parentTelegramChatId?: string;
+  parentNotificationPreferences?: Record<string, boolean>; // Key: 'UNAUTHORIZED', 'EARLY_LEAVE', or DestinationID
 }
 
 export interface AttendanceRecord {
