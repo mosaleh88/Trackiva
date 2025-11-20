@@ -9,6 +9,7 @@ import { Reception } from './components/Reception';
 import { EPass } from './components/EPass';
 import { Management } from './components/Management';
 import { Clinic } from './components/Clinic';
+import { Reports } from './components/Reports';
 import { Menu, Globe, LogOut } from 'lucide-react';
 
 const App = () => {
@@ -155,9 +156,10 @@ const App = () => {
                 {activeTab === 'dashboard' && <Dashboard role={currentRole} lang={lang} />}
                 {activeTab === 'attendance' && <Attendance lang={lang} />}
                 {activeTab === 'reception' && <Reception lang={lang} />}
-                {activeTab === 'epass' && <EPass lang={lang} />}
+                {activeTab === 'epass' && <EPass lang={lang} currentUserRole={currentRole} />}
                 {activeTab === 'management' && <Management lang={lang} />}
                 {activeTab === 'clinic' && <Clinic lang={lang} />}
+                {activeTab === 'reports' && <Reports lang={lang} />}
                 
                 {/* Placeholders for other modules */}
                 {(activeTab === 'transport') && (

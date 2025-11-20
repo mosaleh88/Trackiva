@@ -30,11 +30,25 @@ export interface Student {
   section: string;
   busRoute?: string;
   transportMode: 'Bus' | 'Car' | 'Walker';
+  familyId?: string; // Shared ID to link siblings
   isWatchlisted?: boolean; // Targeted student for specific alerts
   
   // Parent Notification Settings
   parentTelegramChatId?: string;
   parentNotificationPreferences?: Record<string, boolean>; // Key: 'UNAUTHORIZED', 'EARLY_LEAVE', or DestinationID
+}
+
+export interface AssignedClass {
+  grade: string;
+  section: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  assignedClasses?: AssignedClass[]; // Array of { grade, section }
 }
 
 export interface AttendanceRecord {
@@ -43,6 +57,7 @@ export interface AttendanceRecord {
   date: string; // YYYY-MM-DD
   period: string; // Changed from number to string to support "P1", "P2" keys
   status: AttendanceStatus;
+  reason?: string; // Reason for Absent (Excused)
   timestamp: number;
 }
 
@@ -58,6 +73,7 @@ export interface EPassDestination {
 export interface EPass {
   id: string;
   studentId: string;
+  teacherId?: string; // ID of the teacher who issued the pass
   type: string; // ID of the EPassDestination
   startTime: number;
   endTime?: number;

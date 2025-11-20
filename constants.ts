@@ -5,9 +5,10 @@ import {
   DoorOpen, 
   Ticket, 
   Stethoscope, 
-  Settings
+  Settings,
+  BarChart3
 } from 'lucide-react';
-import { UserRole, NavItem, Language, Student, EPassDestination } from './types';
+import { UserRole, NavItem, Language, Student, EPassDestination, User } from './types';
 
 export const ROLES_LIST = Object.values(UserRole);
 
@@ -18,6 +19,13 @@ export const NAV_ITEMS: NavItem[] = [
     label_ar: 'لوحة القيادة',
     icon: LayoutDashboard,
     allowedRoles: Object.values(UserRole)
+  },
+  {
+    id: 'reports',
+    label_en: 'Reports',
+    label_ar: 'التقارير',
+    icon: BarChart3,
+    allowedRoles: [UserRole.ADMIN_SGL, UserRole.MIDDLE_LEADER]
   },
   {
     id: 'management',
@@ -144,10 +152,12 @@ export const TRANSLATIONS = {
     switchLang: "العربية",
     management: "Management",
     clinic: "Clinic",
+    reception: "Reception",
     users: "Users",
     students: "Students",
     classes: "Classes",
-    upload: "Bulk Upload",
+    upload: "Upload Students List",
+    uploading: "Uploading...",
     addUser: "Add User",
     addStudent: "Add Student",
     role: "Role",
@@ -180,6 +190,8 @@ export const TRANSLATIONS = {
     color: "Color Theme",
     labelEn: "Label (English)",
     labelAr: "Label (Arabic)",
+    familyId: "Family ID (Sibling Link)",
+    siblings: "Siblings Detected",
     // Attendance
     date: "Date",
     period: "Period",
@@ -197,6 +209,8 @@ export const TRANSLATIONS = {
     present: "Present",
     excused: "Excused Absent",
     unexcused: "Unexcused",
+    enterReason: "Enter Reason for Absence",
+    saveReason: "Save Reason",
     // E-Pass
     passes: "Passes",
     passActive: "Pass Active",
@@ -277,6 +291,11 @@ export const TRANSLATIONS = {
     parentChatId: "Parent Telegram Chat ID",
     selectEvents: "Select Events to Notify Parent",
     saveParentSettings: "Save Parent Settings",
+    // User Management
+    assignedClasses: "Assigned Classes",
+    assignClass: "Assign Class",
+    selectGradeAndSection: "Select Grade and Section",
+    addClass: "Add Class",
     // Clinic
     incomingPatients: "Incoming Students",
     noIncoming: "No students currently en route.",
@@ -319,6 +338,39 @@ export const TRANSLATIONS = {
     totalVisits: "Total Visits",
     selectStudentForReport: "Search and select a student to view their medical report.",
     noVisitsFound: "No visits found for this student.",
+    // Reports
+    reports: "Reports",
+    dailySummary: "Daily Summary",
+    attendanceReport: "Attendance Report",
+    clinicReport: "Clinic Report",
+    epassReport: "E-Pass Report",
+    receptionReport: "Reception Report",
+    student360: "Student 360",
+    exportReport: "Export Report",
+    dateRange: "Date Range",
+    startDate: "Start Date",
+    endDate: "End Date",
+    generate: "Generate",
+    cycle: "Cycle",
+    cycle1: "Cycle 1 (KG-G4)",
+    cycle2: "Cycle 2 (G5-G8)",
+    cycle3: "Cycle 3 (G9-G12)",
+    absenteeList: "Absentee List",
+    absentBuckets: "Absence Frequency",
+    bucket1_2: "1-2 Days",
+    bucket3_5: "3-5 Days",
+    bucket6_9: "6-9 Days",
+    bucket10_14: "10-14 Days",
+    bucket15plus: "15+ Days (Red Flag)",
+    topComplaints: "Common Complaints",
+    topEPassUsers: "Top 10 E-Pass Users",
+    topUnauthorized: "Top Unauthorized Exits",
+    teacherPassStats: "Passes by Teacher",
+    total: "Total",
+    percentage: "Percentage",
+    count: "Count",
+    viewReport: "View Report",
+    noData: "No data available for the selected period."
   },
   ar: {
     welcome: "مرحباً بعودتك",
@@ -348,10 +400,12 @@ export const TRANSLATIONS = {
     switchLang: "English",
     management: "الإدارة",
     clinic: "العيادة",
+    reception: "الاستقبال",
     users: "المستخدمين",
     students: "الطلاب",
     classes: "الفصول",
-    upload: "تحميل جماعي",
+    upload: "رفع قائمة الطلاب",
+    uploading: "جاري الرفع...",
     addUser: "إضافة مستخدم",
     addStudent: "إضافة طالب",
     role: "الدور",
@@ -384,6 +438,8 @@ export const TRANSLATIONS = {
     color: "اللون",
     labelEn: "الاسم (إنجليزي)",
     labelAr: "الاسم (عربي)",
+    familyId: "رقم العائلة (ربط الأخوة)",
+    siblings: "الأخوة المكتشفون",
     // Attendance
     date: "التاريخ",
     period: "الحصة",
@@ -401,6 +457,8 @@ export const TRANSLATIONS = {
     present: "حاضر",
     excused: "غياب بعذر",
     unexcused: "بدون عذر",
+    enterReason: "أدخل سبب الغياب",
+    saveReason: "حفظ السبب",
     // E-Pass
     passes: "التصاريح",
     passActive: "تصريح نشط",
@@ -481,6 +539,11 @@ export const TRANSLATIONS = {
     parentChatId: "معرف محادثة الوالدين (Chat ID)",
     selectEvents: "اختر الأحداث لتنبيه الوالدين",
     saveParentSettings: "حفظ إعدادات الوالدين",
+    // User Management
+    assignedClasses: "الفصول المسندة",
+    assignClass: "إسناد فصل",
+    selectGradeAndSection: "اختر الصف والشعبة",
+    addClass: "إضافة فصل",
     // Clinic
     incomingPatients: "الطلاب القادمون",
     noIncoming: "لا يوجد طلاب قادمون حالياً.",
@@ -523,20 +586,53 @@ export const TRANSLATIONS = {
     totalVisits: "إجمالي الزيارات",
     selectStudentForReport: "ابحث واختر طالباً لعرض سجله الطبي.",
     noVisitsFound: "لا توجد زيارات مسجلة لهذا الطالب.",
+    // Reports
+    reports: "التقارير",
+    dailySummary: "الملخص اليومي",
+    attendanceReport: "تقرير الحضور",
+    clinicReport: "تقرير العيادة",
+    epassReport: "تقرير التصاريح",
+    receptionReport: "تقرير الاستقبال",
+    student360: "تقرير الطالب الشامل",
+    exportReport: "تصدير التقرير",
+    dateRange: "النطاق الزمني",
+    startDate: "تاريخ البدء",
+    endDate: "تاريخ الانتهاء",
+    generate: "توليد",
+    cycle: "الحلقة",
+    cycle1: "الحلقة 1 (الروضة-4)",
+    cycle2: "الحلقة 2 (5-8)",
+    cycle3: "الحلقة 3 (9-12)",
+    absenteeList: "قائمة الغياب",
+    absentBuckets: "تكرار الغياب",
+    bucket1_2: "1-2 أيام",
+    bucket3_5: "3-5 أيام",
+    bucket6_9: "6-9 أيام",
+    bucket10_14: "10-14 يوم",
+    bucket15plus: "15+ يوم (علامة حمراء)",
+    topComplaints: "أهم الشكاوى",
+    topEPassUsers: "أكثر 10 طلاب استخداماً",
+    topUnauthorized: "أكثر الخروج غير المصرح به",
+    teacherPassStats: "التصاريح حسب المعلم",
+    total: "الإجمالي",
+    percentage: "النسبة",
+    count: "العدد",
+    viewReport: "عرض التقرير",
+    noData: "لا توجد بيانات متاحة للفترة المحددة."
   }
 };
 
 // Mock Data Seeds
 export const MOCK_STUDENTS: Student[] = [
-  { id: 'S001', studentNumber: '2024001', name_en: 'Ahmed Ali', name_ar: 'أحمد علي', gender: 'Male', grade: '10', section: 'A', transportMode: 'Bus', busRoute: 'R-101', isWatchlisted: true },
-  { id: 'S002', studentNumber: '2024002', name_en: 'Sarah Smith', name_ar: 'سارة سميث', gender: 'Female', grade: '10', section: 'A', transportMode: 'Car' },
+  { id: 'S001', studentNumber: '2024001', name_en: 'Ahmed Ali', name_ar: 'أحمد علي', gender: 'Male', grade: '10', section: 'A', transportMode: 'Bus', busRoute: 'R-101', isWatchlisted: true, familyId: 'FAM001' },
+  { id: 'S002', studentNumber: '2024002', name_en: 'Sarah Smith', name_ar: 'سارة سميث', gender: 'Female', grade: '10', section: 'A', transportMode: 'Car', familyId: 'FAM002' },
   { id: 'S003', studentNumber: '2024003', name_en: 'John Doe', name_ar: 'جون دو', gender: 'Male', grade: '10', section: 'B', transportMode: 'Walker' },
   { id: 'S004', studentNumber: '2024004', name_en: 'Fatima Noor', name_ar: 'فاطمة نور', gender: 'Female', grade: '11', section: 'A', transportMode: 'Bus', busRoute: 'R-102' },
-  { id: 'S005', studentNumber: '2024005', name_en: 'Omar Hassan', name_ar: 'عمر حسن', gender: 'Male', grade: '11', section: 'B', transportMode: 'Car' },
+  { id: 'S005', studentNumber: '2024005', name_en: 'Omar Hassan', name_ar: 'عمر حسن', gender: 'Male', grade: '11', section: 'B', transportMode: 'Car', familyId: 'FAM002' }, // Sibling to Sarah
 ];
 
-export const MOCK_USERS_SEED = [
+export const MOCK_USERS_SEED: User[] = [
   { id: 'U001', name: 'Admin User', email: 'admin@trackiva.com', role: UserRole.ADMIN_SGL },
-  { id: 'U002', name: 'Sarah Teacher', email: 'sarah@trackiva.com', role: UserRole.TEACHER },
+  { id: 'U002', name: 'Sarah Teacher', email: 'sarah@trackiva.com', role: UserRole.TEACHER, assignedClasses: [{ grade: '10', section: 'A' }] },
   { id: 'U003', name: 'Mike Supervisor', email: 'mike@trackiva.com', role: UserRole.SUPERVISOR },
 ];

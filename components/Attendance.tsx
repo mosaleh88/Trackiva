@@ -4,7 +4,7 @@ import { Card, Button, Badge, Input, Select } from './ui';
 import { store } from '../services/store';
 import { Student, AttendanceStatus, Language, TimeSlot } from '../types';
 import { TRANSLATIONS } from '../constants';
-import { Clock, Calendar, Filter, Save, Trash2, Users } from 'lucide-react';
+import { Clock, Calendar, Filter, Save, Users, X } from 'lucide-react';
 
 interface AttendanceProps {
   lang: Language;
@@ -14,7 +14,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
   const t = TRANSLATIONS[lang];
   const [students, setStudents] = useState<Student[]>([]);
   const [marked, setMarked] = useState<Record<string, AttendanceStatus>>({});
+  const [reasons, setReasons] = useState<Record<string, string>>({});
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  
+  // Modal State
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [selectedStudentForReason, setSelectedStudentForReason] = useState<string | null>(null);
+  const [tempReason, setTempReason] = useState("");
   
   // Filters & Settings
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -32,9 +38,10 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
   const [bulkActionValue, setBulkActionValue] = useState<string>("");
 
   useEffect(() => {
-    setStudents(store.getStudents());
+    setStudents(store.getStudents()); 
   }, []);
 
+  // ... rest of component ...
   // Calculate Available Periods based on Date & Auto-Select Current Period
   useEffect(() => {
     const dateObj = new Date(selectedDate);
@@ -106,8 +113,14 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
 
     const existing = store.getAttendance(selectedDate, selectedPeriod);
     const map: Record<string, AttendanceStatus> = {};
-    existing.forEach(r => map[r.studentId] = r.status);
+    const reasonMap: Record<string, string> = {};
+
+    existing.forEach(r => {
+        map[r.studentId] = r.status;
+        if (r.reason) reasonMap[r.studentId] = r.reason;
+    });
     setMarked(map);
+    setReasons(reasonMap);
     setUnsavedChanges(false);
   }, [selectedDate, selectedPeriod]); 
 
@@ -154,8 +167,39 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
   };
 
   const handleMark = (studentId: string, status: AttendanceStatus) => {
-    setMarked(prev => ({ ...prev, [studentId]: status }));
-    setUnsavedChanges(true);
+    if (status === AttendanceStatus.ABSENT_EXCUSED) {
+        setSelectedStudentForReason(studentId);
+        setTempReason(reasons[studentId] || "");
+        setShowReasonModal(true);
+    } else {
+        setMarked(prev => ({ ...prev, [studentId]: status }));
+        // Clear reason if status changes to something else
+        setReasons(prev => {
+            const next = { ...prev };
+            delete next[studentId];
+            return next;
+        });
+        setUnsavedChanges(true);
+    }
+  };
+  
+  const handleSaveReason = () => {
+      if (selectedStudentForReason) {
+          setMarked(prev => ({ ...prev, [selectedStudentForReason]: AttendanceStatus.ABSENT_EXCUSED }));
+          if (tempReason.trim()) {
+            setReasons(prev => ({ ...prev, [selectedStudentForReason]: tempReason }));
+          } else {
+             setReasons(prev => {
+                const next = { ...prev };
+                delete next[selectedStudentForReason];
+                return next;
+             });
+          }
+          setUnsavedChanges(true);
+      }
+      setShowReasonModal(false);
+      setSelectedStudentForReason(null);
+      setTempReason("");
   };
 
   const handleBulkFill = () => {
@@ -163,32 +207,32 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
     
     const newMarks = { ...marked };
     filteredStudents.forEach(s => {
-        newMarks[s.id] = bulkActionValue as AttendanceStatus;
+        if (!newMarks[s.id]) { // Only fill blank entries
+            newMarks[s.id] = bulkActionValue as AttendanceStatus;
+        }
     });
     setMarked(newMarks);
     setUnsavedChanges(true);
     setBulkActionValue(""); // Reset dropdown
   };
 
-  const handleClearAll = () => {
-    if (!confirm(t.confirmClear)) return;
-    const newMarks = { ...marked };
-    filteredStudents.forEach(s => {
-        delete newMarks[s.id];
-    });
-    setMarked(newMarks);
-    setUnsavedChanges(true);
-  };
-
   const handleSubmitAttendance = () => {
-    // Save all marked records to store
+    // 1. Save all positive marks (covers all sections modified)
     Object.entries(marked).forEach(([studentId, status]) => {
         store.markAttendance({
             studentId,
             date: selectedDate,
             period: selectedPeriod,
-            status
+            status,
+            reason: reasons[studentId]
         });
+    });
+
+    // 2. Handle deletions (Unmarking) for visible students
+    filteredStudents.forEach(s => {
+        if (!marked[s.id]) {
+            store.deleteAttendance(s.id, selectedDate, selectedPeriod);
+        }
     });
     
     setUnsavedChanges(false);
@@ -196,9 +240,38 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
   };
 
   const currentPeriodInfo = availablePeriods.find(p => p.id === selectedPeriod);
+  const currentStudent = students.find(s => s.id === selectedStudentForReason);
 
   return (
     <div className="space-y-6">
+      {/* Reason Modal */}
+      {showReasonModal && currentStudent && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in zoom-in">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-slate-800">{t.excused}: {lang === 'en' ? currentStudent.name_en : currentStudent.name_ar}</h3>
+                    <button onClick={() => setShowReasonModal(false)} className="p-1 hover:bg-slate-100 rounded-full">
+                        <X size={20} />
+                    </button>
+                </div>
+                
+                <label className="block text-sm font-bold text-slate-500 mb-2">{t.enterReason}</label>
+                <Input 
+                    value={tempReason}
+                    onChange={(e) => setTempReason(e.target.value)}
+                    placeholder="e.g. Medical Appointment"
+                    autoFocus
+                    className="mb-6"
+                />
+
+                <div className="flex justify-end gap-2">
+                    <Button variant="ghost" onClick={() => setShowReasonModal(false)}>{t.cancel}</Button>
+                    <Button onClick={handleSaveReason}>{t.saveReason}</Button>
+                </div>
+            </div>
+        </div>
+      )}
+
       {/* Controls Header */}
       <Card className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -334,9 +407,6 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
                 <Button onClick={handleBulkFill} disabled={!bulkActionValue} variant="secondary">
                     {t.apply}
                 </Button>
-                <Button onClick={handleClearAll} variant="ghost" className="text-red-500 hover:bg-red-50 hover:text-red-600">
-                    <Trash2 size={18} />
-                </Button>
             </div>
           </div>
 
@@ -355,29 +425,36 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
                     <tbody className="divide-y divide-slate-100">
                         {filteredStudents.map(student => (
                             <tr key={student.id} className="hover:bg-slate-50 transition-colors bg-white">
-                                <td className="p-3 font-mono text-slate-500 text-sm text-start">{student.studentNumber}</td>
-                                <td className="p-3 font-medium text-start">
+                                <td className="p-3 font-mono text-slate-500 text-sm text-start align-top">{student.studentNumber}</td>
+                                <td className="p-3 font-medium text-start align-top">
                                     <div>{lang === 'en' ? student.name_en : student.name_ar}</div>
                                 </td>
-                                <td className="p-3 text-start">
+                                <td className="p-3 text-start align-top">
                                     <Badge color="gray">{student.section}</Badge>
                                 </td>
-                                <td className="p-3 text-start">
-                                    {marked[student.id] ? (
-                                        <Badge color={
-                                            marked[student.id] === AttendanceStatus.PRESENT ? 'green' :
-                                            marked[student.id] === AttendanceStatus.ABSENT_UNEXCUSED ? 'red' : 
-                                            marked[student.id] === AttendanceStatus.ABSENT_EXCUSED ? 'blue' :
-                                            marked[student.id] === AttendanceStatus.LATE ? 'yellow' : 
-                                            marked[student.id] === AttendanceStatus.EARLY_LEAVE ? 'yellow' : 'gray'
-                                        }>
-                                            {marked[student.id]}
-                                        </Badge>
-                                    ) : (
-                                        <span className="text-xs text-slate-400 italic">--</span>
-                                    )}
+                                <td className="p-3 text-start align-top">
+                                    <div className="flex flex-col items-start gap-1">
+                                        {marked[student.id] ? (
+                                            <Badge color={
+                                                marked[student.id] === AttendanceStatus.PRESENT ? 'green' :
+                                                marked[student.id] === AttendanceStatus.ABSENT_UNEXCUSED ? 'red' : 
+                                                marked[student.id] === AttendanceStatus.ABSENT_EXCUSED ? 'blue' :
+                                                marked[student.id] === AttendanceStatus.LATE ? 'yellow' : 
+                                                marked[student.id] === AttendanceStatus.EARLY_LEAVE ? 'yellow' : 'gray'
+                                            }>
+                                                {marked[student.id]}
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-xs text-slate-400 italic">--</span>
+                                        )}
+                                        {marked[student.id] === AttendanceStatus.ABSENT_EXCUSED && reasons[student.id] && (
+                                            <span className="text-[10px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 max-w-[150px] truncate" title={reasons[student.id]}>
+                                                {reasons[student.id]}
+                                            </span>
+                                        )}
+                                    </div>
                                 </td>
-                                <td className="p-3">
+                                <td className="p-3 align-top">
                                     <div className="flex justify-center gap-1 flex-wrap">
                                         <button 
                                             className={`w-8 h-8 rounded-md transition-all flex items-center justify-center font-bold text-xs ${marked[student.id] === AttendanceStatus.PRESENT ? 'bg-green-600 text-white shadow-md scale-105' : 'bg-slate-100 text-slate-500 hover:bg-green-100 hover:text-green-600'}`}

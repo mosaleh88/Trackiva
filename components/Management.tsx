@@ -1,18 +1,18 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
-import { store, User } from '../services/store';
-import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions } from '../types';
+import { store } from '../services/store';
+import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions, AssignedClass, User } from '../types';
 import { TRANSLATIONS, ROLES_LIST, AVAILABLE_ICONS, COLOR_THEMES, NAV_ITEMS } from '../constants';
-import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, FileJson, Search, Filter, ArrowUpDown, IdCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, UserCheck, Download } from 'lucide-react';
-import QRCode from 'qrcode';
+import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, FileJson, Search, Filter, ArrowUpDown, IdCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, UserCheck, Download, Loader2 } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
+import QRCode from 'qrcode';
 
 interface ManagementProps {
   lang: Language;
 }
 
-type Tab = 'users' | 'students' | 'classes' | 'timetable' | 'epass' | 'access' | 'notifications';
+type Tab = 'users' | 'students' | 'timetable' | 'epass' | 'access' | 'notifications';
 
 export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const t = TRANSLATIONS[lang];
@@ -77,6 +77,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
   // Form States
   const [formData, setFormData] = useState<any>({});
+  const [assignedClassGrade, setAssignedClassGrade] = useState("");
+  const [assignedClassSection, setAssignedClassSection] = useState("");
 
   useEffect(() => {
     refreshData();
@@ -237,47 +239,52 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     }
 
     setIsUploading(true);
-    try {
-      const XLSX = await import('xlsx');
-      
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: 'array' });
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(worksheet);
-      
-      const mappedStudents = json.map((row: any) => ({
-        studentNumber: String(row.studentNumber || row['Student Number'] || row['ID'] || Math.floor(Math.random()*100000)),
-        name_en: row.name_en || row['Name EN'] || row['Name'] || 'Unknown',
-        name_ar: row.name_ar || row['Name AR'] || '',
-        gender: (row.gender || row['Gender'] || 'Male') as 'Male' | 'Female',
-        grade: String(row.grade || row['Grade'] || ''),
-        section: String(row.section || row['Section'] || ''),
-        transportMode: (row.transportMode || row['Transport'] || 'Bus') as any,
-        busRoute: row.busRoute || row['Bus Route'] || ''
-      }));
 
-      if (mappedStudents.length > 0) {
-        store.bulkImportStudents(mappedStudents);
-        refreshData();
-        alert(`Successfully imported ${mappedStudents.length} students.`);
-      } else {
-        alert("No valid student data found in the Excel file.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error parsing Excel file. Please ensure it is a valid .xlsx or .xls file.");
-    } finally {
-      setIsUploading(false);
-      e.target.value = '';
-    }
+    // Use timeout to allow UI to re-render with loading state before blocking thread
+    setTimeout(async () => {
+        try {
+            const XLSX = await import('xlsx');
+            
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data, { type: 'array' });
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(worksheet);
+            
+            const mappedStudents = json.map((row: any) => ({
+                studentNumber: String(row.studentNumber || row['Student Number'] || row['ID'] || Math.floor(Math.random()*100000)),
+                name_en: row.name_en || row['Name EN'] || row['Name'] || 'Unknown',
+                name_ar: row.name_ar || row['Name AR'] || '',
+                gender: (row.gender || row['Gender'] || 'Male') as 'Male' | 'Female',
+                grade: String(row.grade || row['Grade'] || ''),
+                section: String(row.section || row['Section'] || ''),
+                transportMode: (row.transportMode || row['Transport'] || 'Bus') as any,
+                busRoute: row.busRoute || row['Bus Route'] || '',
+                familyId: String(row.familyId || row['Family ID'] || '')
+            }));
+
+            if (mappedStudents.length > 0) {
+                store.bulkImportStudents(mappedStudents);
+                refreshData();
+                alert(`Successfully imported ${mappedStudents.length} students.`);
+            } else {
+                alert("No valid student data found in the Excel file.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error parsing Excel file. Please ensure it is a valid .xlsx or .xls file.");
+        } finally {
+            setIsUploading(false);
+            if(e.target) e.target.value = '';
+        }
+    }, 100);
   };
 
   const handleDownloadTemplate = async () => {
       try {
           const XLSX = await import('xlsx');
           const template = [
-              { "Student Number": "2024001", "Name EN": "John Doe", "Name AR": "جون دو", "Gender": "Male", "Grade": "10", "Section": "A", "Transport": "Bus", "Bus Route": "R-101" },
-              { "Student Number": "2024002", "Name EN": "Jane Smith", "Name AR": "جين سميث", "Gender": "Female", "Grade": "11", "Section": "B", "Transport": "Car", "Bus Route": "" }
+              { "Student Number": "2024001", "Name EN": "John Doe", "Name AR": "جون دو", "Gender": "Male", "Grade": "10", "Section": "A", "Transport": "Bus", "Bus Route": "R-101", "Family ID": "FAM-001" },
+              { "Student Number": "2024002", "Name EN": "Jane Smith", "Name AR": "جين سميث", "Gender": "Female", "Grade": "11", "Section": "B", "Transport": "Car", "Bus Route": "", "Family ID": "FAM-002" }
           ];
           const ws = XLSX.utils.json_to_sheet(template);
           const wb = XLSX.utils.book_new();
@@ -325,6 +332,31 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
        store.deleteUser(id);
        refreshData();
      }
+  };
+  
+  const handleAddAssignedClass = () => {
+      if (!assignedClassGrade || !assignedClassSection) return;
+      
+      const currentClasses: AssignedClass[] = formData.assignedClasses || [];
+      
+      // Avoid duplicates
+      if (currentClasses.some(c => c.grade === assignedClassGrade && c.section === assignedClassSection)) {
+          return;
+      }
+      
+      setFormData({
+          ...formData,
+          assignedClasses: [...currentClasses, { grade: assignedClassGrade, section: assignedClassSection }]
+      });
+      setAssignedClassGrade("");
+      setAssignedClassSection("");
+  };
+
+  const handleRemoveAssignedClass = (index: number) => {
+      const currentClasses: AssignedClass[] = formData.assignedClasses || [];
+      const newClasses = [...currentClasses];
+      newClasses.splice(index, 1);
+      setFormData({ ...formData, assignedClasses: newClasses });
   };
 
   const handleSlotChange = (slotId: string, field: keyof TimeSlot, value: string) => {
@@ -587,10 +619,22 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                 />
             </div>
         </div>
-        <div className="col-span-1 md:col-span-3 bg-red-50 p-4 rounded-lg border border-red-100">
+        
+        {/* Family ID Input */}
+        <div className="col-span-1">
+            <label className="block text-xs font-bold text-slate-500 mb-1">{t.familyId}</label>
+            <Input 
+                placeholder="FAM-001" 
+                value={formData.familyId || ''} 
+                onChange={e => setFormData({...formData, familyId: e.target.value})} 
+            />
+            <p className="text-[10px] text-slate-400 mt-1">Assign same ID to link siblings.</p>
+        </div>
+
+        <div className="col-span-1 md:col-span-2 bg-red-50 p-4 rounded-lg border border-red-100">
             <label className="flex items-center gap-3 cursor-pointer">
                 <input 
-                    type="checkbox"
+                    type="checkbox" 
                     className="w-5 h-5 rounded text-red-600 focus:ring-red-500"
                     checked={formData.isWatchlisted || false}
                     onChange={e => setFormData({...formData, isWatchlisted: e.target.checked})}
@@ -618,7 +662,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     </div>
   );
 
-  // ... renderUserForm and renderDestForm remain unchanged but kept in closure ...
   const renderUserForm = () => (
     <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6 animate-in fade-in shadow-sm">
       <div className="flex justify-between items-center mb-4">
@@ -642,7 +685,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                 onChange={e => setFormData({...formData, email: e.target.value})} 
             />
         </div>
-        <div className="col-span-1 md:col-span-2">
+        <div>
             <label className="block text-xs font-bold text-slate-500 mb-1">{t.role}</label>
             <Select 
                 value={formData.role || UserRole.TEACHER} 
@@ -653,8 +696,43 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                 ))}
             </Select>
         </div>
+        
+        {/* Assigned Classes Section (for non-Admin roles usually, but visible for all here for simplicity) */}
+        <div className="md:col-span-2 border-t border-slate-200 pt-4 mt-2">
+             <h4 className="font-bold text-sm text-slate-700 mb-2">{t.assignedClasses}</h4>
+             <div className="flex gap-2 mb-3">
+                  <div className="flex-1">
+                      <Select value={assignedClassGrade} onChange={e => setAssignedClassGrade(e.target.value)}>
+                          <option value="">{t.grade}</option>
+                          {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                      </Select>
+                  </div>
+                  <div className="flex-1">
+                       <Select value={assignedClassSection} onChange={e => setAssignedClassSection(e.target.value)}>
+                          <option value="">{t.section}</option>
+                          {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
+                      </Select>
+                  </div>
+                  <Button onClick={handleAddAssignedClass} disabled={!assignedClassGrade || !assignedClassSection} variant="secondary">
+                      <Plus size={16} /> {t.addClass}
+                  </Button>
+             </div>
+             
+             {formData.assignedClasses && formData.assignedClasses.length > 0 ? (
+                 <div className="flex flex-wrap gap-2">
+                     {formData.assignedClasses.map((cls: AssignedClass, index: number) => (
+                         <div key={`${cls.grade}-${cls.section}`} className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-100">
+                             <span>{cls.grade} - {cls.section}</span>
+                             <button onClick={() => handleRemoveAssignedClass(index)} className="hover:text-red-600"><X size={14} /></button>
+                         </div>
+                     ))}
+                 </div>
+             ) : (
+                 <p className="text-xs text-slate-400 italic">No classes assigned (User has access to all).</p>
+             )}
+        </div>
       </div>
-      <div className="flex gap-2 mt-6 justify-end border-t border-slate-200 pt-4">
+      <div className="flex gap-2 mt-6 justify-end">
         <Button onClick={handleSaveUser}>{t.save}</Button>
       </div>
     </div>
@@ -666,952 +744,689 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
               <h3 className="font-bold text-lg text-slate-800">{editingDest ? t.editDestination : t.addDestination}</h3>
               <Button variant="ghost" onClick={() => { setEditingDest(null); setIsAddingDest(false); }}>{t.cancel}</Button>
           </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{t.labelEn}</label>
-                  <Input value={formData.label_en || ''} onChange={e => setFormData({ ...formData, label_en: e.target.value })} />
+                  <Input value={formData.label_en || ''} onChange={e => setFormData({...formData, label_en: e.target.value})} />
               </div>
               <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{t.labelAr}</label>
-                  <Input value={formData.label_ar || ''} onChange={e => setFormData({ ...formData, label_ar: e.target.value })} className="text-right" />
+                  <Input value={formData.label_ar || ''} onChange={e => setFormData({...formData, label_ar: e.target.value})} />
               </div>
               <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1">{t.duration}</label>
-                  <Input type="number" value={formData.maxDuration || 10} onChange={e => setFormData({ ...formData, maxDuration: e.target.value })} />
+                  <Input type="number" value={formData.maxDuration || ''} onChange={e => setFormData({...formData, maxDuration: e.target.value})} />
               </div>
               <div>
-                   <label className="block text-xs font-bold text-slate-500 mb-1">{t.color}</label>
-                   <div className="flex flex-wrap gap-2">
-                       {COLOR_THEMES.map(c => (
-                           <button
-                                key={c.name}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, colorTheme: c.name })}
-                                className={`w-8 h-8 rounded-full border-2 transition-all ${c.class.split(' ')[0]} ${formData.colorTheme === c.name ? 'border-slate-600 scale-110' : 'border-transparent'}`}
-                           />
-                       ))}
-                   </div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{t.color}</label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                      {COLOR_THEMES.map(c => (
+                          <button
+                              key={c.name}
+                              onClick={() => setFormData({...formData, colorTheme: c.name})}
+                              className={`w-6 h-6 rounded-full border-2 ${formData.colorTheme === c.name ? 'border-slate-800 scale-110' : 'border-transparent'} ${c.class.split(' ')[0]}`}
+                          />
+                      ))}
+                  </div>
               </div>
-              <div className="col-span-1 md:col-span-2">
+              <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-500 mb-1">{t.icon}</label>
-                  <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 max-h-32 overflow-y-auto p-2 bg-white border border-slate-200 rounded-lg">
+                  <div className="flex flex-wrap gap-2 p-2 bg-white border border-slate-200 rounded-lg h-32 overflow-y-auto">
                       {AVAILABLE_ICONS.map(iconName => {
-                          const Icon = (LucideIcons as any)[iconName];
+                          // Dynamic icon rendering
+                          const Icon = (LucideIcons as any)[iconName] || Ticket;
                           return (
-                              <button
-                                key={iconName}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, iconName })}
-                                className={`p-2 rounded-lg flex items-center justify-center border transition-all ${formData.iconName === iconName ? 'bg-primary/10 border-primary text-primary' : 'border-transparent hover:bg-slate-50'}`}
+                              <button 
+                                  key={iconName}
+                                  onClick={() => setFormData({...formData, iconName: iconName})}
+                                  className={`p-2 rounded-lg hover:bg-slate-100 transition-colors ${formData.iconName === iconName ? 'bg-blue-100 text-blue-600 ring-1 ring-blue-500' : 'text-slate-500'}`}
                               >
-                                  {Icon && <Icon size={20} />}
+                                  <Icon size={20} />
                               </button>
                           )
                       })}
                   </div>
               </div>
           </div>
-          <div className="flex gap-2 mt-6 justify-end border-t border-slate-200 pt-4">
+          <div className="flex gap-2 mt-6 justify-end">
               <Button onClick={handleSaveDest}>{t.save}</Button>
           </div>
       </div>
   );
 
+  const renderNotificationsTab = () => (
+      <div className="space-y-6">
+          <Card>
+              <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-blue-100 text-blue-600 rounded-full"><Bell size={24} /></div>
+                  <div>
+                      <h3 className="text-lg font-bold text-slate-800">{t.telegramSettings}</h3>
+                      <p className="text-sm text-slate-500">Configure alerting channels for different modules.</p>
+                  </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Security Alerts */}
+                  <div className="p-4 border border-slate-200 rounded-xl bg-red-50/30">
+                      <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2">
+                          <ShieldAlert size={18} className="text-red-500" /> {t.securityAlerts}
+                      </h4>
+                      <p className="text-xs text-slate-500 mb-4">Used for unauthorized exits and security breaches.</p>
+                      <div className="space-y-3">
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
+                              <Input value={telegramToken} onChange={e => setTelegramToken(e.target.value)} type="password" />
+                          </div>
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.chatId}</label>
+                              <Input value={telegramChatId} onChange={e => setTelegramChatId(e.target.value)} />
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* Reception Alerts */}
+                  <div className="p-4 border border-slate-200 rounded-xl bg-orange-50/30">
+                      <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2">
+                          <LogOut size={18} className="text-orange-500" /> {t.receptionAlerts}
+                      </h4>
+                      <p className="text-xs text-slate-500 mb-4">Used for notifying parents/admins about Early Leave.</p>
+                      <div className="space-y-3">
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
+                              <Input value={elTelegramToken} onChange={e => setElTelegramToken(e.target.value)} type="password" />
+                          </div>
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.chatId}</label>
+                              <Input value={elTelegramChatId} onChange={e => setElTelegramChatId(e.target.value)} />
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* Watchlist Alerts */}
+                  <div className="p-4 border border-slate-200 rounded-xl bg-yellow-50/30 md:col-span-2">
+                      <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2">
+                          <Eye size={18} className="text-yellow-600" /> {t.watchlistAlerts}
+                      </h4>
+                      <p className="text-xs text-slate-500 mb-4">{t.watchlistDesc}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
+                              <Input value={wlTelegramToken} onChange={e => setWlTelegramToken(e.target.value)} type="password" />
+                          </div>
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.chatId}</label>
+                              <Input value={wlTelegramChatId} onChange={e => setWlTelegramChatId(e.target.value)} />
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-slate-100">
+                  <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                      <Check size={18} className="text-green-500" /> {t.notificationRules}
+                  </h4>
+                  <p className="text-xs text-slate-500 mb-4">{t.enableNotificationsFor}</p>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                       <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
+                          <input 
+                              type="checkbox" 
+                              checked={notificationRules['UNAUTHORIZED'] !== false} // Default true
+                              onChange={() => toggleNotificationRule('UNAUTHORIZED')}
+                              className="rounded text-primary focus:ring-primary"
+                          />
+                          <span className="text-sm font-medium text-red-600">{t.unauthorized}</span>
+                       </label>
+                       
+                       {destinations.map(d => (
+                           <label key={d.id} className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
+                              <input 
+                                  type="checkbox" 
+                                  checked={notificationRules[d.id] === true}
+                                  onChange={() => toggleNotificationRule(d.id)}
+                                  className="rounded text-primary focus:ring-primary"
+                              />
+                              <span className="text-sm font-medium">{lang === 'en' ? d.label_en : d.label_ar}</span>
+                           </label>
+                       ))}
+                  </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                  <Button onClick={handleUpdateNotificationSettings}>{t.saveCredentials}</Button>
+              </div>
+          </Card>
+          
+          {/* Parent Notification Section */}
+          <Card>
+              <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-purple-100 text-purple-600 rounded-full"><MessageCircle size={24} /></div>
+                  <div>
+                      <h3 className="text-lg font-bold text-slate-800">{t.parentNotifications}</h3>
+                      <p className="text-sm text-slate-500">{t.parentNotificationsDesc}</p>
+                  </div>
+              </div>
+
+              <div className="max-w-lg relative mb-6">
+                  <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                  <Input 
+                      placeholder={t.searchStudent} 
+                      className="pl-10"
+                      value={parentSearch}
+                      onChange={e => setParentSearch(e.target.value)}
+                  />
+                  {parentSearch && (
+                      <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg mt-1 z-10">
+                          {filteredParentSearch.map(s => (
+                              <button 
+                                  key={s.id}
+                                  onClick={() => handleParentSearchSelect(s)}
+                                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm"
+                              >
+                                  {lang === 'en' ? s.name_en : s.name_ar} ({s.studentNumber})
+                              </button>
+                          ))}
+                      </div>
+                  )}
+              </div>
+
+              {selectedStudentForParent && (
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 animate-in fade-in">
+                      <div className="flex justify-between items-start mb-4">
+                          <div>
+                              <h4 className="font-bold text-slate-800">{lang === 'en' ? selectedStudentForParent.name_en : selectedStudentForParent.name_ar}</h4>
+                              <p className="text-xs text-slate-500">ID: {selectedStudentForParent.studentNumber}</p>
+                          </div>
+                          <button onClick={() => setSelectedStudentForParent(null)} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
+                      </div>
+                      
+                      <div className="space-y-4">
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.parentChatId}</label>
+                              <Input value={parentChatId} onChange={e => setParentChatId(e.target.value)} placeholder="e.g. 123456789" />
+                          </div>
+
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-2">{t.selectEvents}</label>
+                              <div className="grid grid-cols-2 gap-3">
+                                   <label className="flex items-center gap-2">
+                                      <input 
+                                          type="checkbox" 
+                                          checked={parentRules['UNAUTHORIZED'] || false}
+                                          onChange={() => toggleParentRule('UNAUTHORIZED')}
+                                          className="rounded text-purple-600 focus:ring-purple-500"
+                                      />
+                                      <span className="text-sm">{t.unauthorized}</span>
+                                  </label>
+                                  <label className="flex items-center gap-2">
+                                      <input 
+                                          type="checkbox" 
+                                          checked={parentRules['EARLY_LEAVE'] || false}
+                                          onChange={() => toggleParentRule('EARLY_LEAVE')}
+                                          className="rounded text-purple-600 focus:ring-purple-500"
+                                      />
+                                      <span className="text-sm">{t.earlyLeave}</span>
+                                  </label>
+                                  {destinations.map(d => (
+                                      <label key={d.id} className="flex items-center gap-2">
+                                          <input 
+                                              type="checkbox" 
+                                              checked={parentRules[d.id] || false}
+                                              onChange={() => toggleParentRule(d.id)}
+                                              className="rounded text-purple-600 focus:ring-purple-500"
+                                          />
+                                          <span className="text-sm">{lang === 'en' ? d.label_en : d.label_ar}</span>
+                                      </label>
+                                  ))}
+                              </div>
+                          </div>
+                          
+                          <Button onClick={handleSaveParentSettings} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                              {t.saveParentSettings}
+                          </Button>
+                      </div>
+                  </div>
+              )}
+          </Card>
+      </div>
+  );
+
+  const renderAccessControl = () => (
+      <Card>
+          <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-slate-100 text-slate-600 rounded-full"><Shield size={24} /></div>
+              <div>
+                  <h3 className="text-lg font-bold text-slate-800">{t.accessControl}</h3>
+                  <p className="text-sm text-slate-500">{t.manageRoles}</p>
+              </div>
+          </div>
+
+          <div className="mb-6">
+              <label className="block text-xs font-bold text-slate-500 mb-1">{t.selectRole}</label>
+              <Select 
+                  value={selectedRoleForAccess} 
+                  onChange={e => setSelectedRoleForAccess(e.target.value)}
+                  className="max-w-xs"
+              >
+                  {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
+              </Select>
+          </div>
+
+          <div className="border rounded-xl overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                  <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm">
+                          <th className="p-4 font-bold">{t.module}</th>
+                          <th className="p-4 font-bold text-center">{t.access}</th>
+                      </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                      {NAV_ITEMS.map(item => {
+                          const hasAccess = (rolePermissions[selectedRoleForAccess] || []).includes(item.id);
+                          const Icon = item.icon;
+                          return (
+                              <tr key={item.id} className="hover:bg-slate-50">
+                                  <td className="p-4 flex items-center gap-3">
+                                      <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
+                                          <Icon size={18} />
+                                      </div>
+                                      <span className="font-medium text-slate-700">{lang === 'en' ? item.label_en : item.label_ar}</span>
+                                  </td>
+                                  <td className="p-4 text-center">
+                                      <label className="relative inline-flex items-center cursor-pointer">
+                                          <input 
+                                              type="checkbox" 
+                                              className="sr-only peer"
+                                              checked={hasAccess}
+                                              onChange={() => handleToggleAccess(item.id)}
+                                          />
+                                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                      </label>
+                                  </td>
+                              </tr>
+                          );
+                      })}
+                  </tbody>
+              </table>
+          </div>
+          
+          <div className="mt-4 p-3 bg-yellow-50 text-yellow-800 text-sm rounded-lg flex gap-2 items-start">
+              <ShieldAlert size={16} className="mt-0.5 shrink-0" />
+              <p>Changes to access control are saved immediately but may require users to refresh their session to take effect.</p>
+          </div>
+      </Card>
+  );
+
   return (
     <div className="space-y-6">
-      {/* ID Card Modal */}
-      {viewingCard && renderIdCardModal()}
-
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
-        <Button 
-            variant={activeTab === 'users' ? 'primary' : 'ghost'} 
-            onClick={() => setActiveTab('users')}
-        >
-            <Users size={18} /> {t.users}
-        </Button>
-        <Button 
-            variant={activeTab === 'students' ? 'primary' : 'ghost'} 
-            onClick={() => setActiveTab('students')}
-        >
-            <GraduationCap size={18} /> {t.students}
-        </Button>
-        <Button 
-            variant={activeTab === 'classes' ? 'primary' : 'ghost'} 
-            onClick={() => setActiveTab('classes')}
-        >
-            <FileJson size={18} /> {t.classes}
-        </Button>
-        <Button 
-            variant={activeTab === 'timetable' ? 'primary' : 'ghost'} 
-            onClick={() => setActiveTab('timetable')}
-        >
-            <Clock size={18} /> {t.timetable}
-        </Button>
-        <Button 
-            variant={activeTab === 'epass' ? 'primary' : 'ghost'} 
-            onClick={() => setActiveTab('epass')}
-        >
-            <Ticket size={18} /> {t.destinations}
-        </Button>
-        <Button 
-            variant={activeTab === 'access' ? 'primary' : 'ghost'} 
-            onClick={() => setActiveTab('access')}
-        >
-            <Shield size={18} /> {t.accessControl}
-        </Button>
-        <Button 
-            variant={activeTab === 'notifications' ? 'primary' : 'ghost'} 
-            onClick={() => setActiveTab('notifications')}
-        >
-            <Bell size={18} /> {t.notifications}
-        </Button>
+      {renderIdCardModal()}
+      
+      {/* Top Navigation */}
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto">
+         {[
+             { id: 'users', label: t.users, icon: Users },
+             { id: 'students', label: t.students, icon: GraduationCap },
+             { id: 'timetable', label: t.timetable, icon: Clock },
+             { id: 'epass', label: t.destinations, icon: Ticket },
+             { id: 'access', label: t.accessControl, icon: Shield },
+             { id: 'notifications', label: t.notifications, icon: Bell }
+         ].map(tab => (
+             <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as Tab)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab.id ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+             >
+                 <tab.icon size={16} />
+                 {tab.label}
+             </button>
+         ))}
       </div>
 
       {/* USERS TAB */}
       {activeTab === 'users' && (
-        <Card>
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">{t.users}</h2>
-                <Button onClick={() => { setFormData({}); setIsAddingUser(true); }}>
-                    <Plus size={16} /> {t.addUser}
-                </Button>
-            </div>
+        <div>
+          <div className="flex justify-between items-center mb-6">
+              <div className="flex gap-4 w-full max-w-lg">
+                  <div className="relative flex-1">
+                      <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                      <Input 
+                          placeholder="Search Users..." 
+                          className="pl-10" 
+                          value={userSearchTerm}
+                          onChange={e => setUserSearchTerm(e.target.value)}
+                      />
+                  </div>
+                  <Select 
+                      value={userRoleFilter}
+                      onChange={e => setUserRoleFilter(e.target.value)}
+                      className="w-40"
+                  >
+                      <option value="All">All Roles</option>
+                      {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
+                  </Select>
+              </div>
+              <Button onClick={() => setIsAddingUser(true)}><Plus size={18} /> {t.addUser}</Button>
+          </div>
 
-            {(isAddingUser || editingUser) && renderUserForm()}
+          {isAddingUser && renderUserForm()}
+          {editingUser && renderUserForm()}
 
-            <div className="bg-slate-50 p-3 rounded-lg mb-4 border border-slate-200 flex flex-col md:flex-row gap-3 items-center">
-                <div className="relative w-full md:w-auto flex-1">
-                    <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
-                    <Input 
-                        placeholder="Search Users..." 
-                        className="pl-9"
-                        value={userSearchTerm}
-                        onChange={(e) => setUserSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                    <span className="text-sm font-bold text-slate-500">{t.filterBy}:</span>
-                    <Select 
-                        value={userRoleFilter} 
-                        onChange={(e) => setUserRoleFilter(e.target.value)}
-                        className="w-full md:w-48"
-                    >
-                        <option value="All">All Roles</option>
-                        {ROLES_LIST.map(role => (
-                            <option key={role} value={role}>{role}</option>
-                        ))}
-                    </Select>
-                </div>
-            </div>
-
-            <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="border-b border-slate-200 text-slate-500 text-sm bg-slate-50">
-                            <th className="p-3 rounded-tl-lg text-start">{t.studentName}</th>
-                            <th className="p-3 text-start">{t.email}</th>
-                            <th className="p-3 text-start">{t.role}</th>
-                            <th className="p-3 text-center rounded-tr-lg">{t.actions}</th>
+          <Card className="overflow-hidden p-0">
+             <table className="w-full text-left border-collapse">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm">
+                    <tr>
+                        <th className="p-4">{t.studentName}</th>
+                        <th className="p-4">{t.email}</th>
+                        <th className="p-4">{t.role}</th>
+                        <th className="p-4 text-right">{t.actions}</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                    {filteredUsers.map(user => (
+                        <tr key={user.id} className="hover:bg-slate-50">
+                            <td className="p-4 font-medium">
+                                <div>{user.name}</div>
+                                {user.assignedClasses && user.assignedClasses.length > 0 && (
+                                    <div className="flex gap-1 mt-1">
+                                        {user.assignedClasses.map((c, i) => (
+                                            <span key={i} className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100">
+                                                {c.grade}-{c.section}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </td>
+                            <td className="p-4 text-slate-500">{user.email}</td>
+                            <td className="p-4"><Badge color="blue">{user.role}</Badge></td>
+                            <td className="p-4 text-right flex justify-end gap-2">
+                                <Button variant="ghost" onClick={() => { setEditingUser(user); setFormData(user); }}>
+                                    <Edit2 size={16} />
+                                </Button>
+                                <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteUser(user.id)}>
+                                    <Trash2 size={16} />
+                                </Button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {filteredUsers.length === 0 ? (
-                            <tr>
-                                <td colSpan={4} className="p-6 text-center text-slate-400 italic">No users found</td>
-                            </tr>
-                        ) : (
-                            filteredUsers.map(user => (
-                                <tr key={user.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                    <td className="p-3 font-medium text-start">{user.name}</td>
-                                    <td className="p-3 text-slate-500 text-start">{user.email}</td>
-                                    <td className="p-3 text-start"><Badge color="blue">{user.role}</Badge></td>
-                                    <td className="p-3 flex justify-end gap-2">
-                                        <button 
-                                            onClick={() => { setEditingUser(user); setFormData(user); }}
-                                            className="p-2 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <button 
-                                            onClick={() => handleDeleteUser(user.id)}
-                                            className="p-2 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
-        </Card>
+                    ))}
+                </tbody>
+             </table>
+          </Card>
+        </div>
       )}
 
       {/* STUDENTS TAB */}
       {activeTab === 'students' && (
-        <Card>
-             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 className="text-xl font-bold">{t.students}</h2>
-                <div className="flex gap-2 flex-wrap">
-                    <Button 
-                        variant="secondary" 
-                        onClick={handleDownloadTemplate}
-                        className="bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-                    >
-                        <Download size={16} /> {t.downloadTemplate}
-                    </Button>
+        <div>
+           <Card className="mb-6">
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                  <h2 className="text-xl font-bold text-slate-800">{t.students}</h2>
+                  <div className="flex gap-2">
+                      <label className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                          {isUploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
+                          <span className="font-bold text-sm">{isUploading ? t.uploading : t.upload}</span>
+                          <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleBulkUpload} disabled={isUploading} />
+                      </label>
+                      <Button variant="secondary" onClick={handleDownloadTemplate}>
+                          <Download size={16} /> {t.downloadTemplate}
+                      </Button>
+                      <Button onClick={() => setIsAddingStudent(true)}>
+                          <Plus size={16} /> {t.addStudent}
+                      </Button>
+                  </div>
+              </div>
+              
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="lg:col-span-2 relative">
+                      <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                      <Input 
+                          placeholder={t.searchPlaceholder} 
+                          className="pl-10"
+                          value={searchTerm}
+                          onChange={e => setSearchTerm(e.target.value)}
+                      />
+                  </div>
+                  <div className="flex gap-2 items-center">
+                      <Filter size={16} className="text-slate-400" />
+                      <span className="text-xs font-bold text-slate-500 whitespace-nowrap">{t.filterBy}:</span>
+                      <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="py-1 text-sm">
+                          <option value="All">{t.allGrades}</option>
+                          {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                      </Select>
+                      <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="py-1 text-sm">
+                          <option value="All">{t.allSections}</option>
+                          {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
+                      </Select>
+                      <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="py-1 text-sm">
+                          <option value="All">{t.allGenders}</option>
+                          <option value="Male">{t.male}</option>
+                          <option value="Female">{t.female}</option>
+                      </Select>
+                  </div>
+                  <div className="flex gap-2 items-center justify-end">
+                       <ArrowUpDown size={16} className="text-slate-400" />
+                       <span className="text-xs font-bold text-slate-500 whitespace-nowrap">{t.sortBy}:</span>
+                       <Select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="py-1 text-sm w-32">
+                           <option value="name">{t.studentName}</option>
+                           <option value="grade">{t.grade}</option>
+                           <option value="number">{t.studentNumber}</option>
+                       </Select>
+                       <button 
+                          onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                          className="p-2 bg-slate-100 rounded hover:bg-slate-200"
+                       >
+                           {sortOrder === 'asc' ? <ArrowDownAZ size={16} /> : <ArrowUpDown size={16} className="rotate-180" />}
+                       </button>
+                  </div>
+              </div>
+           </Card>
 
-                    <div className="relative">
-                        <input 
-                            type="file" 
-                            accept=".xlsx, .xls" 
-                            id="bulk-upload" 
-                            className="hidden" 
-                            onChange={handleBulkUpload}
-                            disabled={isUploading}
-                        />
-                        <Button 
-                            variant="secondary" 
-                            onClick={() => document.getElementById('bulk-upload')?.click()}
-                            disabled={isUploading}
-                        >
-                            {isUploading ? (
-                                <>Loading...</>
-                            ) : (
-                                <><Upload size={16} /> {t.upload} (Excel)</>
-                            )}
-                        </Button>
-                    </div>
-                    <Button onClick={() => { setFormData({}); setIsAddingStudent(true); }}>
-                        <Plus size={16} /> {t.addStudent}
-                    </Button>
-                </div>
-            </div>
+           {isAddingStudent && renderStudentForm()}
+           {editingStudent && renderStudentForm()}
 
-            {(isAddingStudent || editingStudent) && renderStudentForm()}
-            
-            <div className="bg-slate-50 p-4 rounded-lg mb-4 border border-slate-200 space-y-3">
-                <div className="flex items-center gap-2">
-                    <Search size={18} className="text-slate-400" />
-                    <Input 
-                        placeholder={t.searchPlaceholder} 
-                        value={searchTerm} 
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="bg-white"
-                    />
-                </div>
-                
-                <div className="flex flex-wrap gap-2 items-center">
-                    <div className="flex items-center gap-1 text-sm font-bold text-slate-600 rtl:ml-2 ltr:mr-2">
-                        <Filter size={14} /> {t.filterBy}:
-                    </div>
-                    <select 
-                        className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none"
-                        value={filterGrade}
-                        onChange={(e) => setFilterGrade(e.target.value)}
-                    >
-                        <option value="All">{t.allGrades}</option>
-                        {uniqueGrades.map(g => <option key={g} value={g}>{t.grade} {g}</option>)}
-                    </select>
-
-                    <select 
-                        className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none"
-                        value={filterSection}
-                        onChange={(e) => setFilterSection(e.target.value)}
-                    >
-                        <option value="All">{t.allSections}</option>
-                        {uniqueSections.map(s => <option key={s} value={s}>{t.section} {s}</option>)}
-                    </select>
-
-                    <select 
-                        className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none"
-                        value={filterGender}
-                        onChange={(e) => setFilterGender(e.target.value)}
-                    >
-                        <option value="All">{t.allGenders}</option>
-                        <option value="Male">{t.male}</option>
-                        <option value="Female">{t.female}</option>
-                    </select>
-
-                    <div className="h-6 w-px bg-slate-300 mx-2"></div>
-
-                    <div className="flex items-center gap-1 text-sm font-bold text-slate-600 rtl:ml-2 ltr:mr-2">
-                        <ArrowUpDown size={14} /> {t.sortBy}:
-                    </div>
-                    <select 
-                        className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none"
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as any)}
-                    >
-                        <option value="name">{t.studentName}</option>
-                        <option value="grade">{t.grade}</option>
-                        <option value="number">{t.studentNumber}</option>
-                    </select>
-                    <button 
-                        className="p-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50"
-                        onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                    >
-                        {sortOrder === 'asc' ? 'ASC' : 'DESC'}
-                    </button>
-
-                    {(searchTerm || filterGrade !== 'All' || filterSection !== 'All' || filterGender !== 'All') && (
-                        <button 
-                            onClick={() => {
-                                setSearchTerm("");
-                                setFilterGrade("All");
-                                setFilterSection("All");
-                                setFilterGender("All");
-                            }}
-                            className="text-xs text-red-500 hover:underline ml-auto"
-                        >
-                            {t.clearFilters}
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="border-b border-slate-200 text-slate-500 text-sm bg-slate-50">
-                            <th className="p-3 rounded-tl-lg text-nowrap text-start">{t.studentNumber}</th>
-                            <th className="p-3 text-start">{t.studentName}</th>
-                            <th className="p-3 text-start">{t.gender}</th>
-                            <th className="p-3 text-start">{t.grade}</th>
-                            <th className="p-3 text-start">{t.transport}</th>
-                            <th className="p-3 text-center rounded-tr-lg">{t.actions}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredStudents.length === 0 ? (
-                            <tr>
-                                <td colSpan={6} className="p-8 text-center text-slate-500 italic">
-                                    {t.noStudentsFound}
-                                </td>
-                            </tr>
-                        ) : (
-                            filteredStudents.map(student => (
-                                <tr key={student.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
-                                    <td className="p-3 font-mono text-slate-600 text-sm text-start">{student.studentNumber}</td>
-                                    <td className="p-3 font-medium text-start">
-                                        <div className="text-slate-900 flex items-center gap-2">
-                                            {lang === 'en' ? student.name_en : student.name_ar}
-                                            {student.isWatchlisted && <Eye size={14} className="text-red-500" />}
-                                        </div>
-                                        {lang === 'en' && <div className="text-xs text-slate-500">{student.name_ar}</div>}
-                                    </td>
-                                    <td className="p-3 text-start">
-                                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${student.gender === 'Male' ? 'bg-blue-50 text-blue-700' : 'bg-pink-50 text-pink-700'}`}>
-                                            {student.gender === 'Male' ? t.male : t.female}
-                                        </span>
-                                    </td>
-                                    <td className="p-3 text-sm text-slate-700 text-start">
-                                        <span className="font-bold">{student.grade}</span> - {student.section}
-                                    </td>
-                                    <td className="p-3 text-sm text-slate-600 text-start">
-                                        {student.transportMode}
-                                        {student.busRoute && <span className="text-xs text-slate-400 mx-1">({student.busRoute})</span>}
-                                    </td>
-                                    <td className="p-3 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button 
-                                            onClick={() => setViewingCard(student)}
-                                            className="p-2 rounded hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition-colors"
-                                            title={t.generateId}
-                                        >
-                                            <IdCard size={16} />
-                                        </button>
-                                        <button 
-                                            onClick={() => { setEditingStudent(student); setFormData(student); }}
-                                            className="p-2 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <button 
-                                            onClick={() => handleDeleteStudent(student.id)}
-                                            className="p-2 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-                <div className="p-4 border-t border-slate-100 text-xs text-slate-400 text-center">
-                    Showing {filteredStudents.length} of {students.length} students
-                </div>
-            </div>
-        </Card>
-      )}
-
-      {/* CLASSES, TIMETABLE, EPASS, NOTIFICATIONS, ACCESS Tabs rendered below (omitted for brevity as they are unchanged) */}
-      {activeTab === 'classes' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from(new Set(students.map(s => `${s.grade}-${s.section}`))).sort().map(classId => {
-                const classStudents = students.filter(s => `${s.grade}-${s.section}` === classId);
-                const boys = classStudents.filter(s => s.gender === 'Male').length;
-                const girls = classStudents.filter(s => s.gender === 'Female').length;
-
-                return (
-                    <Card key={classId} className="hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-slate-800">{t.grade} {classId}</h3>
-                            <Badge color="blue">{classStudents.length}</Badge>
-                        </div>
-                        <div className="flex gap-2 text-xs text-slate-500 mb-3">
-                            <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">{t.male}: {boys}</span>
-                            <span className="bg-pink-50 text-pink-700 px-2 py-1 rounded">{t.female}: {girls}</span>
-                        </div>
-                        <div className="space-y-1 max-h-48 overflow-y-auto pr-2">
-                            {classStudents.map(s => (
-                                <div key={s.id} className="text-sm p-2 bg-slate-50 rounded border border-slate-100 flex justify-between items-center">
-                                    <span className="truncate max-w-[70%]">{lang === 'en' ? s.name_en : s.name_ar}</span>
-                                    <span className="text-slate-400 text-[10px]">{s.studentNumber}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
-                )
-            })}
+           <Card className="overflow-hidden p-0">
+              <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm">
+                      <tr>
+                          <th className="p-4">{t.studentNumber}</th>
+                          <th className="p-4">{t.studentName}</th>
+                          <th className="p-4">{t.gender}</th>
+                          <th className="p-4">{t.grade}</th>
+                          <th className="p-4">{t.transport}</th>
+                          <th className="p-4 text-right">{t.actions}</th>
+                      </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                      {filteredStudents.map(student => (
+                          <tr key={student.id} className={`hover:bg-slate-50 ${student.isWatchlisted ? 'bg-red-50/30' : ''}`}>
+                              <td className="p-4 font-mono text-slate-600">{student.studentNumber}</td>
+                              <td className="p-4">
+                                  <div className="font-bold text-slate-800 flex items-center gap-2">
+                                      {lang === 'en' ? student.name_en : student.name_ar}
+                                      {student.name_ar && lang === 'en' && <span className="text-xs text-slate-400 font-normal">{student.name_ar}</span>}
+                                  </div>
+                              </td>
+                              <td className="p-4">
+                                  <Badge color={student.gender === 'Male' ? 'blue' : 'red'}>
+                                      {student.gender === 'Male' ? t.male : t.female}
+                                  </Badge>
+                              </td>
+                              <td className="p-4 font-bold">{student.grade} - {student.section}</td>
+                              <td className="p-4 text-sm text-slate-600">
+                                  {student.transportMode} {student.busRoute && <span className="text-slate-400">({student.busRoute})</span>}
+                              </td>
+                              <td className="p-4 text-right flex justify-end gap-2">
+                                  <Button variant="secondary" className="px-2 py-1" onClick={() => setViewingCard(student)}>
+                                      <IdCard size={16} />
+                                  </Button>
+                                  <Button variant="ghost" onClick={() => { setEditingStudent(student); setFormData(student); }}>
+                                      <Edit2 size={16} />
+                                  </Button>
+                                  <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteStudent(student.id)}>
+                                      <Trash2 size={16} />
+                                  </Button>
+                              </td>
+                          </tr>
+                      ))}
+                  </tbody>
+              </table>
+           </Card>
         </div>
       )}
 
+      {/* TIMETABLE TAB */}
       {activeTab === 'timetable' && (
-        <Card>
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Clock className="text-primary" /> {t.timetableConfig}
-                </h2>
-                <div className="flex bg-slate-100 p-1 rounded-lg">
-                    <button 
-                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${editingScheduleType === 'standard' ? 'bg-white shadow-sm text-primary' : 'text-slate-500'}`}
-                        onClick={() => setEditingScheduleType('standard')}
-                    >
-                        {t.standard}
-                    </button>
-                    <button 
-                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${editingScheduleType === 'friday' ? 'bg-white shadow-sm text-primary' : 'text-slate-500'}`}
-                        onClick={() => setEditingScheduleType('friday')}
-                    >
-                        {t.friday}
-                    </button>
-                </div>
-            </div>
-
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-sm text-yellow-800 flex justify-between items-center">
-                <span>
-                    <strong>Note:</strong> Changing timings here will affect the "Current Period" display in the Attendance module. Ensure format is HH:MM.
-                </span>
-                <Button variant="secondary" className="text-xs bg-white" onClick={sortSchedule}>
-                    <ArrowDownAZ size={14} /> {t.sortChrono}
-                </Button>
-            </div>
-
-            <div className="overflow-x-auto mb-4">
-                <table className="w-full border-collapse">
-                    <thead>
-                        <tr className="bg-slate-50 text-slate-500 text-sm text-left">
-                            <th className="p-3 rounded-tl-lg pl-4 text-start">{t.labelEn}</th>
-                            <th className="p-3 text-start">{t.type}</th>
-                            <th className="p-3 text-start">{t.startTime}</th>
-                            <th className="p-3 text-start">{t.endTime}</th>
-                            <th className="p-3 rounded-tr-lg text-center">{t.actions}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {schedule[editingScheduleType].map((slot) => (
-                            <tr key={slot.id} className="hover:bg-slate-50">
-                                <td className="p-3 pl-4">
-                                    <Input 
-                                        value={slot.name} 
-                                        onChange={(e) => handleSlotChange(slot.id, 'name', e.target.value)}
-                                        className="w-full md:w-40"
-                                    />
-                                </td>
-                                <td className="p-3">
-                                    <Select
-                                        value={slot.type}
-                                        onChange={(e) => handleSlotChange(slot.id, 'type', e.target.value as any)}
-                                        className="w-32"
-                                    >
-                                        <option value="Period">Period</option>
-                                        <option value="Break">Break</option>
-                                        <option value="Lunch">Lunch</option>
-                                    </Select>
-                                </td>
-                                <td className="p-3">
-                                    <Input 
-                                        type="time" 
-                                        value={slot.startTime}
-                                        onChange={(e) => handleSlotChange(slot.id, 'startTime', e.target.value)}
-                                        className="w-32"
-                                    />
-                                </td>
-                                <td className="p-3">
-                                    <Input 
-                                        type="time" 
-                                        value={slot.endTime}
-                                        onChange={(e) => handleSlotChange(slot.id, 'endTime', e.target.value)}
-                                        className="w-32"
-                                    />
-                                </td>
-                                <td className="p-3 text-right">
-                                    <button 
-                                        onClick={() => handleDeleteSlot(slot.id)}
-                                        className="p-2 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
-                                        title="Delete Slot"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            <div className="flex justify-between border-t border-slate-200 pt-4">
-                <Button variant="secondary" onClick={handleAddSlot}>
-                    <Plus size={16} /> {t.addSlot}
-                </Button>
-                <Button onClick={saveSchedule}>{t.saveSchedule}</Button>
-            </div>
-        </Card>
-      )}
-
-      {activeTab === 'epass' && (
-          <div className="space-y-6">
-              <Card>
-                  <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2 mb-4">
-                      <Settings className="text-slate-500" size={20} /> {t.globalSettings}
-                  </h3>
-                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 max-w-md">
-                      <label className="block text-xs font-bold text-slate-500 mb-2">{t.maxPasses}</label>
-                      <div className="flex gap-2">
-                        <Input 
-                            type="number" 
-                            min="1" 
-                            max="20" 
-                            value={maxPasses} 
-                            onChange={(e) => setMaxPasses(parseInt(e.target.value) || 1)} 
-                        />
-                        <Button onClick={handleUpdateEPassSettings}>{t.updateLimit}</Button>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                  <Card>
+                      <div className="flex justify-between items-center mb-6">
+                          <div>
+                              <h3 className="text-xl font-bold text-slate-800">{t.timetable}</h3>
+                              <p className="text-sm text-slate-500">{t.timetableConfig}</p>
+                          </div>
+                          <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
+                              <button 
+                                  onClick={() => setEditingScheduleType('standard')}
+                                  className={`px-3 py-1 rounded-md text-sm font-bold transition-all ${editingScheduleType === 'standard' ? 'bg-white shadow-sm' : 'text-slate-500'}`}
+                              >
+                                  {t.standard}
+                              </button>
+                              <button 
+                                  onClick={() => setEditingScheduleType('friday')}
+                                  className={`px-3 py-1 rounded-md text-sm font-bold transition-all ${editingScheduleType === 'friday' ? 'bg-white shadow-sm' : 'text-slate-500'}`}
+                              >
+                                  {t.friday}
+                              </button>
+                          </div>
                       </div>
-                  </div>
-              </Card>
 
-              <Card>
-                  <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold">{t.destinations}</h2>
-                      <Button onClick={() => { setFormData({ colorTheme: 'blue', maxDuration: 10 }); setIsAddingDest(true); }}>
-                          <Plus size={16} /> {t.addDestination}
-                      </Button>
-                  </div>
+                      <div className="space-y-3">
+                          {schedule[editingScheduleType].map((slot, idx) => (
+                              <div key={slot.id} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border border-slate-100 group">
+                                  <span className="w-6 text-center text-slate-400 font-mono text-xs">{idx + 1}</span>
+                                  <Input 
+                                      value={slot.name} 
+                                      onChange={(e) => handleSlotChange(slot.id, 'name', e.target.value)} 
+                                      className="w-32 text-sm font-bold"
+                                  />
+                                  <Select 
+                                      value={slot.type} 
+                                      onChange={(e) => handleSlotChange(slot.id, 'type', e.target.value as any)}
+                                      className="w-28 text-sm"
+                                  >
+                                      <option value="Period">Period</option>
+                                      <option value="Break">Break</option>
+                                      <option value="Lunch">Lunch</option>
+                                  </Select>
+                                  <Input 
+                                      type="time" 
+                                      value={slot.startTime} 
+                                      onChange={(e) => handleSlotChange(slot.id, 'startTime', e.target.value)} 
+                                      className="w-28 text-sm font-mono"
+                                  />
+                                  <span className="text-slate-400">-</span>
+                                  <Input 
+                                      type="time" 
+                                      value={slot.endTime} 
+                                      onChange={(e) => handleSlotChange(slot.id, 'endTime', e.target.value)} 
+                                      className="w-28 text-sm font-mono"
+                                  />
+                                  <button 
+                                      onClick={() => handleDeleteSlot(slot.id)}
+                                      className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full ml-auto"
+                                  >
+                                      <X size={16} />
+                                  </button>
+                              </div>
+                          ))}
+                          
+                          <button 
+                              onClick={handleAddSlot}
+                              className="w-full py-3 border-2 border-dashed border-slate-200 rounded-lg text-slate-400 hover:text-primary hover:border-primary hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
+                          >
+                              <Plus size={16} /> {t.addSlot}
+                          </button>
+                      </div>
 
-                  {(isAddingDest || editingDest) && renderDestForm()}
-
-                  <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                          <thead>
-                              <tr className="border-b border-slate-200 text-slate-500 text-sm bg-slate-50">
-                                  <th className="p-3 rounded-tl-lg text-start">{t.icon}</th>
-                                  <th className="p-3 text-start">{t.labelEn}</th>
-                                  <th className="p-3 text-start">{t.labelAr}</th>
-                                  <th className="p-3 text-start">{t.duration}</th>
-                                  <th className="p-3 text-center rounded-tr-lg">{t.actions}</th>
-                              </tr>
-                          </thead>
-                          <tbody>
-                              {destinations.map(dest => {
-                                  const Icon = (LucideIcons as any)[dest.iconName];
-                                  return (
-                                    <tr key={dest.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                        <td className="p-3">
-                                            <div className={`w-8 h-8 rounded flex items-center justify-center ${COLOR_THEMES.find(c => c.name === dest.colorTheme)?.class}`}>
-                                                {Icon && <Icon size={18} />}
-                                            </div>
-                                        </td>
-                                        <td className="p-3 font-medium text-start">{dest.label_en}</td>
-                                        <td className="p-3 text-slate-600 text-start">{dest.label_ar}</td>
-                                        <td className="p-3 text-start">
-                                            <Badge color="gray">{dest.maxDuration}m</Badge>
-                                        </td>
-                                        <td className="p-3 text-right flex justify-end gap-2">
-                                            <button
-                                                onClick={() => { setEditingDest(dest); setFormData(dest); }}
-                                                className="p-2 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteDest(dest.id)}
-                                                className="p-2 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                  )
-                              })}
-                          </tbody>
-                      </table>
-                  </div>
-              </Card>
+                      <div className="mt-6 flex justify-between border-t border-slate-100 pt-4">
+                          <Button variant="ghost" onClick={sortSchedule}>
+                              <ArrowDownAZ size={16} /> {t.sortChrono}
+                          </Button>
+                          <Button onClick={saveSchedule}>
+                              <Check size={16} /> {t.saveSchedule}
+                          </Button>
+                      </div>
+                  </Card>
+              </div>
           </div>
       )}
 
-      {activeTab === 'notifications' && (
-          <Card>
-              <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-blue-50 p-3 rounded-lg text-blue-600">
-                      <Bell size={24} />
+      {/* DESTINATIONS & EPASS SETTINGS */}
+      {activeTab === 'epass' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                  <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-xl font-bold text-slate-800">{t.destinations}</h2>
+                      <Button onClick={() => setIsAddingDest(true)}><Plus size={16} /> {t.addDestination}</Button>
                   </div>
-                  <div>
-                      <h2 className="text-xl font-bold text-slate-800">{t.telegramSettings}</h2>
-                      <p className="text-slate-500 text-sm">Configure alerting channels for different modules.</p>
-                  </div>
-              </div>
+                  
+                  {isAddingDest && renderDestForm()}
+                  {editingDest && renderDestForm()}
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                       <div className="flex items-center gap-2 mb-4">
-                           <ShieldAlert className="text-red-500" size={20} />
-                           <h3 className="font-bold text-slate-700">{t.securityAlerts}</h3>
-                       </div>
-                       <p className="text-xs text-slate-500 mb-4">Used for unauthorized exits and security breaches.</p>
-                       
-                       <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">{t.botToken}</label>
-                                <Input 
-                                    placeholder="123456:ABC-..." 
-                                    value={telegramToken} 
-                                    onChange={(e) => setTelegramToken(e.target.value)}
-                                    className="bg-white"
-                                    type="password"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">{t.chatId}</label>
-                                <Input 
-                                    placeholder="-100123..." 
-                                    value={telegramChatId} 
-                                    onChange={(e) => setTelegramChatId(e.target.value)}
-                                    className="bg-white"
-                                />
-                            </div>
-                       </div>
-                  </div>
-
-                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                       <div className="flex items-center gap-2 mb-4">
-                           <LogOut className="text-orange-500" size={20} />
-                           <h3 className="font-bold text-slate-700">{t.receptionAlerts}</h3>
-                       </div>
-                       <p className="text-xs text-slate-500 mb-4">Used for notifying parents/admins about Early Leave.</p>
-                       
-                       <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">{t.botToken}</label>
-                                <Input 
-                                    placeholder="123456:ABC-..." 
-                                    value={elTelegramToken} 
-                                    onChange={(e) => setElTelegramToken(e.target.value)}
-                                    className="bg-white"
-                                    type="password"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">{t.chatId}</label>
-                                <Input 
-                                    placeholder="-100123..." 
-                                    value={elTelegramChatId} 
-                                    onChange={(e) => setElTelegramChatId(e.target.value)}
-                                    className="bg-white"
-                                />
-                            </div>
-                       </div>
-                  </div>
-
-                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                       <div className="flex items-center gap-2 mb-4">
-                           <Eye className="text-purple-500" size={20} />
-                           <h3 className="font-bold text-slate-700">{t.watchlistAlerts}</h3>
-                       </div>
-                       <p className="text-xs text-slate-500 mb-4">{t.watchlistDesc}</p>
-                       
-                       <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">{t.botToken}</label>
-                                <Input 
-                                    placeholder="123456:ABC-..." 
-                                    value={wlTelegramToken} 
-                                    onChange={(e) => setWlTelegramToken(e.target.value)}
-                                    className="bg-white"
-                                    type="password"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">{t.chatId}</label>
-                                <Input 
-                                    placeholder="-100123..." 
-                                    value={wlTelegramChatId} 
-                                    onChange={(e) => setWlTelegramChatId(e.target.value)}
-                                    className="bg-white"
-                                />
-                            </div>
-                       </div>
-                  </div>
-
-                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                       <div className="flex items-center gap-2 mb-4">
-                           <Settings className="text-slate-600" size={20} />
-                           <h3 className="font-bold text-slate-700">{t.notificationRules}</h3>
-                       </div>
-                       <p className="text-xs text-slate-500 mb-4">{t.enableNotificationsFor}</p>
-
-                       <div className="space-y-2">
-                           <label className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors">
-                               <span className="text-sm font-bold text-red-600 flex items-center gap-2">
-                                   <ShieldAlert size={16} /> {t.unauthorized}
-                               </span>
-                               <input 
-                                   type="checkbox" 
-                                   checked={notificationRules['UNAUTHORIZED'] ?? true}
-                                   onChange={() => toggleNotificationRule('UNAUTHORIZED')}
-                                   className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                               />
-                           </label>
-
-                           {destinations.map(dest => (
-                               <label key={dest.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors">
-                                   <span className="text-sm font-medium text-slate-700">
-                                       {lang === 'en' ? dest.label_en : dest.label_ar}
-                                   </span>
-                                   <input 
-                                       type="checkbox" 
-                                       checked={notificationRules[dest.id] === true}
-                                       onChange={() => toggleNotificationRule(dest.id)}
-                                       className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                   />
-                               </label>
-                           ))}
-                       </div>
-                  </div>
-              </div>
-
-              <div className="mt-6 flex justify-end border-t border-slate-100 pt-4">
-                   <Button onClick={handleUpdateNotificationSettings}>
-                       <Check size={18} /> {t.saveCredentials}
-                   </Button>
-              </div>
-
-              <div className="mt-8 border-t-2 border-slate-100 pt-8">
-                   <div className="flex items-center gap-3 mb-6">
-                      <div className="bg-green-50 p-3 rounded-lg text-green-600">
-                          <MessageCircle size={24} />
-                      </div>
-                      <div>
-                          <h2 className="text-xl font-bold text-slate-800">{t.parentNotifications}</h2>
-                          <p className="text-slate-500 text-sm">{t.parentNotificationsDesc}</p>
-                      </div>
-                   </div>
-                   
-                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                       <div className="space-y-3">
-                           <label className="block text-xs font-bold text-slate-600">{t.searchStudent}</label>
-                           <div className="relative">
-                               <Search className="absolute top-3 text-slate-400 left-3" size={16} />
-                               <Input 
-                                  value={parentSearch} 
-                                  onChange={(e) => { setParentSearch(e.target.value); setSelectedStudentForParent(null); }}
-                                  placeholder="Name or Number..."
-                                  className="pl-9"
-                               />
-                               {parentSearch && !selectedStudentForParent && (
-                                   <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 shadow-lg rounded-b-lg mt-1 z-10">
-                                       {filteredParentSearch.map(s => (
-                                           <button
-                                               key={s.id}
-                                               onClick={() => handleParentSearchSelect(s)}
-                                               className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm border-b border-slate-50 last:border-0"
-                                           >
-                                               <span className="font-bold">{s.name_en}</span> <span className="text-slate-400 text-xs">#{s.studentNumber}</span>
-                                           </button>
-                                       ))}
-                                       {filteredParentSearch.length === 0 && (
-                                           <div className="p-3 text-slate-400 text-xs text-center">No matches</div>
-                                       )}
-                                   </div>
-                               )}
-                           </div>
-                           {selectedStudentForParent && (
-                               <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex items-center gap-3">
-                                   <UserCheck size={32} className="text-blue-500" />
-                                   <div>
-                                       <h4 className="font-bold text-blue-900">{selectedStudentForParent.name_en}</h4>
-                                       <p className="text-xs text-blue-700">{selectedStudentForParent.grade} - {selectedStudentForParent.section}</p>
-                                   </div>
-                               </div>
-                           )}
-                       </div>
-
-                       {selectedStudentForParent ? (
-                           <div className="lg:col-span-2 bg-slate-50 rounded-xl border border-slate-200 p-6 space-y-6 animate-in fade-in">
-                               <h3 className="font-bold text-slate-700 flex items-center gap-2 border-b border-slate-200 pb-3">
-                                   <Settings size={18} /> {t.configureParentRules}
-                               </h3>
-
-                               <div>
-                                   <label className="block text-xs font-bold text-slate-600 mb-1">{t.parentChatId}</label>
-                                   <Input 
-                                       placeholder="123456..." 
-                                       value={parentChatId} 
-                                       onChange={(e) => setParentChatId(e.target.value)}
-                                       className="bg-white max-w-md"
-                                   />
-                                   <p className="text-xs text-slate-400 mt-1">The Telegram Chat ID of the parent receiving alerts.</p>
-                               </div>
-
-                               <div>
-                                   <label className="block text-xs font-bold text-slate-600 mb-3">{t.selectEvents}</label>
-                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                       <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={parentRules['UNAUTHORIZED'] || false}
-                                                onChange={() => toggleParentRule('UNAUTHORIZED')}
-                                                className="w-4 h-4 rounded border-slate-300 text-blue-600"
-                                            />
-                                            <span className="text-sm font-bold text-red-600 flex items-center gap-2">
-                                                <ShieldAlert size={14} /> {t.unauthorized}
-                                            </span>
-                                       </label>
-
-                                       <label className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={parentRules['EARLY_LEAVE'] || false}
-                                                onChange={() => toggleParentRule('EARLY_LEAVE')}
-                                                className="w-4 h-4 rounded border-slate-300 text-blue-600"
-                                            />
-                                            <span className="text-sm font-bold text-orange-600 flex items-center gap-2">
-                                                <LogOut size={14} /> {t.earlyLeave}
-                                            </span>
-                                       </label>
-
-                                       {destinations.map(dest => (
-                                            <label key={dest.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={parentRules[dest.id] || false}
-                                                    onChange={() => toggleParentRule(dest.id)}
-                                                    className="w-4 h-4 rounded border-slate-300 text-blue-600"
-                                                />
-                                                <span className="text-sm font-medium text-slate-700">
-                                                    {lang === 'en' ? dest.label_en : dest.label_ar}
-                                                </span>
-                                            </label>
-                                       ))}
-                                   </div>
-                               </div>
-
-                               <div className="flex justify-end">
-                                   <Button onClick={handleSaveParentSettings}>
-                                       <Check size={16} /> {t.saveParentSettings}
-                                   </Button>
-                               </div>
-                           </div>
-                       ) : (
-                           <div className="lg:col-span-2 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50">
-                               <Search size={48} className="opacity-20 mb-2" />
-                               <p>Search and select a student to configure parent alerts.</p>
-                           </div>
-                       )}
-                   </div>
-              </div>
-          </Card>
-      )}
-
-      {activeTab === 'access' && (
-          <Card>
-              <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-primary/10 p-3 rounded-lg text-primary">
-                      <Shield size={24} />
-                  </div>
-                  <div>
-                      <h2 className="text-xl font-bold text-slate-800">{t.manageRoles}</h2>
-                      <p className="text-slate-500 text-sm">Configure what each user role can access in the application.</p>
-                  </div>
-              </div>
-
-              <div className="flex flex-col md:flex-row gap-6">
-                  <div className="w-full md:w-64 shrink-0 space-y-2">
-                      <label className="block text-xs font-bold text-slate-500 uppercase">{t.role}</label>
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden">
-                          {ROLES_LIST.map(role => (
-                              <button
-                                  key={role}
-                                  onClick={() => setSelectedRoleForAccess(role)}
-                                  className={`w-full text-start px-4 py-3 text-sm font-medium transition-colors border-b last:border-0 border-slate-100 flex justify-between items-center ${selectedRoleForAccess === role ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-                              >
-                                  {role}
-                                  {selectedRoleForAccess === role && <Check size={16} />}
-                              </button>
-                          ))}
-                      </div>
-                  </div>
-
-                  <div className="flex-1">
-                      <div className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
-                          <div className="px-4 py-3 border-b border-slate-200 flex justify-between items-center bg-white">
-                              <h3 className="font-bold text-slate-700">{t.module} {t.access}</h3>
-                              <Badge color="blue">{selectedRoleForAccess}</Badge>
-                          </div>
-                          <div className="divide-y divide-slate-100">
-                              {NAV_ITEMS.map(item => {
-                                  const Icon = item.icon;
-                                  const isAllowed = rolePermissions[selectedRoleForAccess]?.includes(item.id);
-                                  
-                                  return (
-                                      <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-white transition-colors">
-                                          <div className="flex items-center gap-3">
-                                              <div className={`p-2 rounded-lg ${isAllowed ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-400'}`}>
-                                                  <Icon size={20} />
-                                              </div>
-                                              <div>
-                                                  <p className={`font-medium ${isAllowed ? 'text-slate-800' : 'text-slate-400'}`}>
-                                                      {lang === 'en' ? item.label_en : item.label_ar}
-                                                  </p>
-                                              </div>
-                                          </div>
-                                          
-                                          <label className="relative inline-flex items-center cursor-pointer">
-                                              <input 
-                                                  type="checkbox" 
-                                                  className="sr-only peer" 
-                                                  checked={isAllowed || false}
-                                                  onChange={() => handleToggleAccess(item.id)}
-                                              />
-                                              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                          </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {destinations.map(dest => {
+                          const Icon = (LucideIcons as any)[dest.iconName] || Ticket;
+                          return (
+                              <Card key={dest.id} className="relative group hover:shadow-md transition-all">
+                                  <div className="flex items-center gap-4">
+                                      <div className={`p-3 rounded-full ${COLOR_THEMES.find(c => c.name === dest.colorTheme)?.class}`}>
+                                          <Icon size={24} />
                                       </div>
-                                  );
-                              })}
-                          </div>
-                      </div>
-                      
-                      <div className="mt-4 flex gap-2 items-start text-xs text-slate-500 bg-blue-50 p-3 rounded-lg">
-                          <ShieldAlert size={16} className="text-blue-500 mt-0.5 shrink-0" />
-                          <p>Changes take effect immediately. Users with this role will see the updated navigation menu upon their next login or page refresh.</p>
-                      </div>
+                                      <div>
+                                          <h4 className="font-bold text-slate-800">{dest.label_en}</h4>
+                                          <p className="text-sm text-slate-500">{dest.label_ar}</p>
+                                          <div className="flex gap-2 mt-1">
+                                              <Badge color="gray">{dest.maxDuration}m</Badge>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button onClick={() => { setEditingDest(dest); setFormData(dest); }} className="p-1 text-slate-400 hover:text-blue-600"><Edit2 size={16} /></button>
+                                      <button onClick={() => handleDeleteDest(dest.id)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={16} /></button>
+                                  </div>
+                              </Card>
+                          )
+                      })}
                   </div>
               </div>
-          </Card>
+
+              <div className="lg:col-span-1">
+                   <Card>
+                      <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                          <Settings size={18} /> {t.globalSettings}
+                      </h3>
+                      <div>
+                          <label className="block text-xs font-bold text-slate-500 mb-2">{t.maxPasses}</label>
+                          <div className="flex gap-2">
+                              <Input 
+                                  type="number" 
+                                  value={maxPasses} 
+                                  onChange={(e) => setMaxPasses(parseInt(e.target.value))} 
+                              />
+                              <Button onClick={handleUpdateEPassSettings}>{t.updateLimit}</Button>
+                          </div>
+                      </div>
+                   </Card>
+              </div>
+          </div>
       )}
+
+      {/* NOTIFICATIONS TAB */}
+      {activeTab === 'notifications' && renderNotificationsTab()}
+
+      {/* ACCESS CONTROL TAB */}
+      {activeTab === 'access' && renderAccessControl()}
+
     </div>
   );
 };

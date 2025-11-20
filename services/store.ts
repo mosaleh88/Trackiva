@@ -1,16 +1,9 @@
 
-import { Student, AttendanceRecord, EPass, ReceptionLog, AttendanceStatus, UserRole, ScheduleConfig, TimeSlot, EPassDestination, AppSettings, ClinicVisit } from '../types';
+import { Student, AttendanceRecord, EPass, ReceptionLog, AttendanceStatus, UserRole, ScheduleConfig, TimeSlot, EPassDestination, AppSettings, ClinicVisit, User } from '../types';
 import { MOCK_STUDENTS, MOCK_USERS_SEED, DEFAULT_DESTINATIONS, NAV_ITEMS } from '../constants';
 
 // This service simulates the Supabase backend by persisting data to localStorage
 // ensuring the app works "offline" or without a real backend connected.
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-}
 
 const DEFAULT_STANDARD_SCHEDULE: TimeSlot[] = [
   { id: 'p1', name: 'Period 1', startTime: '08:00', endTime: '08:45', type: 'Period' },
@@ -45,7 +38,7 @@ const generateDefaultPermissions = () => {
 };
 
 class MockStore {
-  private readonly STORAGE_KEY = 'trackiva_db_v8'; // Increment version
+  private readonly STORAGE_KEY = 'trackiva_db_v9'; // Increment version
   
   private data: {
     students: Student[];
@@ -142,6 +135,28 @@ class MockStore {
   getStudents() {
     return this.data.students;
   }
+  
+  // NEW: Get students filtered by user's assigned classes (if any)
+  getStudentsForUser(userId: string) {
+      const user = this.data.users.find(u => u.id === userId);
+      
+      // If Admin, return all
+      if (user?.role === UserRole.ADMIN_SGL || !user?.assignedClasses || user.assignedClasses.length === 0) {
+          return this.data.students;
+      }
+
+      return this.data.students.filter(student => {
+          return user.assignedClasses?.some(ac => 
+              ac.grade === student.grade && ac.section === student.section
+          );
+      });
+  }
+
+  getSiblings(studentId: string) {
+      const student = this.data.students.find(s => s.id === studentId);
+      if (!student || !student.familyId) return [];
+      return this.data.students.filter(s => s.familyId === student.familyId && s.id !== studentId);
+  }
 
   addStudent(student: Omit<Student, 'id'>) {
     const newStudent = {
@@ -178,6 +193,10 @@ class MockStore {
   // --- User Management ---
   getUsers() {
     return this.data.users;
+  }
+
+  getUser(id: string) {
+      return this.data.users.find(u => u.id === id);
   }
 
   addUser(user: Omit<User, 'id'>) {
@@ -257,6 +276,13 @@ class MockStore {
     } else {
       this.data.attendance.push(entry);
     }
+    this.save();
+  }
+
+  deleteAttendance(studentId: string, date: string, period: string) {
+    this.data.attendance = this.data.attendance.filter(
+      a => !(a.studentId === studentId && a.date === date && a.period === period)
+    );
     this.save();
   }
 
@@ -372,6 +398,199 @@ class MockStore {
 
       this.save();
       return newVisit;
+  }
+
+  // --- Reporting Helpers ---
+
+  getCycle(grade: string): 'Cycle 1' | 'Cycle 2' | 'Cycle 3' | 'Unknown' {
+    if (['KG1', 'KG2', '1', '2', '3', '4'].includes(grade)) return 'Cycle 1';
+    if (['5', '6', '7', '8'].includes(grade)) return 'Cycle 2';
+    if (['9', '10', '11', '12'].includes(grade)) return 'Cycle 3';
+    return 'Unknown';
+  }
+
+  getReportsData(startDate: string, endDate: string, filters?: { grade?: string, section?: string, gender?: string }) {
+      const start = new Date(startDate).setHours(0,0,0,0);
+      const end = new Date(endDate).setHours(23,59,59,999);
+
+      // 1. Filter Students based on Global Filters
+      let targetStudents = this.data.students;
+      if (filters) {
+          if (filters.grade && filters.grade !== 'All') targetStudents = targetStudents.filter(s => s.grade === filters.grade);
+          if (filters.section && filters.section !== 'All') targetStudents = targetStudents.filter(s => s.section === filters.section);
+          if (filters.gender && filters.gender !== 'All') targetStudents = targetStudents.filter(s => s.gender === filters.gender);
+      }
+      const targetStudentIds = new Set(targetStudents.map(s => s.id));
+
+      // 2. Filter Data based on Date AND Target Students
+      const filteredAttendance = this.data.attendance.filter(a => {
+          const d = new Date(a.date).getTime();
+          return d >= start && d <= end && targetStudentIds.has(a.studentId);
+      });
+
+      const filteredVisits = this.data.clinicVisits.filter(v => 
+          v.timestamp >= start && v.timestamp <= end && targetStudentIds.has(v.studentId)
+      );
+      const filteredPasses = this.data.ePasses.filter(p => 
+          p.startTime >= start && p.startTime <= end && targetStudentIds.has(p.studentId)
+      );
+      const filteredLogs = this.data.receptionLogs.filter(l => 
+          l.timestamp >= start && l.timestamp <= end && targetStudentIds.has(l.studentId)
+      );
+
+      // --- Attendance Aggregation ---
+      const studentAttendance: Record<string, { P: number, A: number, EA: number, L: number, EL: number, total: number }> = {};
+      
+      // Group by date AND student to calculate daily status first
+      const attendanceByDateStudent: Record<string, AttendanceRecord[]> = {};
+      filteredAttendance.forEach(r => {
+          const key = `${r.date}-${r.studentId}`;
+          if (!attendanceByDateStudent[key]) attendanceByDateStudent[key] = [];
+          attendanceByDateStudent[key].push(r);
+      });
+
+      // Calculate daily statuses
+      Object.entries(attendanceByDateStudent).forEach(([key, records]) => {
+          const studentId = key.split('-')[1];
+          if (!studentAttendance[studentId]) studentAttendance[studentId] = { P: 0, A: 0, EA: 0, L: 0, EL: 0, total: 0 };
+          
+          const unexcused = records.filter(r => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
+          const excused = records.filter(r => r.status === AttendanceStatus.ABSENT_EXCUSED).length;
+          const late = records.some(r => r.status === AttendanceStatus.LATE);
+          const early = records.some(r => r.status === AttendanceStatus.EARLY_LEAVE);
+          const totalRecs = records.length;
+
+          studentAttendance[studentId].total++;
+
+          if (unexcused >= 3) {
+              studentAttendance[studentId].A++;
+          } else if (totalRecs > 0 && excused === totalRecs) {
+              studentAttendance[studentId].EA++;
+          } else if (early) {
+              studentAttendance[studentId].EL++;
+          } else if (late) {
+              studentAttendance[studentId].L++;
+          } else {
+              studentAttendance[studentId].P++;
+          }
+      });
+
+      // Bucketing
+      const absenteeBuckets = { '1-2': 0, '3-5': 0, '6-9': 0, '10-14': 0, '15+': 0 };
+      const excusedBuckets = { '1-2': 0, '3-5': 0, '6-9': 0, '10-14': 0, '15+': 0 };
+      const absenteeList: any[] = [];
+
+      Object.entries(studentAttendance).forEach(([sid, stats]) => {
+          const student = this.data.students.find(s => s.id === sid);
+          if (!student) return;
+          
+          // Unexcused
+          if (stats.A > 0) {
+              if (stats.A >= 15) absenteeBuckets['15+']++;
+              else if (stats.A >= 10) absenteeBuckets['10-14']++;
+              else if (stats.A >= 6) absenteeBuckets['6-9']++;
+              else if (stats.A >= 3) absenteeBuckets['3-5']++;
+              else absenteeBuckets['1-2']++;
+              
+              absenteeList.push({ ...student, daysAbsent: stats.A, type: 'Unexcused' });
+          }
+
+          // Excused
+          if (stats.EA > 0) {
+             if (stats.EA >= 15) excusedBuckets['15+']++;
+              else if (stats.EA >= 10) excusedBuckets['10-14']++;
+              else if (stats.EA >= 6) excusedBuckets['6-9']++;
+              else if (stats.EA >= 3) excusedBuckets['3-5']++;
+              else excusedBuckets['1-2']++;
+          }
+      });
+
+      // --- E-Pass Aggregation ---
+      const epassCounts: Record<string, number> = {};
+      const unauthorizedCounts: Record<string, number> = {};
+      const teacherCounts: Record<string, number> = {};
+
+      filteredPasses.forEach(p => {
+          epassCounts[p.studentId] = (epassCounts[p.studentId] || 0) + 1;
+          if (p.type === 'UNAUTHORIZED') unauthorizedCounts[p.studentId] = (unauthorizedCounts[p.studentId] || 0) + 1;
+          if (p.teacherId) teacherCounts[p.teacherId] = (teacherCounts[p.teacherId] || 0) + 1;
+      });
+
+      const topEPassUsers = Object.entries(epassCounts)
+          .map(([sid, count]) => ({ student: this.data.students.find(s => s.id === sid), count }))
+          .filter(i => i.student)
+          .sort((a,b) => b.count - a.count)
+          .slice(0, 10);
+
+      const topUnauthorized = Object.entries(unauthorizedCounts)
+           .map(([sid, count]) => ({ student: this.data.students.find(s => s.id === sid), count }))
+           .filter(i => i.student)
+           .sort((a,b) => b.count - a.count)
+           .slice(0, 10);
+
+       const teacherStats = Object.entries(teacherCounts)
+           .map(([tid, count]) => ({ user: this.data.users.find(u => u.id === tid), count }))
+           .filter(i => i.user)
+           .sort((a,b) => b.count - a.count);
+
+      return {
+          attendance: {
+              buckets: absenteeBuckets,
+              excusedBuckets: excusedBuckets,
+              list: absenteeList,
+              raw: studentAttendance
+          },
+          clinic: filteredVisits,
+          epass: {
+              topUsers: topEPassUsers,
+              topUnauthorized: topUnauthorized,
+              byTeacher: teacherStats
+          },
+          reception: filteredLogs
+      };
+  }
+
+  // Get full history for Student 360
+  getStudent360Data(studentId: string, startDate: string, endDate: string) {
+      const start = new Date(startDate).setHours(0,0,0,0);
+      const end = new Date(endDate).setHours(23,59,59,999);
+
+      const history = {
+          attendance: this.data.attendance.filter(a => {
+              const d = new Date(a.date).getTime();
+              return d >= start && d <= end && a.studentId === studentId;
+          }).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+
+          clinic: this.data.clinicVisits.filter(v => 
+              v.timestamp >= start && v.timestamp <= end && v.studentId === studentId
+          ).sort((a,b) => b.timestamp - a.timestamp),
+
+          epasses: this.data.ePasses.filter(p => 
+              p.startTime >= start && p.startTime <= end && p.studentId === studentId
+          ).sort((a,b) => b.startTime - a.startTime),
+
+          reception: this.data.receptionLogs.filter(l => 
+              l.timestamp >= start && l.timestamp <= end && l.studentId === studentId
+          ).sort((a,b) => b.timestamp - a.timestamp)
+      };
+
+      // Calculate Aggregated Stats
+      const attendanceStats = { P: 0, EA: 0, A: 0, L: 0, EL: 0 };
+      
+      // Simple raw count for 360 view (not daily logic for simplicity in list view, but can be enhanced)
+      // Actually, let's use the records to count flags
+      history.attendance.forEach(a => {
+          if(a.status === AttendanceStatus.PRESENT) attendanceStats.P++;
+          else if(a.status === AttendanceStatus.ABSENT_EXCUSED) attendanceStats.EA++;
+          else if(a.status === AttendanceStatus.ABSENT_UNEXCUSED) attendanceStats.A++;
+          else if(a.status === AttendanceStatus.LATE) attendanceStats.L++;
+          else if(a.status === AttendanceStatus.EARLY_LEAVE) attendanceStats.EL++;
+      });
+
+      return {
+          history,
+          stats: attendanceStats
+      };
   }
 
   // Helper for Gemini context

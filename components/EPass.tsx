@@ -2,13 +2,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Select, Badge, Input } from './ui';
 import { store } from '../services/store';
-import { Language, EPass as EPassType, Student, EPassDestination } from '../types';
-import { TRANSLATIONS } from '../constants';
-import { Search, Filter, Ticket, Library, Stethoscope, Armchair, Briefcase, Clock, AlertTriangle, Coffee, Gamepad2, Music, Dumbbell, Beaker, BookOpen, Users, Ban, AlertOctagon, LayoutDashboard } from 'lucide-react';
+import { Language, EPass as EPassType, Student, EPassDestination, UserRole } from '../types';
+import { TRANSLATIONS, ROLES_LIST } from '../constants';
+import { Search, Filter, Ticket, Library, Stethoscope, Armchair, Briefcase, Coffee, Gamepad2, Music, Dumbbell, Beaker, BookOpen, Users, Ban, AlertOctagon, LayoutDashboard, AlertTriangle, Clock } from 'lucide-react';
 import { sendUnauthorizedAlert, sendPassCreatedAlert } from '../services/telegramService';
 
 interface EPassProps {
   lang: Language;
+  // In a real app, we would pass 'currentUser' here
+  currentUserRole?: UserRole; // Add this prop if we can modify App.tsx, otherwise assume we can't
 }
 
 // Icon lookup map
@@ -37,7 +39,13 @@ export const EPass: React.FC<EPassProps> = ({ lang }) => {
 
   const refresh = () => {
       setPasses(store.getEPasses().filter(p => p.status === 'Active'));
-      setStudents(store.getStudents());
+      
+      // SIMULATION: If we are simulating Sarah Teacher (U002), filter by her classes.
+      // Since we don't have the current user context, we will fetch ALL students for now to avoid breaking the demo flow,
+      // but the `store.getStudentsForUser` logic exists for when authentication is fully wired up.
+      // In a real implementation: setStudents(store.getStudentsForUser(currentUserId));
+      setStudents(store.getStudents()); 
+      
       setDestinations(store.getDestinations());
       setMaxPasses(store.getSettings().maxPassesPerDay);
   };

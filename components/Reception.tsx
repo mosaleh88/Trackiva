@@ -4,7 +4,7 @@ import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
 import { Student, Language } from '../types';
 import { TRANSLATIONS, EARLY_LEAVE_REASONS, PICKUP_RELATIONS } from '../constants';
-import { Search, ArrowRight, UserCheck, LogOut, Clock, MapPin, Bus, User, X, Filter, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { Search, ArrowRight, UserCheck, LogOut, Clock, MapPin, Bus, User, X, Filter, AlertTriangle, CheckCircle2, Info, Users } from 'lucide-react';
 import QRCode from 'qrcode';
 import { sendEarlyLeaveAlert } from '../services/telegramService';
 
@@ -27,6 +27,9 @@ export const Reception: React.FC<ReceptionProps> = ({ lang }) => {
   // Selected Student
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  
+  // Sibling Detection
+  const [siblings, setSiblings] = useState<Student[]>([]);
 
   // Form States
   const [reasonSelect, setReasonSelect] = useState("");
@@ -38,16 +41,23 @@ export const Reception: React.FC<ReceptionProps> = ({ lang }) => {
     setStudents(store.getStudents());
   }, []);
 
-  // Generate QR Code for ID Card (keeping logic in case needed later, but removed from display)
+  // Handle Student Selection Changes (QR Code + Siblings Check)
   useEffect(() => {
     if (selectedStudentId) {
         const student = students.find(s => s.id === selectedStudentId);
         if (student) {
+            // QR Code
             const dataToEncode = JSON.stringify({ id: student.id, no: student.studentNumber });
             QRCode.toDataURL(dataToEncode, { width: 100, margin: 0 })
                 .then(url => setQrDataUrl(url))
                 .catch(err => console.error(err));
+
+            // Siblings Check
+            const detectedSiblings = store.getSiblings(student.id);
+            setSiblings(detectedSiblings);
         }
+    } else {
+        setSiblings([]);
     }
   }, [selectedStudentId, students]);
 
@@ -299,6 +309,29 @@ export const Reception: React.FC<ReceptionProps> = ({ lang }) => {
                         </div>
                     </div>
                 </div>
+
+                {/* SIBLING DETECTION BANNER */}
+                {siblings.length > 0 && (
+                    <div className="px-6 pb-2 shrink-0">
+                        <div className="bg-blue-50/80 border border-blue-100 rounded-xl p-3 animate-in slide-in-from-top-2">
+                            <div className="flex items-center gap-2 text-blue-700 text-xs font-bold uppercase mb-2">
+                                <Users size={14} /> {t.siblings}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {siblings.map(sib => (
+                                    <button
+                                        key={sib.id}
+                                        onClick={() => setSelectedStudentId(sib.id)}
+                                        className="flex items-center gap-2 bg-white border border-blue-200 px-3 py-2 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all text-sm shadow-sm group"
+                                    >
+                                        <span className="font-bold text-slate-700 group-hover:text-blue-700">{lang === 'en' ? sib.name_en : sib.name_ar}</span>
+                                        <Badge color="gray" className="text-[10px]">{sib.grade}-{sib.section}</Badge>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 2. Form Inputs (Scrollable Middle) */}
                 <div className="flex-1 overflow-y-auto px-6 py-2">
