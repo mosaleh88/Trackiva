@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
 import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions, AssignedClass, User, AttendanceConfig } from '../types';
 import { TRANSLATIONS, ROLES_LIST, AVAILABLE_ICONS, COLOR_THEMES, NAV_ITEMS } from '../constants';
-import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, FileJson, Search, Filter, ArrowUpDown, IdCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, UserCheck, Download, Loader2, ListChecks, Megaphone } from 'lucide-react';
+import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, FileJson, Search, Filter, ArrowUpDown, CreditCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, UserCheck, Download, Loader2, ListChecks, Megaphone } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -1381,7 +1380,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                               </td>
                               <td className="p-4 text-right flex justify-end gap-2">
                                   <Button variant="secondary" className="px-2 py-1" onClick={() => setViewingCard(student)}>
-                                      <IdCard size={16} />
+                                      <CreditCard size={16} />
                                   </Button>
                                   <Button variant="ghost" onClick={() => { setEditingStudent(student); setFormData(student); }}>
                                       <Edit2 size={16} />
