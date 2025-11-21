@@ -221,6 +221,12 @@ export const COLOR_THEMES = [
 
 export const TRANSLATIONS = {
   en: {
+    login: "Login",
+    password: "Password",
+    demoMode: "Demo Mode",
+    signIn: "Sign In",
+    loginDescription: "Enter your credentials to access the system.",
+    invalidCredentials: "Invalid email or password.",
     welcome: "Welcome back",
     selectRole: "Select Role to Simulate",
     totalStudents: "Total Students",
@@ -482,6 +488,12 @@ export const TRANSLATIONS = {
     noData: "No data available for the selected period."
   },
   ar: {
+    login: "تسجيل الدخول",
+    password: "كلمة المرور",
+    demoMode: "وضع التجربة",
+    signIn: "دخول",
+    loginDescription: "أدخل بيانات الاعتماد الخاصة بك للوصول إلى النظام.",
+    invalidCredentials: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
     welcome: "مرحباً بعودتك",
     selectRole: "اختر دوراً للمحاكاة",
     totalStudents: "إجمالي الطلاب",

@@ -9,8 +9,8 @@ import { sendUnauthorizedAlert, sendPassCreatedAlert } from '../services/telegra
 
 interface EPassProps {
   lang: Language;
-  // In a real app, we would pass 'currentUser' here
-  currentUserRole?: UserRole; // Add this prop if we can modify App.tsx, otherwise assume we can't
+  currentUserRole?: UserRole;
+  currentUserId?: string; // Added ID for more accurate tracking
 }
 
 // Icon lookup map
@@ -20,7 +20,7 @@ const ICON_MAP: any = {
 
 const UNAUTHORIZED_TYPE = 'UNAUTHORIZED';
 
-export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole }) => {
+export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUserId }) => {
   const t = TRANSLATIONS[lang];
   const [activeTab, setActiveTab] = useState<'issue' | 'dashboard'>('issue');
   const [passes, setPasses] = useState<EPassType[]>([]);
@@ -41,11 +41,13 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole }) => {
   const refresh = () => {
       setPasses(store.getEPasses().filter(p => p.status === 'Active'));
       
-      // SIMULATION: If we are simulating Sarah Teacher (U002), filter by her classes.
-      // Since we don't have the current user context, we will fetch ALL students for now to avoid breaking the demo flow,
-      // but the `store.getStudentsForUser` logic exists for when authentication is fully wired up.
-      // In a real implementation: setStudents(store.getStudentsForUser(currentUserId));
-      setStudents(store.getStudents()); 
+      // If we have a user ID, we could filter students by their assigned classes
+      // For now, we fetch all students but in a real app: setStudents(store.getStudentsForUser(currentUserId));
+      if (currentUserId) {
+          setStudents(store.getStudentsForUser(currentUserId));
+      } else {
+          setStudents(store.getStudents()); 
+      }
       
       setUsers(store.getUsers());
       setDestinations(store.getDestinations());
@@ -56,15 +58,19 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole }) => {
     refresh();
     const interval = setInterval(refresh, 5000); // Poll every 5s
     return () => clearInterval(interval);
-  }, []);
+  }, [currentUserId]);
 
   const currentUser = useMemo(() => {
-      if (!currentUserRole) return undefined;
-      // Find a user that matches the current simulated role.
-      // In a real app, this would be the actual logged-in user from auth context.
-      return users.find(u => u.role === currentUserRole);
-  }, [currentUserRole, users]);
+      if (currentUserId) {
+          return users.find(u => u.id === currentUserId);
+      }
+      if (currentUserRole) {
+          return users.find(u => u.role === currentUserRole);
+      }
+      return undefined;
+  }, [currentUserId, currentUserRole, users]);
 
+  // ... rest of component ...
   // --- Derived Data for Dashboard ---
   const destinationStats = useMemo(() => {
     const stats: Record<string, number> = {};
