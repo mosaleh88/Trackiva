@@ -740,10 +740,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         <Button variant="ghost" onClick={() => { setEditingUser(null); setIsAddingUser(false); }}>{t.cancel}</Button>
       </div>
       
-      <div className="mb-4 bg-blue-50 p-3 rounded-lg text-sm text-blue-800 border border-blue-100">
-          NOTE: This form creates the User Profile in the database. You must also create the Login Account (Email/Password) in the Supabase Authentication dashboard.
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <label className="block text-xs font-bold text-slate-500 mb-1">{t.studentName}</label>

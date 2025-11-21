@@ -196,8 +196,38 @@ class SupabaseStore {
   }
 
   async addUser(user: Omit<User, 'id'>) {
-    // Note: This adds to the public.users table profile. 
-    // Actual Auth account creation happens in Supabase Auth or needs a separate admin function.
+    // 1. Call Cloudflare Function to create Auth User (requires server-side logic)
+    // We generate a temporary password for the user
+    const tempPassword = "TempPassword123!"; 
+    
+    try {
+        const response = await fetch('/api/create_user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                email: user.email, 
+                password: tempPassword,
+                user_metadata: { name: user.name, role: user.role }
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            // If error is that user exists, we proceed to try creating the profile
+            // Otherwise, throw error
+            if (!err.error?.includes("already registered")) {
+                throw new Error(err.error || "Failed to create auth user");
+            }
+        } else {
+            const { user: authUser } = await response.json();
+            // Optionally use authUser.id if we want tight coupling
+        }
+    } catch (e) {
+        console.error("Auth creation warning:", e);
+        // Proceeding to create profile anyway, user might have been created manually
+    }
+
+    // 2. Create Profile in public.users
     const { data, error } = await supabase.from('users').insert(user).select().single();
     if (data) this.data.users.push(data);
     if (error) throw error;

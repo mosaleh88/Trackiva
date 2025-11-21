@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { User, Language, UserRole } from '../types';
-import { MOCK_USERS_SEED, TRANSLATIONS } from '../constants';
+import { User, Language } from '../types';
+import { TRANSLATIONS } from '../constants';
 import { store } from '../services/store';
 import { supabase } from '../services/supabase';
-import { Card, Input, Button, Badge } from './ui';
-import { Globe, LogIn, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Input, Button } from './ui';
+import { Globe, LogIn, Eye, EyeOff, Loader2, ArrowLeft, Mail } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -15,10 +15,13 @@ interface LoginProps {
 
 export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
   const t = TRANSLATIONS[lang];
+  const [view, setView] = useState<'login' | 'forgot'>('login');
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e?: React.FormEvent) => {
@@ -28,7 +31,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
 
     try {
         // 1. Authenticate against Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        const { error: authError } = await supabase.auth.signInWithPassword({
             email,
             password
         });
@@ -36,14 +39,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
         if (authError) throw authError;
 
         // 2. Fetch User Profile from public.users
-        // We assume the 'email' is the link between Auth and Profile for this setup
         const users = store.getUsers();
         const userProfile = users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
         if (userProfile) {
             onLogin(userProfile);
         } else {
-            // Fallback if profile missing (shouldn't happen if setup correctly)
             setError("Account authenticated but User Profile not found in database.");
             await supabase.auth.signOut();
         }
@@ -56,9 +57,23 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
     }
   };
 
-  // Demo functionality retained for testing without auth setup
-  const handleDemoLogin = async (user: User) => {
-      onLogin(user);
+  const handleForgotPassword = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsLoading(true);
+      setError("");
+      setSuccessMsg("");
+
+      try {
+          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+              redirectTo: window.location.origin, // Will redirect back to app
+          });
+          if (error) throw error;
+          setSuccessMsg(t.resetLinkSent);
+      } catch (err: any) {
+          setError(err.message || "Failed to send reset link");
+      } finally {
+          setIsLoading(false);
+      }
   };
 
   const isRTL = lang === 'ar';
@@ -80,12 +95,23 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
         </div>
       </div>
 
-      {/* Right: Login Form */}
+      {/* Right: Auth Forms */}
       <div className="flex-1 flex flex-col justify-center items-center p-6 lg:p-12">
         <div className="w-full max-w-md space-y-8">
+          
+          {/* View Header */}
           <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-bold text-slate-900">{t.welcome}</h2>
-            <p className="text-slate-500 mt-2">{t.loginDescription}</p>
+            {view === 'login' ? (
+                <>
+                    <h2 className="text-3xl font-bold text-slate-900">{t.welcome}</h2>
+                    <p className="text-slate-500 mt-2">{t.loginDescription}</p>
+                </>
+            ) : (
+                <>
+                    <h2 className="text-3xl font-bold text-slate-900">{t.resetPassword}</h2>
+                    <p className="text-slate-500 mt-2">{t.enterEmailToReset}</p>
+                </>
+            )}
           </div>
 
           <div className="flex justify-end">
@@ -97,86 +123,103 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
              </button>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t.email}</label>
-              <Input 
-                type="email" 
-                value={email} 
-                onChange={e => { setEmail(e.target.value); setError(""); }}
-                placeholder="name@school.com"
-                className="h-12"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t.password}</label>
-              <div className="relative">
-                <Input 
-                  type={showPassword ? "text" : "password"} 
-                  value={password} 
-                  onChange={e => { setPassword(e.target.value); setError(""); }}
-                  placeholder="••••••••"
-                  className="h-12 pr-10"
-                  required
-                />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className={`absolute top-3.5 text-slate-400 hover:text-slate-600 ${isRTL ? 'left-3' : 'right-3'}`}
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100">
-                {error}
-              </div>
-            )}
-
-            <Button type="submit" disabled={isLoading} className="w-full h-12 text-lg shadow-lg shadow-blue-200">
-              {isLoading ? <Loader2 className="animate-spin mx-2" /> : t.signIn} {!isLoading && <LogIn size={20} className="mx-2" />}
-            </Button>
-          </form>
-
-          {/* Demo Mode Section */}
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-slate-50 text-slate-500">{t.demoMode}</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3">
-            {MOCK_USERS_SEED.map(user => (
-              <button
-                key={user.id}
-                onClick={() => handleDemoLogin(user)}
-                className="flex items-center p-3 border border-slate-200 rounded-xl hover:bg-white hover:shadow-md hover:border-blue-200 transition-all text-left group bg-white"
-              >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0 ${
-                    user.role === UserRole.ADMIN_SGL ? 'bg-purple-600' :
-                    user.role === UserRole.TEACHER ? 'bg-blue-600' :
-                    user.role === UserRole.CLINIC_STAFF ? 'bg-red-500' :
-                    user.role === UserRole.SOCIAL_WORKER ? 'bg-orange-500' : 'bg-slate-500'
-                }`}>
-                    {user.name.charAt(0)}
+          {/* FORMS */}
+          {view === 'login' ? (
+              <form onSubmit={handleLogin} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t.email}</label>
+                  <Input 
+                    type="email" 
+                    value={email} 
+                    onChange={e => { setEmail(e.target.value); setError(""); }}
+                    placeholder="name@school.com"
+                    className="h-12"
+                    required
+                  />
                 </div>
-                <div className="ml-4 rtl:ml-0 rtl:mr-4 flex-1">
-                    <p className="font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{user.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                        <Badge color="gray" className="text-[10px] px-2">{user.role}</Badge>
-                        <span className="text-xs text-slate-400">{user.email}</span>
-                    </div>
+                
+                <div>
+                  <div className="flex justify-between mb-1">
+                      <label className="block text-sm font-medium text-slate-700">{t.password}</label>
+                      <button 
+                          type="button" 
+                          onClick={() => { setView('forgot'); setError(""); setSuccessMsg(""); }}
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                          {t.forgotPassword}
+                      </button>
+                  </div>
+                  <div className="relative">
+                    <Input 
+                      type={showPassword ? "text" : "password"} 
+                      value={password} 
+                      onChange={e => { setPassword(e.target.value); setError(""); }}
+                      placeholder="••••••••"
+                      className="h-12 pr-10"
+                      required
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className={`absolute top-3.5 text-slate-400 hover:text-slate-600 ${isRTL ? 'left-3' : 'right-3'}`}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                 </div>
-              </button>
-            ))}
-          </div>
+
+                {error && (
+                  <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100">
+                    {error}
+                  </div>
+                )}
+
+                <Button type="submit" disabled={isLoading} className="w-full h-12 text-lg shadow-lg shadow-blue-200">
+                  {isLoading ? <Loader2 className="animate-spin mx-2" /> : t.signIn} {!isLoading && <LogIn size={20} className="mx-2" />}
+                </Button>
+              </form>
+          ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-6">
+                  <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t.email}</label>
+                      <div className="relative">
+                          <Input 
+                            type="email" 
+                            value={email} 
+                            onChange={e => { setEmail(e.target.value); setError(""); }}
+                            placeholder="name@school.com"
+                            className="h-12 pl-10"
+                            required
+                          />
+                          <Mail className="absolute left-3 top-3.5 text-slate-400" size={20} />
+                      </div>
+                  </div>
+
+                  {error && (
+                      <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100">
+                        {error}
+                      </div>
+                  )}
+                  
+                  {successMsg && (
+                      <div className="bg-green-50 text-green-700 text-sm p-3 rounded-lg border border-green-100">
+                        {successMsg}
+                      </div>
+                  )}
+
+                  <Button type="submit" disabled={isLoading} className="w-full h-12 text-lg shadow-lg">
+                      {isLoading ? <Loader2 className="animate-spin mx-2" /> : t.sendLink}
+                  </Button>
+
+                  <button 
+                      type="button"
+                      onClick={() => { setView('login'); setError(""); }}
+                      className="w-full flex items-center justify-center gap-2 text-sm text-slate-500 hover:text-slate-700 py-2"
+                  >
+                      <ArrowLeft size={16} /> {t.backToLogin}
+                  </button>
+              </form>
+          )}
         </div>
       </div>
     </div>
