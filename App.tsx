@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { UserRole, Language, User } from './types';
 import { ROLES_LIST, NAV_ITEMS, TRANSLATIONS } from './constants';
@@ -45,7 +46,7 @@ const App = () => {
               }
 
               // 3. Listen for Auth Changes
-              const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+              const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
                   if (event === 'PASSWORD_RECOVERY') {
                       setIsPasswordRecovery(true);
                   } else if (event === 'SIGNED_IN' && session?.user?.email) {
