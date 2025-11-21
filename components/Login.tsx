@@ -71,8 +71,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
       setSuccessMsg("");
 
       try {
+          // Dynamically determine the URL
+          const redirectTo = window.location.origin;
+          
           const { error } = await supabase.auth.resetPasswordForEmail(email, {
-              redirectTo: window.location.origin, 
+              redirectTo: redirectTo, 
           });
           if (error) throw error;
           setSuccessMsg(t.resetLinkSent);

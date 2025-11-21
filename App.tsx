@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { UserRole, Language, User } from './types';
 import { ROLES_LIST, NAV_ITEMS, TRANSLATIONS } from './constants';
@@ -35,7 +34,14 @@ const App = () => {
               // 1. Load Store Data
               await store.init();
 
-              // 2. Check for existing Supabase Session
+              // 2. Check URL Hash for Recovery (Critical Fix)
+              // This handles the case where the app loads with #access_token=...&type=recovery
+              const hash = window.location.hash;
+              if (hash && hash.includes('type=recovery')) {
+                  setIsPasswordRecovery(true);
+              }
+
+              // 3. Check for existing Supabase Session
               const { data: { session } } = await supabase.auth.getSession();
               if (session?.user?.email) {
                   const users = store.getUsers();
@@ -45,7 +51,7 @@ const App = () => {
                   }
               }
 
-              // 3. Listen for Auth Changes
+              // 4. Listen for Auth Changes
               const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
                   if (event === 'PASSWORD_RECOVERY') {
                       setIsPasswordRecovery(true);
@@ -59,7 +65,8 @@ const App = () => {
                       const userProfile = users.find(u => u.email.toLowerCase() === session.user.email!.toLowerCase());
                       if (userProfile) {
                           setCurrentUser(userProfile);
-                          setIsPasswordRecovery(false); // Reset recovery state on successful login
+                          // Only reset recovery if we are NOT currently in the process of updating it
+                          // (handled inside Login component usually, but safe to keep here)
                       }
                   } else if (event === 'SIGNED_OUT') {
                       setCurrentUser(null);
