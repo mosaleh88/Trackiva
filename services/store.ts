@@ -1,4 +1,3 @@
-
 import { Student, AttendanceRecord, EPass, ReceptionLog, AttendanceStatus, UserRole, ScheduleConfig, TimeSlot, EPassDestination, AppSettings, ClinicVisit, User } from '../types';
 import { MOCK_STUDENTS, MOCK_USERS_SEED, DEFAULT_DESTINATIONS, NAV_ITEMS } from '../constants';
 import { sendAttendanceAlert } from './telegramService';
@@ -288,7 +287,7 @@ class MockStore {
 
     const entry: AttendanceRecord = {
       ...record,
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 11),
       timestamp: Date.now()
     };
 
@@ -362,7 +361,7 @@ class MockStore {
   createEPass(pass: Omit<EPass, 'id' | 'status' | 'startTime'>) {
     const newPass: EPass = {
       ...pass,
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 11),
       status: 'Active',
       startTime: Date.now()
     };
@@ -396,7 +395,7 @@ class MockStore {
 
     const newLog: ReceptionLog = {
       ...log,
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 11),
       timestamp: Date.now(),
       transportConflict: conflict
     };
