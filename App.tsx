@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { UserRole, Language, User } from './types';
 import { ROLES_LIST, NAV_ITEMS, TRANSLATIONS } from './constants';
@@ -22,16 +21,55 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [permissions, setPermissions] = useState<string[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   const t = TRANSLATIONS[lang];
   const isRTL = lang === 'ar';
 
-  // Initialization
+  // Initialization & Session Check
   useEffect(() => {
       const initApp = async () => {
           setIsLoadingData(true);
           try {
+              // 1. Load Store Data
               await store.init();
+
+              // 2. Check for existing Supabase Session
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.user?.email) {
+                  const users = store.getUsers();
+                  const userProfile = users.find(u => u.email.toLowerCase() === session.user.email!.toLowerCase());
+                  if (userProfile) {
+                      setCurrentUser(userProfile);
+                  }
+              }
+
+              // 3. Listen for Auth Changes
+              const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+                  if (event === 'PASSWORD_RECOVERY') {
+                      setIsPasswordRecovery(true);
+                  } else if (event === 'SIGNED_IN' && session?.user?.email) {
+                      // Double check store if users not loaded yet
+                      let users = store.getUsers();
+                      if (users.length === 0) {
+                          await store.refreshData();
+                          users = store.getUsers();
+                      }
+                      const userProfile = users.find(u => u.email.toLowerCase() === session.user.email!.toLowerCase());
+                      if (userProfile) {
+                          setCurrentUser(userProfile);
+                          setIsPasswordRecovery(false); // Reset recovery state on successful login
+                      }
+                  } else if (event === 'SIGNED_OUT') {
+                      setCurrentUser(null);
+                      setIsPasswordRecovery(false);
+                  }
+              });
+
+              return () => {
+                  authListener.subscription.unsubscribe();
+              };
+
           } catch (e) {
               console.error("Failed to load initial data", e);
           } finally {
@@ -63,9 +101,17 @@ const App = () => {
       );
   }
 
-  // Login Screen
-  if (!currentUser) {
-    return <Login onLogin={setCurrentUser} lang={lang} setLang={setLang} />;
+  // Login Screen (or Password Recovery Screen)
+  // We show Login component if no user is logged in OR if we are in recovery mode (even if session exists technically)
+  if (!currentUser || isPasswordRecovery) {
+    return (
+        <Login 
+            onLogin={(user) => { setCurrentUser(user); setIsPasswordRecovery(false); }} 
+            lang={lang} 
+            setLang={setLang} 
+            isPasswordRecovery={isPasswordRecovery}
+        />
+    );
   }
 
   const visibleNavItems = NAV_ITEMS.filter(item => permissions.includes(item.id));

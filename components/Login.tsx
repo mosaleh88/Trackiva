@@ -1,21 +1,21 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { store } from '../services/store';
 import { supabase } from '../services/supabase';
 import { Input, Button } from './ui';
-import { Globe, LogIn, Eye, EyeOff, Loader2, ArrowLeft, Mail } from 'lucide-react';
+import { Globe, LogIn, Eye, EyeOff, Loader2, ArrowLeft, Mail, KeyRound } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (user: User) => void;
   lang: Language;
   setLang: (lang: Language) => void;
+  isPasswordRecovery?: boolean;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPasswordRecovery = false }) => {
   const t = TRANSLATIONS[lang];
-  const [view, setView] = useState<'login' | 'forgot'>('login');
+  const [view, setView] = useState<'login' | 'forgot' | 'update_password'>('login');
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,6 +23,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // If triggered by App.tsx detecting recovery event
+  useEffect(() => {
+      if (isPasswordRecovery) {
+          setView('update_password');
+      }
+  }, [isPasswordRecovery]);
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -65,12 +72,40 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
 
       try {
           const { error } = await supabase.auth.resetPasswordForEmail(email, {
-              redirectTo: window.location.origin, // Will redirect back to app
+              redirectTo: window.location.origin, 
           });
           if (error) throw error;
           setSuccessMsg(t.resetLinkSent);
       } catch (err: any) {
           setError(err.message || "Failed to send reset link");
+      } finally {
+          setIsLoading(false);
+      }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsLoading(true);
+      setError("");
+      
+      try {
+          const { error } = await supabase.auth.updateUser({ password: password });
+          if (error) throw error;
+          
+          // Password updated successfully, verify session
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user && user.email) {
+              const users = store.getUsers();
+              const userProfile = users.find(u => u.email.toLowerCase() === user.email!.toLowerCase());
+              if (userProfile) {
+                  alert("Password updated successfully!");
+                  onLogin(userProfile);
+              } else {
+                  setError("Password updated, but profile not found.");
+              }
+          }
+      } catch (err: any) {
+          setError(err.message || "Failed to update password");
       } finally {
           setIsLoading(false);
       }
@@ -106,10 +141,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
                     <h2 className="text-3xl font-bold text-slate-900">{t.welcome}</h2>
                     <p className="text-slate-500 mt-2">{t.loginDescription}</p>
                 </>
-            ) : (
+            ) : view === 'forgot' ? (
                 <>
                     <h2 className="text-3xl font-bold text-slate-900">{t.resetPassword}</h2>
                     <p className="text-slate-500 mt-2">{t.enterEmailToReset}</p>
+                </>
+            ) : (
+                <>
+                    <h2 className="text-3xl font-bold text-slate-900">Set New Password</h2>
+                    <p className="text-slate-500 mt-2">Please enter your new secure password.</p>
                 </>
             )}
           </div>
@@ -178,7 +218,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
                   {isLoading ? <Loader2 className="animate-spin mx-2" /> : t.signIn} {!isLoading && <LogIn size={20} className="mx-2" />}
                 </Button>
               </form>
-          ) : (
+          ) : view === 'forgot' ? (
               <form onSubmit={handleForgotPassword} className="space-y-6">
                   <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">{t.email}</label>
@@ -218,6 +258,41 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
                   >
                       <ArrowLeft size={16} /> {t.backToLogin}
                   </button>
+              </form>
+          ) : (
+              <form onSubmit={handleUpdatePassword} className="space-y-6">
+                  <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
+                      <div className="relative">
+                          <Input 
+                            type={showPassword ? "text" : "password"}
+                            value={password} 
+                            onChange={e => { setPassword(e.target.value); setError(""); }}
+                            placeholder="Enter new password"
+                            className="h-12 pl-10 pr-10"
+                            required
+                            minLength={6}
+                          />
+                          <KeyRound className="absolute left-3 top-3.5 text-slate-400" size={20} />
+                          <button 
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className={`absolute top-3.5 text-slate-400 hover:text-slate-600 ${isRTL ? 'left-3' : 'right-3'}`}
+                          >
+                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                          </button>
+                      </div>
+                  </div>
+
+                  {error && (
+                      <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100">
+                        {error}
+                      </div>
+                  )}
+
+                  <Button type="submit" disabled={isLoading} className="w-full h-12 text-lg shadow-lg bg-green-600 hover:bg-green-700">
+                      {isLoading ? <Loader2 className="animate-spin mx-2" /> : "Update Password & Login"}
+                  </Button>
               </form>
           )}
         </div>
