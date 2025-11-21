@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
@@ -195,9 +194,9 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     try {
         const studentData = {
             ...formData,
+            // DEFAULT VALUES to fix Supabase 400 Error
             gender: formData.gender || 'Male',
             transportMode: formData.transportMode || 'Bus',
-            // Ensure all fields are defined to prevent Supabase issues
             name_ar: formData.name_ar || '',
             busRoute: formData.busRoute || '',
             familyId: formData.familyId || '',
@@ -377,7 +376,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         const userData = {
             name: formData.name,
             email: formData.email,
-            role: formData.role || UserRole.TEACHER, // Enforce default Role
+            // DEFAULT ROLE to fix Supabase 400 Error
+            role: formData.role || UserRole.TEACHER, 
             assignedClasses: formData.assignedClasses || [],
             telegramChatId: formData.telegramChatId || null
         };
@@ -387,7 +387,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           alert("User updated successfully.");
         } else {
           await store.addUser(userData);
-          // Note: Backend now handles Auth creation via /api/create_user
           alert("User created successfully!\n\nTemporary Password: TempPassword123!\nPlease share this with the user.");
         }
         setEditingUser(null);

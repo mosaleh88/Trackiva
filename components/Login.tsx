@@ -24,7 +24,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
   const [successMsg, setSuccessMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // If triggered by App.tsx detecting recovery event
+  // Initialize View based on prop (Correctly handles deep linking)
   useEffect(() => {
       if (isPasswordRecovery) {
           setView('update_password');
@@ -71,7 +71,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
       setSuccessMsg("");
 
       try {
-          // Dynamically determine the URL
+          // Dynamically determine the URL (Fixes local vs prod redirect mismatch)
           const redirectTo = window.location.origin;
           
           const { error } = await supabase.auth.resetPasswordForEmail(email, {

@@ -31,15 +31,18 @@ const App = () => {
       const initApp = async () => {
           setIsLoadingData(true);
           try {
-              // 1. Load Store Data
-              await store.init();
-
-              // 2. Check URL Hash for Recovery (Critical Fix)
+              // 1. CRITICAL: Check URL Hash for Recovery BEFORE anything else
               // This handles the case where the app loads with #access_token=...&type=recovery
               const hash = window.location.hash;
               if (hash && hash.includes('type=recovery')) {
+                  console.log("Password recovery detected from URL hash");
                   setIsPasswordRecovery(true);
+                  // Do not init store yet if we want to show recovery screen fast, 
+                  // but usually we need store for login logic later.
               }
+
+              // 2. Load Store Data
+              await store.init();
 
               // 3. Check for existing Supabase Session
               const { data: { session } } = await supabase.auth.getSession();
@@ -53,6 +56,8 @@ const App = () => {
 
               // 4. Listen for Auth Changes
               const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+                  console.log("Auth Event:", event);
+                  
                   if (event === 'PASSWORD_RECOVERY') {
                       setIsPasswordRecovery(true);
                   } else if (event === 'SIGNED_IN' && session?.user?.email) {
