@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Badge, Input, Select } from './ui';
 import { store } from '../services/store';
@@ -17,6 +16,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
   const [marked, setMarked] = useState<Record<string, AttendanceStatus>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Modal State
   const [showReasonModal, setShowReasonModal] = useState(false);
@@ -42,7 +42,6 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
     setStudents(store.getStudents()); 
   }, []);
 
-  // ... rest of component ...
   // Calculate Available Periods based on Date & Auto-Select Current Period
   useEffect(() => {
     const dateObj = new Date(selectedDate);
@@ -217,32 +216,40 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
     setBulkActionValue(""); // Reset dropdown
   };
 
-  const handleSubmitAttendance = () => {
+  const handleSubmitAttendance = async () => {
+    setIsSubmitting(true);
+    
     // 1. Save all positive marks (covers all sections modified)
-    Object.entries(marked).forEach(([studentId, status]) => {
-        store.markAttendance({
+    const updates = Object.entries(marked).map(([studentId, status]) => {
+        return store.markAttendance({
             studentId,
             date: selectedDate,
             period: selectedPeriod,
             status,
             reason: reasons[studentId]
+        }).then(() => {
+            // Trigger check for Absent status to send Alert after save
+            if (status === AttendanceStatus.ABSENT_UNEXCUSED) {
+                store.checkAttendanceAlert(studentId);
+            }
         });
-        
-        // Trigger check for Absent status to send Alert
-        if (status === AttendanceStatus.ABSENT_UNEXCUSED) {
-            store.checkAttendanceAlert(studentId);
-        }
     });
 
     // 2. Handle deletions (Unmarking) for visible students
-    filteredStudents.forEach(s => {
-        if (!marked[s.id]) {
-            store.deleteAttendance(s.id, selectedDate, selectedPeriod);
-        }
+    const deletions = filteredStudents.filter(s => !marked[s.id]).map(s => {
+        return store.deleteAttendance(s.id, selectedDate, selectedPeriod);
     });
-    
-    setUnsavedChanges(false);
-    alert(t.attendanceSaved);
+
+    try {
+        await Promise.all([...updates, ...deletions]);
+        setUnsavedChanges(false);
+        alert(t.attendanceSaved);
+    } catch (error) {
+        console.error("Failed to save attendance", error);
+        alert("Error saving attendance");
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const currentPeriodInfo = availablePeriods.find(p => p.id === selectedPeriod);
@@ -510,9 +517,10 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
           <div className="flex justify-end sticky bottom-4 z-20">
             <Button 
                 onClick={handleSubmitAttendance} 
+                disabled={isSubmitting}
                 className={`shadow-xl text-lg px-8 py-3 transition-all ${unsavedChanges ? 'bg-primary hover:bg-blue-700 translate-y-0' : 'bg-slate-400 hover:bg-slate-500 translate-y-0 opacity-90'}`}
             >
-                <Save size={20} /> {unsavedChanges ? t.submitChanges : t.attendanceSaved}
+                <Save size={20} /> {isSubmitting ? 'Saving...' : (unsavedChanges ? t.submitChanges : t.attendanceSaved)}
             </Button>
           </div>
         </div>

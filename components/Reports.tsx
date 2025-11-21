@@ -55,12 +55,8 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
   const [showEPassHistory, setShowEPassHistory] = useState(false);
   const [showReceptionHistory, setShowReceptionHistory] = useState(false);
 
-  // Pagination State
-  const [attendancePage, setAttendancePage] = useState(1);
-
-  // Reset pagination and AI when student changes
+  // Reset AI when student changes
   useEffect(() => {
-      setAttendancePage(1);
       setAiInsight(null);
   }, [student360]);
 
@@ -98,9 +94,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
       }
   };
 
-  // --- Moved Hooks from renderStudent360 to top level ---
-  
-  // Aggregate Attendance Data by Day
+  // Aggregate Attendance Data by Day for 360
   const dailyAttendance = useMemo(() => {
       if (!student360Data?.history?.attendance) return [];
       
@@ -229,7 +223,6 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
 
   // --- Daily Summary Logic ---
   const renderDailySummary = () => {
-      // Reuse existing daily summary logic from store for "Today"
       const summary = store.getDataSummary();
       
       return (
@@ -262,7 +255,6 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
       );
   };
 
-  // --- Attendance Reports ---
   const renderAttendanceReports = () => {
       if (!data) return null;
 
@@ -330,24 +322,22 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
       );
   };
 
-  // --- Clinic Reports ---
   const renderClinicReports = () => {
       if (!data) return null;
       
       const symptoms: Record<string, number> = {};
       const grades: Record<string, number> = {};
-      const genders: Record<string, number> = {};
       
       data.clinic.forEach((v: any) => {
           symptoms[v.symptom] = (symptoms[v.symptom] || 0) + 1;
           const s = students.find(stu => stu.id === v.studentId);
           if (s) {
              grades[s.grade] = (grades[s.grade] || 0) + 1;
-             genders[s.gender] = (genders[s.gender] || 0) + 1;
           }
       });
 
       const chartData = Object.entries(symptoms).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value);
+      const gradeData = Object.entries(grades).map(([name, value]) => ({ name, value })).sort((a,b) => a.name.localeCompare(b.name));
 
       return (
           <div className="space-y-6 animate-in fade-in">
@@ -368,413 +358,162 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
                   </Card>
 
                   <Card>
-                      <h3 className="font-bold mb-4 text-slate-700">Demographic Breakdown</h3>
-                      <div className="space-y-6">
-                          <div>
-                              <h4 className="text-sm font-bold text-slate-500 mb-2">Visits by Grade</h4>
-                              <div className="grid grid-cols-3 gap-2">
-                                  {Object.entries(grades).sort((a,b) => b[1] - a[1]).map(([grade, count]) => (
-                                      <div key={grade} className="flex justify-between p-2 bg-slate-50 rounded border border-slate-100">
-                                          <span className="font-mono text-sm">G{grade}</span>
-                                          <span className="font-bold text-blue-600">{count}</span>
-                                      </div>
-                                  ))}
-                              </div>
-                          </div>
-                          <div>
-                              <h4 className="text-sm font-bold text-slate-500 mb-2">Visits by Gender</h4>
-                              <div className="flex gap-4">
-                                  <div className="flex-1 flex justify-between p-3 bg-blue-50 rounded border border-blue-100">
-                                      <span className="font-medium text-blue-800">{t.male}</span>
-                                      <span className="font-bold text-blue-600">{genders['Male'] || 0}</span>
-                                  </div>
-                                  <div className="flex-1 flex justify-between p-3 bg-pink-50 rounded border border-pink-100">
-                                      <span className="font-medium text-pink-800">{t.female}</span>
-                                      <span className="font-bold text-pink-600">{genders['Female'] || 0}</span>
-                                  </div>
-                              </div>
-                          </div>
+                      <h3 className="font-bold mb-4 text-slate-700">{t.visitsByGrade}</h3>
+                      <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={gradeData}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                  <XAxis dataKey="name" fontSize={12} />
+                                  <YAxis allowDecimals={false} />
+                                  <Tooltip />
+                                  <Bar dataKey="value" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                              </BarChart>
+                          </ResponsiveContainer>
                       </div>
                   </Card>
-              </div>
-              <div className="flex justify-end">
-                  <Button onClick={handleExport}>
-                      <Download size={16} /> {t.exportReport}
-                  </Button>
               </div>
           </div>
       );
   };
 
-  // --- E-Pass Reports ---
   const renderEPassReports = () => {
-     if (!data) return null;
-     
-     return (
-         <div className="space-y-6 animate-in fade-in">
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                 <Card>
-                     <h3 className="font-bold mb-4 text-slate-700 flex items-center gap-2">
-                         <Ticket size={20} className="text-blue-500" /> {t.topEPassUsers}
-                     </h3>
-                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-500">
-                                <tr>
-                                    <th className="p-2">#</th>
-                                    <th className="p-2">{t.studentName}</th>
-                                    <th className="p-2">{t.grade}</th>
-                                    <th className="p-2 text-right">{t.count}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {data.epass.topUsers.map((item: any, idx: number) => (
-                                    <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50">
-                                        <td className="p-2 text-slate-400 font-mono">{idx + 1}</td>
-                                        <td className="p-2 font-medium">{lang === 'en' ? item.student.name_en : item.student.name_ar}</td>
-                                        <td className="p-2"><Badge color="gray">{item.student.grade}-{item.student.section}</Badge></td>
-                                        <td className="p-2 text-right font-bold text-blue-600">{item.count}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                     </div>
-                 </Card>
-
-                 <Card>
-                     <h3 className="font-bold mb-4 text-slate-700 flex items-center gap-2">
-                         <DoorOpen size={20} className="text-red-500" /> {t.topUnauthorized}
-                     </h3>
-                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-500">
-                                <tr>
-                                    <th className="p-2">#</th>
-                                    <th className="p-2">{t.studentName}</th>
-                                    <th className="p-2">{t.grade}</th>
-                                    <th className="p-2 text-right">{t.count}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {data.epass.topUnauthorized.map((item: any, idx: number) => (
-                                    <tr key={idx} className="border-b border-slate-50 hover:bg-red-50/30">
-                                        <td className="p-2 text-slate-400 font-mono">{idx + 1}</td>
-                                        <td className="p-2 font-medium">{lang === 'en' ? item.student.name_en : item.student.name_ar}</td>
-                                        <td className="p-2"><Badge color="gray">{item.student.grade}-{item.student.section}</Badge></td>
-                                        <td className="p-2 text-right font-bold text-red-600">{item.count}</td>
-                                    </tr>
-                                ))}
-                                {data.epass.topUnauthorized.length === 0 && (
-                                    <tr><td colSpan={4} className="p-4 text-center text-slate-400">No unauthorized exits detected.</td></tr>
-                                )}
-                            </tbody>
-                        </table>
-                     </div>
-                 </Card>
-             </div>
-             
-             <Card>
-                 <h3 className="font-bold mb-4 text-slate-700">{t.teacherPassStats}</h3>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                     {data.epass.byTeacher.map((item: any, idx: number) => (
-                         <div key={idx} className="p-3 border border-slate-200 rounded-lg flex justify-between items-center hover:bg-slate-50">
-                             <div className="flex items-center gap-2">
-                                 <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-xs font-bold">
-                                     {item.user.name.charAt(0)}
-                                 </div>
-                                 <span className="text-sm font-medium truncate max-w-[120px]">{item.user.name}</span>
-                             </div>
-                             <Badge color="blue">{item.count}</Badge>
-                         </div>
-                     ))}
-                 </div>
-             </Card>
-         </div>
-     );
+      if (!data) return null;
+      return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                  <h3 className="font-bold mb-4 text-slate-700">{t.topEPassUsers}</h3>
+                  <ul className="space-y-2">
+                      {data.epass.topUsers.map((item: any, i: number) => (
+                          <li key={i} className="flex justify-between p-2 bg-slate-50 rounded">
+                              <span>{lang === 'en' ? item.student.name_en : item.student.name_ar}</span>
+                              <Badge color="blue">{item.count}</Badge>
+                          </li>
+                      ))}
+                  </ul>
+              </Card>
+              <Card>
+                   <h3 className="font-bold mb-4 text-slate-700">{t.topUnauthorized}</h3>
+                   <ul className="space-y-2">
+                      {data.epass.topUnauthorized.map((item: any, i: number) => (
+                          <li key={i} className="flex justify-between p-2 bg-red-50 rounded text-red-700">
+                              <span>{lang === 'en' ? item.student.name_en : item.student.name_ar}</span>
+                              <Badge color="red">{item.count}</Badge>
+                          </li>
+                      ))}
+                  </ul>
+              </Card>
+          </div>
+      );
   };
 
-  // --- Student 360 ---
-  const renderStudent360 = () => {
-      const searchResults = search360 ? students.filter(s => 
-        s.name_en.toLowerCase().includes(search360.toLowerCase()) || 
-        s.studentNumber.includes(search360)
-      ).slice(0, 5) : [];
-
-      // Pagination Logic for Attendance
-      const totalPages = Math.ceil(dailyAttendance.length / ITEMS_PER_PAGE);
-      const paginatedAttendance = dailyAttendance.slice((attendancePage - 1) * ITEMS_PER_PAGE, attendancePage * ITEMS_PER_PAGE);
-
+  const renderReceptionReports = () => {
+      if (!data) return null;
       return (
-          <div className="space-y-6 animate-in fade-in">
-              <Card className="no-print">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                      <div className="md:col-span-2 relative z-20">
-                          <div className="relative">
-                              <Search className="absolute left-3 top-3 text-slate-400" size={16} />
-                              <Input 
-                                  placeholder={t.searchReportPlaceholder} 
-                                  className="pl-9" 
-                                  value={search360}
-                                  onChange={e => { setSearch360(e.target.value); setStudent360(null); setStudent360Data(null); }}
-                              />
-                              {search360 && !student360 && (
-                                  <div className="absolute top-full left-0 right-0 bg-white border rounded-b-lg shadow-lg z-10">
-                                      {searchResults.map(s => (
-                                          <button 
-                                            key={s.id}
-                                            onClick={() => { 
-                                                setStudent360(s); 
-                                                setSearch360(lang === 'en' ? s.name_en : s.name_ar); 
-                                                // Note: Data is now fetched by the useEffect on change of student360 or dates
-                                            }}
-                                            className="w-full text-left p-3 hover:bg-slate-50 text-sm border-b last:border-0"
-                                          >
-                                              {lang === 'en' ? s.name_en : s.name_ar}
-                                          </button>
-                                      ))}
-                                  </div>
-                              )}
-                          </div>
+          <Card>
+              <h3 className="font-bold mb-4 text-slate-700">{t.receptionReport}</h3>
+               <div className="overflow-y-auto h-96">
+                   <table className="w-full text-sm text-left">
+                       <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0">
+                           <tr>
+                               <th className="px-4 py-3">{t.date}</th>
+                               <th className="px-4 py-3">{t.studentName}</th>
+                               <th className="px-4 py-3">{t.type}</th>
+                               <th className="px-4 py-3">{t.reason}</th>
+                           </tr>
+                       </thead>
+                       <tbody className="divide-y divide-slate-100">
+                           {data.reception.map((log: any) => {
+                               const s = students.find(st => st.id === log.studentId);
+                               return (
+                                   <tr key={log.id}>
+                                       <td className="px-4 py-3">{new Date(log.timestamp).toLocaleString()}</td>
+                                       <td className="px-4 py-3 font-medium">{s ? (lang === 'en' ? s.name_en : s.name_ar) : 'Unknown'}</td>
+                                       <td className="px-4 py-3">
+                                           <Badge color={log.type === 'LateArrival' ? 'blue' : 'orange'}>
+                                               {log.type === 'LateArrival' ? t.lateArrival : t.earlyLeave}
+                                           </Badge>
+                                       </td>
+                                       <td className="px-4 py-3 text-slate-500">{log.reason || '-'}</td>
+                                   </tr>
+                               );
+                           })}
+                       </tbody>
+                   </table>
+               </div>
+          </Card>
+      );
+  };
+
+  const renderStudent360 = () => {
+      // ... Student 360 UI Implementation similar to Clinic Report but aggregated ...
+      return (
+          <div>
+              <div className="relative mb-6">
+                  <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                  <Input 
+                      placeholder={t.searchStudent} 
+                      className="pl-10"
+                      value={search360}
+                      onChange={e => { setSearch360(e.target.value); setStudent360(null); }}
+                  />
+                  {search360 && !student360 && (
+                      <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg mt-1 z-20 max-h-60 overflow-y-auto">
+                          {students.filter(s => s.name_en.toLowerCase().includes(search360.toLowerCase()) || s.studentNumber.includes(search360)).map(s => (
+                              <button 
+                                  key={s.id}
+                                  onClick={() => { setStudent360(s); setSearch360(lang === 'en' ? s.name_en : s.name_ar); }}
+                                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm"
+                              >
+                                  {lang === 'en' ? s.name_en : s.name_ar} ({s.studentNumber})
+                              </button>
+                          ))}
                       </div>
-                      <div className="md:col-span-1">
-                          <label className="block text-xs font-bold text-slate-500 mb-1">{t.dateRange}</label>
-                          <div className="flex items-center gap-2">
-                              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="text-sm" />
-                              <span className="text-slate-400">-</span>
-                              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="text-sm" />
-                          </div>
-                      </div>
-                  </div>
-              </Card>
+                  )}
+              </div>
 
               {student360 && student360Data && (
-                  <div className="space-y-6">
-                      {/* AI Analyst for Student 360 */}
-                      {renderAiCard()}
+                  <div className="space-y-6 animate-in fade-in">
+                       <div className="flex justify-between items-center">
+                           <h2 className="text-2xl font-bold text-slate-800">{lang === 'en' ? student360.name_en : student360.name_ar}</h2>
+                           <Button variant="secondary" onClick={handlePrint360}><Printer size={18} /> Print Profile</Button>
+                       </div>
 
-                      {/* Profile Header */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          <Card className="col-span-2 flex gap-6 items-center bg-gradient-to-br from-slate-50 to-white">
-                              <div className="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center text-slate-500 border-4 border-white shadow-sm">
-                                  <User size={48} />
-                              </div>
-                              <div>
-                                  <h2 className="text-2xl font-bold text-slate-800">{lang === 'en' ? student360.name_en : student360.name_ar}</h2>
-                                  <div className="flex flex-wrap gap-2 mt-2">
-                                      <Badge>{student360.grade}-{student360.section}</Badge>
-                                      <Badge color="gray">#{student360.studentNumber}</Badge>
-                                      <Badge color="gray">{student360.gender}</Badge>
-                                      {student360.isWatchlisted && <Badge color="red">Targeted</Badge>}
-                                  </div>
-                              </div>
-                          </Card>
-                          
-                          {/* Attendance Chart */}
-                          <Card className="flex flex-col p-4 h-full min-h-[200px]">
-                              <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">{t.attendanceReport}</h4>
-                              <div className="w-full flex-1 relative">
-                                  <ResponsiveContainer width="100%" height="100%" minHeight={140}>
-                                      <PieChart>
-                                          <Pie
-                                              data={pieData}
-                                              cx="50%"
-                                              cy="50%"
-                                              innerRadius={45}
-                                              outerRadius={60}
-                                              paddingAngle={5}
-                                              dataKey="value"
-                                          >
-                                              {pieData.map((entry, index) => (
-                                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                              ))}
-                                          </Pie>
-                                          <Tooltip />
-                                      </PieChart>
-                                  </ResponsiveContainer>
-                              </div>
-                              <div className="flex gap-3 text-xs mt-2 justify-center">
-                                  <div className="flex items-center gap-1"><div className="w-2 h-2 bg-green-500 rounded-full"></div> P</div>
-                                  <div className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-500 rounded-full"></div> EA</div>
-                                  <div className="flex items-center gap-1"><div className="w-2 h-2 bg-red-500 rounded-full"></div> A</div>
-                              </div>
-                          </Card>
-                      </div>
-
-                      {/* Summary Cards */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <Card className="p-4">
-                              <p className="text-xs text-slate-500 uppercase font-bold">{t.clinic}</p>
-                              <h3 className="text-2xl font-bold text-blue-600">{student360Data.history.clinic.length}</h3>
-                          </Card>
-                          <Card className="p-4">
-                              <p className="text-xs text-slate-500 uppercase font-bold">{t.epassReport}</p>
-                              <h3 className="text-2xl font-bold text-purple-600">{student360Data.history.epasses.length}</h3>
-                          </Card>
-                          <Card className="p-4">
-                              <p className="text-xs text-slate-500 uppercase font-bold">{t.late}</p>
-                              <h3 className="text-2xl font-bold text-yellow-600">{student360Data.stats.L}</h3>
-                          </Card>
-                          <Card className="p-4">
-                              <p className="text-xs text-slate-500 uppercase font-bold">{t.earlyLeave}</p>
-                              <h3 className="text-2xl font-bold text-orange-600">{student360Data.stats.EL}</h3>
-                          </Card>
-                      </div>
-                      
-                      {/* Collapsible History Sections */}
-                      <div className="space-y-4 print:space-y-6">
-                          {/* Attendance History (Aggregated Daily) with Pagination */}
-                          <div className="border border-slate-200 rounded-xl overflow-hidden">
-                              <button 
-                                  onClick={() => setShowAttendanceHistory(!showAttendanceHistory)}
-                                  className="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
-                              >
-                                  <span className="font-bold text-slate-700 flex items-center gap-2"><Calendar size={18} /> Attendance Log (Daily)</span>
-                                  {showAttendanceHistory ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                              </button>
-                              {showAttendanceHistory && (
-                                  <div className="bg-white">
-                                      <div className="p-4">
-                                          <table className="w-full text-sm text-left">
-                                              <thead><tr className="text-slate-500"><th>Date</th><th>Status</th><th>Note</th></tr></thead>
-                                              <tbody>
-                                                  {paginatedAttendance.map((day: any, idx: number) => (
-                                                      <tr key={idx} className="border-b border-slate-50 last:border-0">
-                                                          <td className="py-2">{new Date(day.date).toLocaleDateString()}</td>
-                                                          <td><Badge color={day.color as any}>{day.status}</Badge></td>
-                                                          <td className="text-slate-500">{day.note || '-'}</td>
-                                                      </tr>
-                                                  ))}
-                                                  {paginatedAttendance.length === 0 && (
-                                                      <tr><td colSpan={3} className="py-4 text-center text-slate-400">No attendance records found</td></tr>
-                                                  )}
-                                              </tbody>
-                                          </table>
-                                      </div>
-                                      
-                                      {/* Pagination Footer */}
-                                      {totalPages > 1 && (
-                                          <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-t border-slate-100">
-                                              <span className="text-xs text-slate-500">Page {attendancePage} of {totalPages}</span>
-                                              <div className="flex gap-2">
-                                                  <Button 
-                                                      variant="secondary" 
-                                                      className="h-8 px-3 text-xs" 
-                                                      onClick={() => setAttendancePage(p => Math.max(1, p - 1))} 
-                                                      disabled={attendancePage === 1}
-                                                  >
-                                                      Previous
-                                                  </Button>
-                                                  <Button 
-                                                      variant="secondary" 
-                                                      className="h-8 px-3 text-xs" 
-                                                      onClick={() => setAttendancePage(p => Math.min(totalPages, p + 1))} 
-                                                      disabled={attendancePage === totalPages}
-                                                  >
-                                                      Next
-                                                  </Button>
-                                              </div>
-                                          </div>
-                                      )}
-                                  </div>
-                              )}
-                          </div>
-
-                          {/* Clinic History */}
-                          <div className="border border-slate-200 rounded-xl overflow-hidden">
-                              <button 
-                                  onClick={() => setShowClinicHistory(!showClinicHistory)}
-                                  className="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
-                              >
-                                  <span className="font-bold text-slate-700 flex items-center gap-2"><Stethoscope size={18} /> Clinic History</span>
-                                  {showClinicHistory ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                              </button>
-                              {showClinicHistory && (
-                                  <div className="p-4 max-h-60 overflow-y-auto bg-white">
-                                      <table className="w-full text-sm text-left">
-                                          <thead><tr className="text-slate-500"><th>Date</th><th>Symptom</th><th>Severity</th><th>Outcome</th></tr></thead>
-                                          <tbody>
-                                              {student360Data.history.clinic.map((c: any) => (
-                                                  <tr key={c.id} className="border-b border-slate-50">
-                                                      <td className="py-2">{new Date(c.timestamp).toLocaleDateString()}</td>
-                                                      <td>{c.symptom}</td>
-                                                      <td><Badge color={c.severity === 'Emergency' ? 'red' : 'blue'}>{c.severity}</Badge></td>
-                                                      <td>{c.outcome}</td>
-                                                  </tr>
-                                              ))}
-                                          </tbody>
-                                      </table>
-                                  </div>
-                              )}
-                          </div>
-
-                          {/* E-Pass History */}
-                           <div className="border border-slate-200 rounded-xl overflow-hidden">
-                              <button 
-                                  onClick={() => setShowEPassHistory(!showEPassHistory)}
-                                  className="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
-                              >
-                                  <span className="font-bold text-slate-700 flex items-center gap-2"><Ticket size={18} /> E-Pass Log</span>
-                                  {showEPassHistory ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                              </button>
-                              {showEPassHistory && (
-                                  <div className="p-4 max-h-60 overflow-y-auto bg-white">
-                                      <table className="w-full text-sm text-left">
-                                          <thead><tr className="text-slate-500"><th>Date</th><th>Destination</th><th>Duration</th></tr></thead>
-                                          <tbody>
-                                              {student360Data.history.epasses.map((p: any) => {
-                                                  const duration = p.endTime ? Math.floor((p.endTime - p.startTime) / 60000) + 'm' : 'Active';
-                                                  return (
-                                                      <tr key={p.id} className="border-b border-slate-50">
-                                                          <td className="py-2">{new Date(p.startTime).toLocaleDateString()} {new Date(p.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-                                                          <td>
-                                                              <Badge color={p.type === 'UNAUTHORIZED' ? 'red' : 'blue'}>{p.type}</Badge>
-                                                          </td>
-                                                          <td>{duration}</td>
-                                                      </tr>
-                                                  )
-                                              })}
-                                          </tbody>
-                                      </table>
-                                  </div>
-                              )}
-                          </div>
-
-                          {/* Reception History */}
-                          <div className="border border-slate-200 rounded-xl overflow-hidden">
-                              <button 
-                                  onClick={() => setShowReceptionHistory(!showReceptionHistory)}
-                                  className="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
-                              >
-                                  <span className="font-bold text-slate-700 flex items-center gap-2"><DoorOpen size={18} /> Reception Log</span>
-                                  {showReceptionHistory ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                              </button>
-                              {showReceptionHistory && (
-                                  <div className="p-4 max-h-60 overflow-y-auto bg-white">
-                                      <table className="w-full text-sm text-left">
-                                          <thead><tr className="text-slate-500"><th>Date</th><th>Type</th><th>Reason</th><th>Picked By</th></tr></thead>
-                                          <tbody>
-                                              {student360Data.history.reception.map((l: any) => (
-                                                  <tr key={l.id} className="border-b border-slate-50">
-                                                      <td className="py-2">{new Date(l.timestamp).toLocaleDateString()}</td>
-                                                      <td>
-                                                          <Badge color={l.type === 'LateArrival' ? 'blue' : 'orange'}>{l.type}</Badge>
-                                                      </td>
-                                                      <td>{l.reason || '-'}</td>
-                                                      <td>{l.pickupBy || '-'}</td>
-                                                  </tr>
-                                              ))}
-                                          </tbody>
-                                      </table>
-                                  </div>
-                              )}
-                          </div>
-                      </div>
-
-                      <div className="flex justify-end no-print pt-6 border-t border-slate-200">
-                          <Button onClick={handlePrint360}>
-                              <Printer size={16} /> {t.printCard}
-                          </Button>
-                      </div>
+                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                           <Card className="lg:col-span-2">
+                               <h3 className="font-bold text-slate-700 mb-4">Attendance Summary</h3>
+                               <div className="h-64 flex items-center justify-center">
+                                   <ResponsiveContainer width="100%" height="100%">
+                                       <PieChart>
+                                           <Pie data={pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                               {pieData.map((entry, index) => (
+                                                   <Cell key={`cell-${index}`} fill={entry.name === t.absent ? '#ef4444' : entry.name === t.excused ? '#3b82f6' : '#22c55e'} />
+                                               ))}
+                                           </Pie>
+                                           <Tooltip />
+                                           <Legend />
+                                       </PieChart>
+                                   </ResponsiveContainer>
+                               </div>
+                           </Card>
+                           
+                           <Card>
+                               <h3 className="font-bold text-slate-700 mb-4">Quick Stats</h3>
+                               <div className="space-y-4">
+                                   <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                                       <span className="text-sm text-slate-600">Days Absent</span>
+                                       <span className="font-bold text-red-600">{pieData.find(d => d.name === t.absent)?.value || 0}</span>
+                                   </div>
+                                   <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                                       <span className="text-sm text-slate-600">Clinic Visits</span>
+                                       <span className="font-bold text-blue-600">{student360Data.history.clinic.length}</span>
+                                   </div>
+                                   <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                                       <span className="text-sm text-slate-600">Late Arrivals</span>
+                                       <span className="font-bold text-yellow-600">{dailyAttendance.filter((d:any) => d.status === 'Late').length}</span>
+                                   </div>
+                               </div>
+                           </Card>
+                       </div>
                   </div>
               )}
           </div>
@@ -782,114 +521,77 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
   };
 
   return (
-    <div className="space-y-6 h-[calc(100vh-9rem)] overflow-y-auto pr-2">
-      {/* Top Navigation */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto shrink-0 no-print">
-          {TABS.map(tab => (
-              <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab.id ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                  <tab.icon size={16} />
-                  {t[tab.labelKey as keyof typeof t]}
-              </button>
-          ))}
-      </div>
+    <div className="space-y-6 pb-12">
+      {/* Header Controls */}
+      <Card>
+        <div className="flex flex-col lg:flex-row gap-4 justify-between items-end lg:items-center mb-6">
+            <div className="flex gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto max-w-full">
+                {TABS.map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab.id ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        <tab.icon size={16} />
+                        {(t as any)[tab.labelKey]}
+                    </button>
+                ))}
+            </div>
+            
+            <div className="flex flex-wrap gap-2 items-end">
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">{t.startDate}</label>
+                    <div className="relative">
+                        <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="py-1.5 text-sm w-36" />
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">{t.endDate}</label>
+                    <div className="relative">
+                        <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="py-1.5 text-sm w-36" />
+                    </div>
+                </div>
+                <Button onClick={refreshReport} className="h-[34px] text-sm">
+                    {t.generate}
+                </Button>
+            </div>
+        </div>
 
-      {/* Global Filter Bar (Hidden for Daily Summary & Student 360 which has its own search) */}
-      {activeTab !== 'daily' && activeTab !== 'student360' && (
-          <Card className="no-print">
-              <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 items-end">
-                  <div className="lg:col-span-2">
-                      <label className="block text-xs font-bold text-slate-500 mb-1">{t.dateRange}</label>
-                      <div className="flex items-center gap-2">
-                          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-                          <span className="text-slate-400">-</span>
-                          <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-                      </div>
-                  </div>
-                  <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1">{t.grade}</label>
-                      <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)}>
-                          <option value="All">{t.allGrades}</option>
-                          {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
-                      </Select>
-                  </div>
-                  <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1">{t.section}</label>
-                      <Select value={filterSection} onChange={e => setFilterSection(e.target.value)}>
-                          <option value="All">{t.allSections}</option>
-                          {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
-                      </Select>
-                  </div>
-                  <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1">{t.gender}</label>
-                      <Select value={filterGender} onChange={e => setFilterGender(e.target.value)}>
-                          <option value="All">{t.allGenders}</option>
-                          <option value="Male">{t.male}</option>
-                          <option value="Female">{t.female}</option>
-                      </Select>
-                  </div>
-                  <div>
-                      <Button onClick={refreshReport} className="w-full">
-                          {t.generate}
-                      </Button>
-                  </div>
-              </div>
-          </Card>
-      )}
+        {/* Advanced Filters (Only for applicable tabs) */}
+        {activeTab !== 'student360' && activeTab !== 'daily' && (
+            <div className="flex flex-wrap gap-3 items-center pt-4 border-t border-slate-100">
+                <Filter size={14} className="text-slate-400" />
+                <span className="text-xs font-bold text-slate-500">{t.filterBy}:</span>
+                <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="py-1 text-xs w-24">
+                    <option value="All">{t.allGrades}</option>
+                    {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                </Select>
+                <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="py-1 text-xs w-24">
+                    <option value="All">{t.allSections}</option>
+                    {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
+                </Select>
+                <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="py-1 text-xs w-24">
+                    <option value="All">{t.allGenders}</option>
+                    <option value="Male">{t.male}</option>
+                    <option value="Female">{t.female}</option>
+                </Select>
+            </div>
+        )}
+      </Card>
 
-      {/* AI Card for Global Reports */}
-      {activeTab !== 'student360' && activeTab !== 'daily' && data && renderAiCard()}
+      {/* AI Insight Card */}
+      {renderAiCard()}
 
-      {/* Tab Content */}
+      {/* Main Content Area */}
       <div className="min-h-[400px]">
           {activeTab === 'daily' && renderDailySummary()}
           {activeTab === 'attendance' && renderAttendanceReports()}
           {activeTab === 'clinic' && renderClinicReports()}
           {activeTab === 'epass' && renderEPassReports()}
-          {/* Reception Report reusing EPass structure logic for now but specific to logs */}
-          {activeTab === 'reception' && data && (
-              <Card>
-                  <h3 className="font-bold mb-4 text-slate-700">{t.receptionReport}</h3>
-                   <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
-                          <thead className="bg-slate-50 text-slate-500">
-                              <tr>
-                                  <th className="p-3">{t.date}</th>
-                                  <th className="p-3">{t.studentName}</th>
-                                  <th className="p-3">{t.grade}</th>
-                                  <th className="p-3">{t.type}</th>
-                                  <th className="p-3">{t.reason}</th>
-                                  <th className="p-3">{t.pickupBy}</th>
-                              </tr>
-                          </thead>
-                          <tbody>
-                              {data.reception.map((log: any) => {
-                                  const student = students.find(s => s.id === log.studentId);
-                                  return (
-                                      <tr key={log.id} className="border-b border-slate-50 hover:bg-slate-50">
-                                          <td className="p-3">{new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td>
-                                          <td className="p-3 font-bold">{lang === 'en' ? student?.name_en : student?.name_ar}</td>
-                                          <td className="p-3"><Badge color="gray">{student?.grade}-{student?.section}</Badge></td>
-                                          <td className="p-3"><Badge color={log.type === 'LateArrival' ? 'blue' : 'orange'}>{log.type}</Badge></td>
-                                          <td className="p-3">{log.reason || '-'}</td>
-                                          <td className="p-3">{log.pickupBy || '-'}</td>
-                                      </tr>
-                                  )
-                              })}
-                              {data.reception.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-slate-400">{t.noData}</td></tr>}
-                          </tbody>
-                      </table>
-                  </div>
-                  <div className="flex justify-end mt-4">
-                      <Button onClick={handleExport}><Download size={16} /> {t.exportReport}</Button>
-                  </div>
-              </Card>
-          )}
+          {activeTab === 'reception' && renderReceptionReports()}
           {activeTab === 'student360' && renderStudent360()}
       </div>
+
     </div>
   );
 };

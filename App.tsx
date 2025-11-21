@@ -11,7 +11,8 @@ import { Management } from './components/Management';
 import { Clinic } from './components/Clinic';
 import { Reports } from './components/Reports';
 import { Login } from './components/Login';
-import { Menu, Globe, LogOut, UserCircle } from 'lucide-react';
+import { Menu, Globe, LogOut, UserCircle, Loader2 } from 'lucide-react';
+import { supabase } from './services/supabase';
 
 const App = () => {
   // App State
@@ -20,9 +21,25 @@ const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [permissions, setPermissions] = useState<string[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   const t = TRANSLATIONS[lang];
   const isRTL = lang === 'ar';
+
+  // Initialization
+  useEffect(() => {
+      const initApp = async () => {
+          setIsLoadingData(true);
+          try {
+              await store.init();
+          } catch (e) {
+              console.error("Failed to load initial data", e);
+          } finally {
+              setIsLoadingData(false);
+          }
+      };
+      initApp();
+  }, []);
 
   // Refresh permissions when user changes
   useEffect(() => {
@@ -31,19 +48,26 @@ const App = () => {
           const rolePerms = allPermissions[currentUser.role] || [];
           setPermissions(rolePerms);
           
-          // Reset to dashboard if current tab is not allowed, or first allowed item
           if (!rolePerms.includes(activeTab)) {
               setActiveTab(rolePerms[0] || 'dashboard');
           }
       }
   }, [currentUser]);
 
+  if (isLoadingData) {
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-400 flex-col gap-4">
+              <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+              <p>Loading Trackiva...</p>
+          </div>
+      );
+  }
+
   // Login Screen
   if (!currentUser) {
     return <Login onLogin={setCurrentUser} lang={lang} setLang={setLang} />;
   }
 
-  // Determine visible navigation items based on dynamic permissions from store
   const visibleNavItems = NAV_ITEMS.filter(item => permissions.includes(item.id));
 
   return (
@@ -104,7 +128,10 @@ const App = () => {
                     <Globe size={16} /> {t.switchLang}
                 </button>
                 <button 
-                    onClick={() => setCurrentUser(null)}
+                    onClick={() => { 
+                        supabase.auth.signOut(); 
+                        setCurrentUser(null); 
+                    }}
                     className="w-full flex items-center justify-center gap-2 p-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
                     <LogOut size={16} /> {t.logout}
@@ -140,7 +167,7 @@ const App = () => {
                 {activeTab === 'epass' && (
                     <EPass 
                         lang={lang} 
-                        currentUserId={currentUser.id} // Pass exact user ID
+                        currentUserId={currentUser.id} 
                         currentUserRole={currentUser.role} 
                     />
                 )}

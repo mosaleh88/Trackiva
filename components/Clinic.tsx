@@ -18,6 +18,7 @@ export const Clinic: React.FC<ClinicProps> = ({ lang }) => {
   const [visits, setVisits] = useState<ClinicVisit[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [activePasses, setActivePasses] = useState<EPass[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   // New Visit Form State
   const [selectedStudentId, setSelectedStudentId] = useState("");
@@ -144,28 +145,36 @@ export const Clinic: React.FC<ClinicProps> = ({ lang }) => {
       setLinkedPassId(passId);
   };
 
-  const handleSubmitVisit = () => {
+  const handleSubmitVisit = async () => {
       if (!selectedStudentId || !formData.symptom) return;
+      setIsLoading(true);
 
-      store.addClinicVisit({
-          studentId: selectedStudentId,
-          symptom: formData.symptom!,
-          severity: formData.severity as any,
-          outcome: formData.outcome as any,
-          diagnosis: formData.diagnosis,
-          treatment: formData.treatment,
-          notes: formData.notes,
-          linkedPassId: linkedPassId || undefined
-      });
+      try {
+          await store.addClinicVisit({
+              studentId: selectedStudentId,
+              symptom: formData.symptom!,
+              severity: formData.severity as any,
+              outcome: formData.outcome as any,
+              diagnosis: formData.diagnosis,
+              treatment: formData.treatment,
+              notes: formData.notes,
+              linkedPassId: linkedPassId || undefined
+          });
 
-      alert(t.visitLogged);
+          alert(t.visitLogged);
 
-      // Reset
-      setSelectedStudentId("");
-      setLinkedPassId("");
-      setFormData({ symptom: '', severity: 'Low', outcome: 'ReturnToClass' });
-      setEmergencyMode(false);
-      refresh();
+          // Reset
+          setSelectedStudentId("");
+          setLinkedPassId("");
+          setFormData({ symptom: '', severity: 'Low', outcome: 'ReturnToClass' });
+          setEmergencyMode(false);
+          refresh();
+      } catch (e) {
+          console.error(e);
+          alert("Error saving visit");
+      } finally {
+          setIsLoading(false);
+      }
   };
 
   const handleConfirmEmergency = () => {
@@ -288,7 +297,7 @@ export const Clinic: React.FC<ClinicProps> = ({ lang }) => {
               </div>
 
               <div className="flex justify-end gap-2">
-                  <Button onClick={handleSubmitVisit} className={formData.severity === 'Emergency' ? 'bg-red-600 hover:bg-red-700' : ''}>
+                  <Button disabled={isLoading} onClick={handleSubmitVisit} className={formData.severity === 'Emergency' ? 'bg-red-600 hover:bg-red-700' : ''}>
                       {t.logVisit}
                   </Button>
               </div>

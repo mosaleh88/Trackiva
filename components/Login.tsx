@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { User, Language, UserRole } from '../types';
 import { MOCK_USERS_SEED, TRANSLATIONS } from '../constants';
 import { store } from '../services/store';
+import { supabase } from '../services/supabase';
 import { Card, Input, Button, Badge } from './ui';
-import { Globe, LogIn, Eye, EyeOff } from 'lucide-react';
+import { Globe, LogIn, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -18,26 +19,45 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Demo Mode: Show list of available personas
-  const mockUsers = MOCK_USERS_SEED;
-
-  const handleLogin = (e?: React.FormEvent) => {
+  const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    
-    // Simulate Authentication
-    const users = store.getUsers();
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    setIsLoading(true);
+    setError("");
 
-    if (user) {
-      // In a real app, verify password here
-      onLogin(user);
-    } else {
-      setError(t.invalidCredentials);
+    try {
+        // 1. Authenticate against Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+
+        if (authError) throw authError;
+
+        // 2. Fetch User Profile from public.users
+        // We assume the 'email' is the link between Auth and Profile for this setup
+        const users = store.getUsers();
+        const userProfile = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+        if (userProfile) {
+            onLogin(userProfile);
+        } else {
+            // Fallback if profile missing (shouldn't happen if setup correctly)
+            setError("Account authenticated but User Profile not found in database.");
+            await supabase.auth.signOut();
+        }
+
+    } catch (err: any) {
+        console.error("Login failed:", err);
+        setError(t.invalidCredentials);
+    } finally {
+        setIsLoading(false);
     }
   };
 
-  const handleDemoLogin = (user: User) => {
+  // Demo functionality retained for testing without auth setup
+  const handleDemoLogin = async (user: User) => {
       onLogin(user);
   };
 
@@ -68,7 +88,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
             <p className="text-slate-500 mt-2">{t.loginDescription}</p>
           </div>
 
-          {/* Language Toggle */}
           <div className="flex justify-end">
              <button 
                 onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
@@ -78,7 +97,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
              </button>
           </div>
 
-          {/* Login Form */}
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">{t.email}</label>
@@ -119,11 +137,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
               </div>
             )}
 
-            <Button type="submit" className="w-full h-12 text-lg shadow-lg shadow-blue-200">
-              {t.signIn} <LogIn size={20} className="mx-2" />
+            <Button type="submit" disabled={isLoading} className="w-full h-12 text-lg shadow-lg shadow-blue-200">
+              {isLoading ? <Loader2 className="animate-spin mx-2" /> : t.signIn} {!isLoading && <LogIn size={20} className="mx-2" />}
             </Button>
           </form>
 
+          {/* Demo Mode Section */}
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-200"></div>
@@ -133,9 +152,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang }) => {
             </div>
           </div>
 
-          {/* Demo Personas */}
           <div className="grid grid-cols-1 gap-3">
-            {mockUsers.map(user => (
+            {MOCK_USERS_SEED.map(user => (
               <button
                 key={user.id}
                 onClick={() => handleDemoLogin(user)}

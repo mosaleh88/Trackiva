@@ -85,11 +85,26 @@ export interface EPass {
 // Permissions: Key is Role Name, Value is array of NAV_ITEM IDs
 export type RolePermissions = Record<string, string[]>;
 
+// Timetable Types
+export interface TimeSlot {
+  id: string;
+  name: string;
+  startTime: string; // "08:00"
+  endTime: string;   // "08:45"
+  type: 'Period' | 'Break' | 'Lunch';
+}
+
+export interface ScheduleConfig {
+  standard: TimeSlot[]; // Mon-Thu
+  friday: TimeSlot[];   // Fri
+}
+
 export interface AttendanceConfig {
   absentPeriodThreshold: number; // Default 3
   countAllExcusedAsExcusedDay: boolean; // Default true
   // Alerts configuration
   alertThresholds: number[]; // e.g. [1, 3, 6, 10, 15]
+  schedule?: ScheduleConfig;
 }
 
 export interface AppSettings {
@@ -139,20 +154,6 @@ export interface ClinicVisit {
   outcome: 'ReturnToClass' | 'SentHome'; // Removed Hospital
   notes?: string;
   linkedPassId?: string; // If linked to an E-Pass
-}
-
-// Timetable Types
-export interface TimeSlot {
-  id: string;
-  name: string;
-  startTime: string; // "08:00"
-  endTime: string;   // "08:45"
-  type: 'Period' | 'Break' | 'Lunch';
-}
-
-export interface ScheduleConfig {
-  standard: TimeSlot[]; // Mon-Thu
-  friday: TimeSlot[];   // Fri
 }
 
 // Navigation structure

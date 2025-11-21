@@ -28,6 +28,7 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
   const [destinations, setDestinations] = useState<EPassDestination[]>([]);
   const [maxPasses, setMaxPasses] = useState(4);
   const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,8 +42,6 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
   const refresh = () => {
       setPasses(store.getEPasses().filter(p => p.status === 'Active'));
       
-      // If we have a user ID, we could filter students by their assigned classes
-      // For now, we fetch all students but in a real app: setStudents(store.getStudentsForUser(currentUserId));
       if (currentUserId) {
           setStudents(store.getStudentsForUser(currentUserId));
       } else {
@@ -70,7 +69,6 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
       return undefined;
   }, [currentUserId, currentUserRole, users]);
 
-  // ... rest of component ...
   // --- Derived Data for Dashboard ---
   const destinationStats = useMemo(() => {
     const stats: Record<string, number> = {};
@@ -134,43 +132,55 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
 
   // --- Handlers ---
 
-  const handleCreatePass = (studentId: string, type: string) => {
-    store.createEPass({
-        studentId,
-        type,
-        teacherId: currentUser?.id
-    });
+  const handleCreatePass = async (studentId: string, type: string) => {
+    setIsLoading(true);
+    try {
+        await store.createEPass({
+            studentId,
+            type,
+            teacherId: currentUser?.id
+        });
 
-    const student = students.find(s => s.id === studentId);
-    
-    // --- TELEGRAM ALERT TRIGGERS ---
-    if (student) {
-        if (type === UNAUTHORIZED_TYPE) {
-            sendUnauthorizedAlert(student);
-        } else {
-            // Standard Pass
-            const dest = destinations.find(d => d.id === type);
-            if (dest) {
-                sendPassCreatedAlert(student, dest);
+        const student = students.find(s => s.id === studentId);
+        
+        // --- TELEGRAM ALERT TRIGGERS ---
+        if (student) {
+            if (type === UNAUTHORIZED_TYPE) {
+                sendUnauthorizedAlert(student);
+            } else {
+                // Standard Pass
+                const dest = destinations.find(d => d.id === type);
+                if (dest) {
+                    sendPassCreatedAlert(student, dest);
+                }
             }
         }
-    }
-    // -----------------------------
+        // -----------------------------
 
-    if (overrideMap[studentId]) {
-        setOverrideMap(prev => {
-            const newMap = { ...prev };
-            delete newMap[studentId];
-            return newMap;
-        });
-    }
+        if (overrideMap[studentId]) {
+            setOverrideMap(prev => {
+                const newMap = { ...prev };
+                delete newMap[studentId];
+                return newMap;
+            });
+        }
 
-    refresh();
+        refresh();
+    } catch (e) {
+        console.error(e);
+        alert("Failed to create pass");
+    } finally {
+        setIsLoading(false);
+    }
   };
 
-  const handleComplete = (id: string) => {
-    store.completeEPass(id);
-    refresh();
+  const handleComplete = async (id: string) => {
+    try {
+        await store.completeEPass(id);
+        refresh();
+    } catch (e) {
+        console.error(e);
+    }
   };
 
   const handleAllowOverride = (studentId: string) => {
@@ -324,8 +334,9 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
                                                     return (
                                                         <button
                                                             key={dest.id}
+                                                            disabled={isLoading}
                                                             onClick={() => handleCreatePass(student.id, dest.id)}
-                                                            className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors gap-1 ${getThemeClasses(dest.colorTheme)}`}
+                                                            className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors gap-1 ${getThemeClasses(dest.colorTheme)} disabled:opacity-50`}
                                                         >
                                                             <IconComp size={18} />
                                                             <span className="text-[10px] font-bold text-center leading-tight">
@@ -337,8 +348,9 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
                                             </div>
                                             
                                             <button
+                                                disabled={isLoading}
                                                 onClick={() => handleCreatePass(student.id, UNAUTHORIZED_TYPE)}
-                                                className="w-full flex items-center justify-center gap-2 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-bold transition-colors"
+                                                className="w-full flex items-center justify-center gap-2 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
                                             >
                                                 <AlertTriangle size={14} /> {t.outOfClass}
                                             </button>

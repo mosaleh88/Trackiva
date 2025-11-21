@@ -17,6 +17,7 @@ export const Reception: React.FC<ReceptionProps> = ({ lang }) => {
   const [mode, setMode] = useState<'LateArrival' | 'EarlyLeave'>('LateArrival');
   const [lastLog, setLastLog] = useState<any>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Filter States
   const [selectedGender, setSelectedGender] = useState<string>("");
@@ -112,35 +113,43 @@ export const Reception: React.FC<ReceptionProps> = ({ lang }) => {
       handleReset();
   };
 
-  const handleLog = () => {
+  const handleLog = async () => {
     if (!selectedStudentId) return;
+    setIsLoading(true);
     const currentStudent = students.find(s => s.id === selectedStudentId);
     
     const finalReason = reasonSelect === 'Other' ? reasonText : reasonSelect;
 
-    const log = store.logReception({
-      studentId: selectedStudentId,
-      type: mode,
-      reason: mode === 'EarlyLeave' ? finalReason : undefined,
-      pickupBy: mode === 'EarlyLeave' ? pickedBy : undefined,
-      pickupId: mode === 'EarlyLeave' ? pickerId : undefined,
-    });
+    try {
+        const log = await store.logReception({
+          studentId: selectedStudentId,
+          type: mode,
+          reason: mode === 'EarlyLeave' ? finalReason : undefined,
+          pickupBy: mode === 'EarlyLeave' ? pickedBy : undefined,
+          pickupId: mode === 'EarlyLeave' ? pickerId : undefined,
+        });
 
-    // --- TELEGRAM ALERT TRIGGER ---
-    if (mode === 'EarlyLeave' && currentStudent) {
-        sendEarlyLeaveAlert(currentStudent, finalReason, pickedBy, pickerId);
+        // --- TELEGRAM ALERT TRIGGER ---
+        if (mode === 'EarlyLeave' && currentStudent) {
+            sendEarlyLeaveAlert(currentStudent, finalReason, pickedBy, pickerId);
+        }
+        // -----------------------------
+
+        setLastLog(log);
+        // Soft Reset
+        setSelectedStudentId("");
+        setReasonSelect("");
+        setReasonText("");
+        setPickedBy("");
+        setPickerId("");
+        
+        setTimeout(() => setLastLog(null), 4000);
+    } catch (e) {
+        console.error(e);
+        alert("Failed to log reception event");
+    } finally {
+        setIsLoading(false);
     }
-    // -----------------------------
-
-    setLastLog(log);
-    // Soft Reset
-    setSelectedStudentId("");
-    setReasonSelect("");
-    setReasonText("");
-    setPickedBy("");
-    setPickerId("");
-    
-    setTimeout(() => setLastLog(null), 4000);
   };
 
   const currentStudent = students.find(s => s.id === selectedStudentId);
@@ -396,12 +405,12 @@ export const Reception: React.FC<ReceptionProps> = ({ lang }) => {
                     </Button>
                     <Button 
                         onClick={handleLog} 
-                        disabled={mode === 'EarlyLeave' && (!reasonSelect || !pickedBy || !pickerId)}
+                        disabled={(mode === 'EarlyLeave' && (!reasonSelect || !pickedBy || !pickerId)) || isLoading}
                         className={`px-8 py-3 text-lg shadow-xl transition-transform active:scale-95 ${
                             mode === 'LateArrival' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-200' : 'bg-orange-600 hover:bg-orange-700 shadow-orange-200'
                         }`}
                     >
-                        <span className="mx-2">{t.submit}</span> {lang === 'ar' ? <ArrowRight size={20} className="rotate-180" /> : <ArrowRight size={20} />}
+                        <span className="mx-2">{isLoading ? 'Processing...' : t.submit}</span> {lang === 'ar' ? <ArrowRight size={20} className="rotate-180" /> : <ArrowRight size={20} />}
                     </Button>
                 </div>
             </div>

@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
 import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions, AssignedClass, User, AttendanceConfig } from '../types';
 import { TRANSLATIONS, ROLES_LIST, AVAILABLE_ICONS, COLOR_THEMES, NAV_ITEMS } from '../constants';
-import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, FileJson, Search, Filter, ArrowUpDown, CreditCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, UserCheck, Download, Loader2, ListChecks, Megaphone } from 'lucide-react';
+import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, Search, Filter, ArrowUpDown, CreditCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, Download, Loader2, ListChecks, Megaphone } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -19,6 +20,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [destinations, setDestinations] = useState<EPassDestination[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   // User Filters
   const [userSearchTerm, setUserSearchTerm] = useState("");
@@ -91,7 +93,9 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     refreshData();
   }, []);
 
-  const refreshData = () => {
+  const refreshData = async () => {
+    // Ensure data is fresh
+    await store.refreshData();
     setStudents(store.getStudents());
     setUsers(store.getUsers());
     setSchedule(store.getSchedule());
@@ -181,22 +185,37 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     return result;
   }, [students, searchTerm, filterGrade, filterSection, filterGender, sortBy, sortOrder]);
 
-  const handleSaveStudent = () => {
-    if (editingStudent) {
-      store.updateStudent(editingStudent.id, formData);
-    } else {
-      store.addStudent({ ...formData, gender: formData.gender || 'Male' });
+  const handleSaveStudent = async () => {
+    setIsLoading(true);
+    try {
+        if (editingStudent) {
+          await store.updateStudent(editingStudent.id, formData);
+        } else {
+          await store.addStudent({ ...formData, gender: formData.gender || 'Male' });
+        }
+        setEditingStudent(null);
+        setIsAddingStudent(false);
+        setFormData({});
+        await refreshData();
+    } catch (error) {
+        console.error(error);
+        alert("Failed to save student.");
+    } finally {
+        setIsLoading(false);
     }
-    setEditingStudent(null);
-    setIsAddingStudent(false);
-    setFormData({});
-    refreshData();
   };
 
-  const handleDeleteStudent = (id: string) => {
+  const handleDeleteStudent = async (id: string) => {
     if (confirm("Are you sure you want to delete this student?")) {
-      store.deleteStudent(id);
-      refreshData();
+      setIsLoading(true);
+      try {
+          await store.deleteStudent(id);
+          await refreshData();
+      } catch (error) {
+          alert("Failed to delete student.");
+      } finally {
+          setIsLoading(false);
+      }
     }
   };
 
@@ -208,15 +227,22 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       setParentSearch("");
   };
 
-  const handleSaveParentSettings = () => {
+  const handleSaveParentSettings = async () => {
       if (!selectedStudentForParent) return;
-      store.updateStudent(selectedStudentForParent.id, {
-          parentTelegramChatId: parentChatId,
-          parentNotificationPreferences: parentRules
-      });
-      alert("Parent settings saved successfully!");
-      setSelectedStudentForParent(null);
-      refreshData(); // To update local state if needed
+      setIsLoading(true);
+      try {
+          await store.updateStudent(selectedStudentForParent.id, {
+              parentTelegramChatId: parentChatId,
+              parentNotificationPreferences: parentRules
+          });
+          alert("Parent settings saved successfully!");
+          setSelectedStudentForParent(null);
+          await refreshData();
+      } catch (e) {
+          alert("Error saving parent settings");
+      } finally {
+          setIsLoading(false);
+      }
   };
 
   const toggleParentRule = (key: string) => {
@@ -272,8 +298,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             }));
 
             if (mappedStudents.length > 0) {
-                store.bulkImportStudents(mappedStudents);
-                refreshData();
+                await store.bulkImportStudents(mappedStudents);
+                await refreshData();
                 alert(`Successfully imported ${mappedStudents.length} students.`);
             } else {
                 alert("No valid student data found in the Excel file.");
@@ -324,22 +350,30 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     }
   };
 
-  const handleSaveUser = () => {
-    if (editingUser) {
-      store.updateUser(editingUser.id, formData);
-    } else {
-      store.addUser(formData);
+  const handleSaveUser = async () => {
+    setIsLoading(true);
+    try {
+        if (editingUser) {
+          await store.updateUser(editingUser.id, formData);
+        } else {
+          await store.addUser(formData);
+        }
+        setEditingUser(null);
+        setIsAddingUser(false);
+        setFormData({});
+        await refreshData();
+    } catch (e) {
+        console.error(e);
+        alert("Failed to save user");
+    } finally {
+        setIsLoading(false);
     }
-    setEditingUser(null);
-    setIsAddingUser(false);
-    setFormData({});
-    refreshData();
   };
 
-  const handleDeleteUser = (id: string) => {
+  const handleDeleteUser = async (id: string) => {
      if (confirm("Delete this user?")) {
-       store.deleteUser(id);
-       refreshData();
+       await store.deleteUser(id);
+       await refreshData();
      }
   };
   
@@ -410,45 +444,54 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       setSchedule({ ...schedule, [editingScheduleType]: sorted });
   };
 
-  const saveSchedule = () => {
-      store.updateSchedule(editingScheduleType, schedule[editingScheduleType]);
+  const saveSchedule = async () => {
+      setIsLoading(true);
+      await store.updateSchedule(editingScheduleType, schedule[editingScheduleType]);
+      setIsLoading(false);
       alert(t.attendanceSaved);
   };
 
-  const handleSaveDest = () => {
-      if (editingDest) {
-          store.updateDestination(editingDest.id, formData);
-      } else {
-          store.addDestination({
-              label_en: formData.label_en || 'New Destination',
-              label_ar: formData.label_ar || 'وجهة جديدة',
-              iconName: formData.iconName || 'Ticket',
-              colorTheme: formData.colorTheme || 'blue',
-              maxDuration: parseInt(formData.maxDuration) || 10
-          });
+  const handleSaveDest = async () => {
+      setIsLoading(true);
+      try {
+          if (editingDest) {
+              await store.updateDestination(editingDest.id, formData);
+          } else {
+              await store.addDestination({
+                  label_en: formData.label_en || 'New Destination',
+                  label_ar: formData.label_ar || 'وجهة جديدة',
+                  iconName: formData.iconName || 'Ticket',
+                  colorTheme: formData.colorTheme || 'blue',
+                  maxDuration: parseInt(formData.maxDuration) || 10
+              });
+          }
+          setEditingDest(null);
+          setIsAddingDest(false);
+          setFormData({});
+          await refreshData();
+      } catch(e) {
+          alert("Error saving destination");
+      } finally {
+          setIsLoading(false);
       }
-      setEditingDest(null);
-      setIsAddingDest(false);
-      setFormData({});
-      refreshData();
   };
 
-  const handleDeleteDest = (id: string) => {
+  const handleDeleteDest = async (id: string) => {
       if (confirm("Are you sure you want to delete this destination?")) {
-          store.deleteDestination(id);
-          refreshData();
+          await store.deleteDestination(id);
+          await refreshData();
       }
   };
 
-  const handleUpdateEPassSettings = () => {
-      store.updateSettings({ 
+  const handleUpdateEPassSettings = async () => {
+      await store.updateSettings({ 
           maxPassesPerDay: maxPasses,
       });
       alert("Limit updated successfully!");
   };
 
-  const handleUpdateNotificationSettings = () => {
-      store.updateSettings({ 
+  const handleUpdateNotificationSettings = async () => {
+      await store.updateSettings({ 
           telegramBotToken: telegramToken,
           telegramChatId: telegramChatId,
           earlyLeaveBotToken: elTelegramToken,
@@ -461,8 +504,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       alert("Notification credentials saved successfully!");
   };
 
-  const handleUpdateAttendanceRules = () => {
-      store.updateSettings({
+  const handleUpdateAttendanceRules = async () => {
+      await store.updateSettings({
           attendanceSettings: attendanceRules
       });
       alert("Attendance rules updated successfully!");
@@ -475,7 +518,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       }));
   };
 
-  const handleToggleAccess = (navId: string) => {
+  const handleToggleAccess = async (navId: string) => {
       const currentPerms = rolePermissions[selectedRoleForAccess] || [];
       let newPerms: string[];
       
@@ -491,7 +534,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       };
 
       setRolePermissions(updatedRolePermissions);
-      store.updateSettings({ rolePermissions: updatedRolePermissions });
+      await store.updateSettings({ rolePermissions: updatedRolePermissions });
   };
 
   const toggleAttendanceAlertThreshold = (days: number) => {
@@ -685,7 +728,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
          </div>
     )}
       <div className="flex gap-2 mt-6 justify-end border-t border-slate-200 pt-4">
-        <Button onClick={handleSaveStudent}>{t.save}</Button>
+        <Button disabled={isLoading} onClick={handleSaveStudent}>{t.save}</Button>
       </div>
     </div>
   );
@@ -696,6 +739,11 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         <h3 className="font-bold text-lg text-slate-800">{editingUser ? t.actions : t.addUser}</h3>
         <Button variant="ghost" onClick={() => { setEditingUser(null); setIsAddingUser(false); }}>{t.cancel}</Button>
       </div>
+      
+      <div className="mb-4 bg-blue-50 p-3 rounded-lg text-sm text-blue-800 border border-blue-100">
+          NOTE: This form creates the User Profile in the database. You must also create the Login Account (Email/Password) in the Supabase Authentication dashboard.
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <label className="block text-xs font-bold text-slate-500 mb-1">{t.studentName}</label>
@@ -773,7 +821,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         </div>
       </div>
       <div className="flex gap-2 mt-6 justify-end">
-        <Button onClick={handleSaveUser}>{t.save}</Button>
+        <Button disabled={isLoading} onClick={handleSaveUser}>{t.save}</Button>
       </div>
     </div>
   );
@@ -830,7 +878,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
               </div>
           </div>
           <div className="flex gap-2 mt-6 justify-end">
-              <Button onClick={handleSaveDest}>{t.save}</Button>
+              <Button disabled={isLoading} onClick={handleSaveDest}>{t.save}</Button>
           </div>
       </div>
   );
@@ -1036,7 +1084,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                               </div>
                           </div>
                           
-                          <Button onClick={handleSaveParentSettings} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                          <Button disabled={isLoading} onClick={handleSaveParentSettings} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
                               {t.saveParentSettings}
                           </Button>
                       </div>
@@ -1108,7 +1156,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
               </div>
 
               <div className="flex justify-end pt-4 border-t border-slate-100">
-                  <Button onClick={handleUpdateAttendanceRules}>{t.saveRules}</Button>
+                  <Button disabled={isLoading} onClick={handleUpdateAttendanceRules}>{t.saveRules}</Button>
               </div>
           </div>
       </Card>
@@ -1475,7 +1523,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                           <Button variant="ghost" onClick={sortSchedule}>
                               <ArrowDownAZ size={16} /> {t.sortChrono}
                           </Button>
-                          <Button onClick={saveSchedule}>
+                          <Button disabled={isLoading} onClick={saveSchedule}>
                               <Check size={16} /> {t.saveSchedule}
                           </Button>
                       </div>
