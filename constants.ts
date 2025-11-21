@@ -8,7 +8,7 @@ import {
   Settings,
   BarChart3
 } from 'lucide-react';
-import { UserRole, NavItem, Language, Student, EPassDestination, User } from './types';
+import { UserRole, NavItem, EPassDestination } from './types';
 
 export const ROLES_LIST = Object.values(UserRole);
 
@@ -61,102 +61,6 @@ export const NAV_ITEMS: NavItem[] = [
     label_ar: 'العيادة',
     icon: Stethoscope,
     allowedRoles: [UserRole.CLINIC_STAFF, UserRole.ADMIN_SGL]
-  }
-];
-
-// Mock Data
-export const MOCK_STUDENTS: Student[] = [
-  {
-    id: 'S001',
-    studentNumber: '2024001',
-    name_en: 'Ahmed Al-Falahi',
-    name_ar: 'أحمد الفلاحي',
-    gender: 'Male',
-    grade: '10',
-    section: 'A',
-    transportMode: 'Bus',
-    busRoute: 'R-101',
-    familyId: 'FAM-001'
-  },
-  {
-    id: 'S002',
-    studentNumber: '2024002',
-    name_en: 'Sarah Johnson',
-    name_ar: 'سارة جونسون',
-    gender: 'Female',
-    grade: '11',
-    section: 'B',
-    transportMode: 'Car',
-    familyId: 'FAM-002'
-  },
-  {
-    id: 'S003',
-    studentNumber: '2024003',
-    name_en: 'Mohammad Ali',
-    name_ar: 'محمد علي',
-    gender: 'Male',
-    grade: '10',
-    section: 'A',
-    transportMode: 'Walker',
-    familyId: 'FAM-003',
-    isWatchlisted: true
-  },
-  {
-    id: 'S004',
-    studentNumber: '2024004',
-    name_en: 'Fatima Al-Sayed',
-    name_ar: 'فاطمة السيد',
-    gender: 'Female',
-    grade: '10',
-    section: 'A',
-    transportMode: 'Bus',
-    busRoute: 'R-102',
-    familyId: 'FAM-001'
-  },
-  {
-    id: 'S005',
-    studentNumber: '2024005',
-    name_en: 'John Doe',
-    name_ar: 'جون دو',
-    gender: 'Male',
-    grade: '12',
-    section: 'C',
-    transportMode: 'Car',
-  }
-];
-
-export const MOCK_USERS_SEED: User[] = [
-  {
-    id: 'U001',
-    name: 'Admin User',
-    email: 'admin@school.com',
-    role: UserRole.ADMIN_SGL
-  },
-  {
-    id: 'U002',
-    name: 'Sarah Teacher',
-    email: 'sarah@school.com',
-    role: UserRole.TEACHER,
-    assignedClasses: [{ grade: '10', section: 'A' }]
-  },
-  {
-    id: 'U003',
-    name: 'Security Guard',
-    email: 'security@school.com',
-    role: UserRole.SUPERVISOR
-  },
-  {
-    id: 'U004',
-    name: 'School Nurse',
-    email: 'nurse@school.com',
-    role: UserRole.CLINIC_STAFF
-  },
-  {
-    id: 'U005',
-    name: 'Mr. Social Worker',
-    email: 'social@school.com',
-    role: UserRole.SOCIAL_WORKER,
-    assignedClasses: [{ grade: '10', section: 'A' }, { grade: '11', section: 'B' }]
   }
 ];
 
