@@ -1,12 +1,25 @@
-
 import { createClient } from '@supabase/supabase-js';
+
+interface Env {
+  VITE_SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+}
+
+interface EventContext {
+  request: Request;
+  env: Env;
+  params: Record<string, string>;
+  waitUntil: (promise: Promise<any>) => void;
+  next: () => Promise<Response>;
+  data: Record<string, unknown>;
+}
 
 /**
  * Cloudflare Pages Function to create a Supabase Auth User.
  * This runs securely on the server, accessing the SUPABASE_SERVICE_ROLE_KEY
  * which should be set in the Cloudflare Pages project settings.
  */
-export const onRequestPost = async (context) => {
+export const onRequestPost = async (context: EventContext) => {
   const { request, env } = context;
 
   // 1. Validate Environment
@@ -16,7 +29,7 @@ export const onRequestPost = async (context) => {
 
   try {
     // 2. Parse Request Body
-    const { email, password, user_metadata } = await request.json();
+    const { email, password, user_metadata } = await request.json() as any;
 
     if (!email || !password) {
       return new Response(JSON.stringify({ error: "Email and password are required." }), { status: 400 });
