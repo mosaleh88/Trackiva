@@ -2,9 +2,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
+import { generateSchoolInsights } from '../services/geminiService';
 import { Language, Student } from '../types';
 import { TRANSLATIONS } from '../constants';
-import { BarChart3, Calendar, Download, Filter, Search, User, LayoutDashboard, Activity, Ticket, DoorOpen, ChevronDown, ChevronRight, Printer, Stethoscope, Clock, AlertTriangle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { BarChart3, Calendar, Download, Filter, Search, User, LayoutDashboard, Activity, Ticket, DoorOpen, ChevronDown, ChevronRight, Printer, Stethoscope, Clock, AlertTriangle, CheckCircle2, ArrowRight, BrainCircuit } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 interface ReportsProps {
@@ -44,6 +45,10 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
   const [student360, setStudent360] = useState<Student | null>(null);
   const [student360Data, setStudent360Data] = useState<any>(null);
   
+  // AI Analyst State
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+  
   // 360 View Collapsibles
   const [showAttendanceHistory, setShowAttendanceHistory] = useState(true);
   const [showClinicHistory, setShowClinicHistory] = useState(false);
@@ -53,10 +58,16 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
   // Pagination State
   const [attendancePage, setAttendancePage] = useState(1);
 
-  // Reset pagination when student changes
+  // Reset pagination and AI when student changes
   useEffect(() => {
       setAttendancePage(1);
+      setAiInsight(null);
   }, [student360]);
+
+  // Clear AI insight when tab changes
+  useEffect(() => {
+      setAiInsight(null);
+  }, [activeTab]);
 
   // Auto-refresh Student 360 data when dates change
   useEffect(() => {
@@ -65,6 +76,27 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
           setStudent360Data(sData);
       }
   }, [startDate, endDate, student360]);
+
+  // --- AI Analyst Handler ---
+  const handleAskAi = async () => {
+      setLoadingAi(true);
+      try {
+          let context: 'global_report' | 'student_profile' = 'global_report';
+          let analysisData = data;
+
+          if (activeTab === 'student360' && student360Data) {
+              context = 'student_profile';
+              analysisData = student360Data;
+          }
+
+          const insight = await generateSchoolInsights(analysisData, context, 'Administrator', lang);
+          setAiInsight(insight);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setLoadingAi(false);
+      }
+  };
 
   // --- Moved Hooks from renderStudent360 to top level ---
   
@@ -141,8 +173,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
           gender: filterGender
       });
       setData(reportData);
-      
-      // Note: Student 360 data is now handled by the dedicated useEffect
+      setAiInsight(null);
   };
 
   // Initial load
@@ -161,6 +192,40 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
 
   const uniqueGrades = useMemo(() => Array.from(new Set(students.map(s => s.grade))).sort(), [students]);
   const uniqueSections = useMemo(() => Array.from(new Set(students.map(s => s.section))).sort(), [students]);
+
+  const renderAiCard = () => (
+      <Card className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white border-none shadow-lg animate-in fade-in mb-6 no-print">
+          <div className="flex items-start gap-4">
+              <div className="p-3 bg-white/10 rounded-full shrink-0">
+                  <BrainCircuit size={24} className="text-white" />
+              </div>
+              <div className="flex-1">
+                  <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-bold text-lg">{t.askAi}</h3>
+                      {!aiInsight && (
+                          <Button 
+                              onClick={handleAskAi} 
+                              disabled={loadingAi}
+                              className="bg-white/20 hover:bg-white/30 text-white border-none text-xs"
+                          >
+                              {loadingAi ? t.aiThinking : "Analyze Report"}
+                          </Button>
+                      )}
+                  </div>
+                  {aiInsight && (
+                      <div className="bg-white/10 rounded-lg p-4 text-sm leading-relaxed animate-in slide-in-from-top-2">
+                          {aiInsight}
+                      </div>
+                  )}
+                  {!aiInsight && !loadingAi && (
+                      <p className="text-sm text-white/70">
+                          Click analyze to get AI-powered insights, trends, and recommendations based on the current report data.
+                      </p>
+                  )}
+              </div>
+          </div>
+      </Card>
+  );
 
   // --- Daily Summary Logic ---
   const renderDailySummary = () => {
@@ -484,6 +549,9 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
 
               {student360 && student360Data && (
                   <div className="space-y-6">
+                      {/* AI Analyst for Student 360 */}
+                      {renderAiCard()}
+
                       {/* Profile Header */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <Card className="col-span-2 flex gap-6 items-center bg-gradient-to-br from-slate-50 to-white">
@@ -771,6 +839,9 @@ export const Reports: React.FC<ReportsProps> = ({ lang }) => {
               </div>
           </Card>
       )}
+
+      {/* AI Card for Global Reports */}
+      {activeTab !== 'student360' && activeTab !== 'daily' && data && renderAiCard()}
 
       {/* Tab Content */}
       <div className="min-h-[400px]">

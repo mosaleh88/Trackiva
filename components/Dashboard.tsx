@@ -3,12 +3,11 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button, Badge } from './ui';
 import { UserRole, Language, EPassDestination } from '../types';
 import { store } from '../services/store';
-import { generateSchoolInsights } from '../services/geminiService';
 import { TRANSLATIONS } from '../constants';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend
 } from 'recharts';
-import { BrainCircuit, AlertTriangle, Activity, Users, Clock, Stethoscope, LogOut, Ticket } from 'lucide-react';
+import { AlertTriangle, Activity, Users, Clock, Stethoscope, LogOut, Ticket } from 'lucide-react';
 
 interface DashboardProps {
   role: UserRole;
@@ -19,8 +18,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
   const t = TRANSLATIONS[lang];
   const [summary, setSummary] = useState<any>(null);
   const [destinations, setDestinations] = useState<EPassDestination[]>([]);
-  const [aiInsight, setAiInsight] = useState<string | null>(null);
-  const [loadingAi, setLoadingAi] = useState(false);
 
   // Refresh data on mount
   useEffect(() => {
@@ -28,18 +25,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
     setSummary(data);
     setDestinations(store.getDestinations());
   }, []);
-
-  const handleAskAi = async () => {
-    setLoadingAi(true);
-    try {
-      const insight = await generateSchoolInsights(summary, role, lang);
-      setAiInsight(insight);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingAi(false);
-    }
-  };
 
   if (!summary) return <div>Loading...</div>;
 
@@ -136,60 +121,40 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
         </Card>
       </div>
 
-      {/* Row 2: AI & Charts */}
+      {/* Row 2: Charts & Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left Column: AI + Recent Activity */}
-        <div className="space-y-6">
-             {/* AI Action Card */}
-            <Card className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none shadow-lg">
-                <div className="flex items-center gap-3 mb-2">
-                    <BrainCircuit className="text-white/80" />
-                    <h3 className="font-bold">{t.insight}</h3>
-                </div>
-                {aiInsight ? (
-                    <p className="text-sm text-white/90 leading-relaxed animate-in fade-in">{aiInsight}</p>
+        {/* Left Column: Recent Activity (Expanded to full height) */}
+        <Card className="flex flex-col h-full min-h-[22rem]">
+            <h3 className="font-bold text-lg mb-4 text-slate-800">{t.recentActivity}</h3>
+            <div className="flex-1 overflow-y-auto max-h-[18rem] space-y-4 pr-2">
+                {summary.recentIncidents.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-slate-400">
+                        <p>No recent activity</p>
+                    </div>
                 ) : (
-                    <Button 
-                        onClick={handleAskAi} 
-                        disabled={loadingAi}
-                        className="w-full bg-white/20 hover:bg-white/30 text-white border-none text-sm mt-2"
-                    >
-                        {loadingAi ? t.aiThinking : t.askAi}
-                    </Button>
-                )}
-            </Card>
-
-            {/* Recent Activity Feed */}
-            <Card className="flex-1 overflow-y-auto max-h-[22rem]">
-                <h3 className="font-bold text-lg mb-4 text-slate-800">{t.recentActivity}</h3>
-                <div className="space-y-4">
-                    {summary.recentIncidents.length === 0 ? (
-                        <p className="text-slate-400 text-center py-4">No recent activity</p>
-                    ) : (
-                    summary.recentIncidents.map((log: any) => (
-                        <div key={log.id} className="flex gap-3 border-b border-slate-50 pb-3 last:border-0 items-start">
-                            <div className={`mt-1 p-1.5 rounded-full shrink-0 ${log.type === 'LateArrival' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
-                                {log.type === 'LateArrival' ? <Clock size={14} /> : <LogOut size={14} />}
-                            </div>
-                            <div>
-                                <p className="text-sm font-bold text-slate-700">
-                                    {log.type === 'LateArrival' ? t.lateArrival : t.earlyLeave}
-                                </p>
-                                <p className="text-xs text-slate-500 font-mono">
-                                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </p>
-                                {log.reason && <p className="text-xs text-slate-600 mt-1 bg-slate-50 px-2 py-0.5 rounded inline-block">{log.reason}</p>}
-                                {log.transportConflict && (
-                                    <span className="text-xs text-red-500 font-bold block mt-1">{t.transportConflict}</span>
-                                )}
-                            </div>
+                summary.recentIncidents.map((log: any) => (
+                    <div key={log.id} className="flex gap-3 border-b border-slate-50 pb-3 last:border-0 items-start">
+                        <div className={`mt-1 p-1.5 rounded-full shrink-0 ${log.type === 'LateArrival' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
+                            {log.type === 'LateArrival' ? <Clock size={14} /> : <LogOut size={14} />}
                         </div>
-                    ))
-                    )}
-                </div>
-            </Card>
-        </div>
+                        <div>
+                            <p className="text-sm font-bold text-slate-700">
+                                {log.type === 'LateArrival' ? t.lateArrival : t.earlyLeave}
+                            </p>
+                            <p className="text-xs text-slate-500 font-mono">
+                                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            {log.reason && <p className="text-xs text-slate-600 mt-1 bg-slate-50 px-2 py-0.5 rounded inline-block">{log.reason}</p>}
+                            {log.transportConflict && (
+                                <span className="text-xs text-red-500 font-bold block mt-1">{t.transportConflict}</span>
+                            )}
+                        </div>
+                    </div>
+                ))
+                )}
+            </div>
+        </Card>
 
         {/* Center: Attendance Horizontal Stacked Bar (3 Groups) */}
         <Card className="lg:col-span-1 h-full flex flex-col justify-center min-h-[22rem]">

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 
 // Note: In a real app, you would not expose the key on the client, 
@@ -14,23 +15,54 @@ try {
     console.error("Failed to initialize GoogleGenAI", error);
 }
 
+export type InsightContext = 'dashboard' | 'global_report' | 'student_profile';
+
 export const generateSchoolInsights = async (
-  dataSummary: any,
+  data: any,
+  context: InsightContext,
   role: string,
   language: 'en' | 'ar'
 ): Promise<string> => {
   if (!ai) return "API Key not configured.";
 
-  const prompt = `
-    You are an AI Assistant for a School Management System called Trackiva.
-    Analyze the following JSON data representing the school's current status:
-    ${JSON.stringify(dataSummary)}
+  let promptContext = "";
 
-    The user asking is a: ${role}.
-    Please provide a concise, 2-sentence summary of the current situation and 1 actionable recommendation relevant to their role.
-    
-    Output Language: ${language === 'ar' ? 'Arabic' : 'English'}.
-    Tone: Professional and Helpful.
+  if (context === 'student_profile') {
+      promptContext = `
+        CONTEXT: You are analyzing a SINGLE STUDENT'S 360° Report.
+        FOCUS: Look for patterns in their attendance (specific days absent), clinic visits (recurring symptoms), and e-pass usage (frequent destinations or unauthorized exits).
+        GOAL: Identify if this student is "At Risk" (academically, medically, or behaviorally) and suggest specific interventions for the ${role}.
+      `;
+  } else if (context === 'global_report') {
+      promptContext = `
+        CONTEXT: You are analyzing the SCHOOL-WIDE Aggregate Reports.
+        FOCUS: Look for trends across Grades/Sections (e.g., Grade 10 has low attendance), health outbreaks (spikes in Fever/Flu in Clinic data), or operational issues (high unauthorized exits).
+        GOAL: Provide a strategic summary for the ${role} to improve school operations or student wellbeing.
+      `;
+  } else {
+      promptContext = `
+        CONTEXT: General Dashboard Summary.
+        FOCUS: Real-time status (Attendance %, Active Issues).
+      `;
+  }
+
+  const prompt = `
+    You are an AI Assistant for Trackiva (School Management System).
+    ${promptContext}
+
+    DATA JSON:
+    ${JSON.stringify(data, (key, value) => {
+        // Replacer to truncate long lists to save tokens, keep summaries
+        if (key === 'list' && Array.isArray(value) && value.length > 20) return value.slice(0, 20);
+        if (key === 'history' && Array.isArray(value) && value.length > 20) return value.slice(0, 20);
+        return value;
+    })}
+
+    OUTPUT FORMAT:
+    - Concise 2-3 sentences summarizing the key insight.
+    - 1 Bullet point with a direct "Actionable Recommendation".
+    - Output Language: ${language === 'ar' ? 'Arabic' : 'English'}.
+    - Tone: Professional, educational, and concise.
   `;
 
   try {

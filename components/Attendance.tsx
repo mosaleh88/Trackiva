@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Badge, Input, Select } from './ui';
 import { store } from '../services/store';
@@ -226,6 +227,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
             status,
             reason: reasons[studentId]
         });
+        
+        // Trigger check for Absent status to send Alert
+        if (status === AttendanceStatus.ABSENT_UNEXCUSED) {
+            store.checkAttendanceAlert(studentId);
+        }
     });
 
     // 2. Handle deletions (Unmarking) for visible students

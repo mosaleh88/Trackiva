@@ -64,6 +64,102 @@ export const NAV_ITEMS: NavItem[] = [
   }
 ];
 
+// Mock Data
+export const MOCK_STUDENTS: Student[] = [
+  {
+    id: 'S001',
+    studentNumber: '2024001',
+    name_en: 'Ahmed Al-Falahi',
+    name_ar: 'أحمد الفلاحي',
+    gender: 'Male',
+    grade: '10',
+    section: 'A',
+    transportMode: 'Bus',
+    busRoute: 'R-101',
+    familyId: 'FAM-001'
+  },
+  {
+    id: 'S002',
+    studentNumber: '2024002',
+    name_en: 'Sarah Johnson',
+    name_ar: 'سارة جونسون',
+    gender: 'Female',
+    grade: '11',
+    section: 'B',
+    transportMode: 'Car',
+    familyId: 'FAM-002'
+  },
+  {
+    id: 'S003',
+    studentNumber: '2024003',
+    name_en: 'Mohammad Ali',
+    name_ar: 'محمد علي',
+    gender: 'Male',
+    grade: '10',
+    section: 'A',
+    transportMode: 'Walker',
+    familyId: 'FAM-003',
+    isWatchlisted: true
+  },
+  {
+    id: 'S004',
+    studentNumber: '2024004',
+    name_en: 'Fatima Al-Sayed',
+    name_ar: 'فاطمة السيد',
+    gender: 'Female',
+    grade: '10',
+    section: 'A',
+    transportMode: 'Bus',
+    busRoute: 'R-102',
+    familyId: 'FAM-001'
+  },
+  {
+    id: 'S005',
+    studentNumber: '2024005',
+    name_en: 'John Doe',
+    name_ar: 'جون دو',
+    gender: 'Male',
+    grade: '12',
+    section: 'C',
+    transportMode: 'Car',
+  }
+];
+
+export const MOCK_USERS_SEED: User[] = [
+  {
+    id: 'U001',
+    name: 'Admin User',
+    email: 'admin@school.com',
+    role: UserRole.ADMIN_SGL
+  },
+  {
+    id: 'U002',
+    name: 'Sarah Teacher',
+    email: 'sarah@school.com',
+    role: UserRole.TEACHER,
+    assignedClasses: [{ grade: '10', section: 'A' }]
+  },
+  {
+    id: 'U003',
+    name: 'Security Guard',
+    email: 'security@school.com',
+    role: UserRole.SUPERVISOR
+  },
+  {
+    id: 'U004',
+    name: 'School Nurse',
+    email: 'nurse@school.com',
+    role: UserRole.CLINIC_STAFF
+  },
+  {
+    id: 'U005',
+    name: 'Mr. Social Worker',
+    email: 'social@school.com',
+    role: UserRole.SOCIAL_WORKER,
+    assignedClasses: [{ grade: '10', section: 'A' }, { grade: '11', section: 'B' }]
+  }
+];
+
 export const EARLY_LEAVE_REASONS = [
   "Medical Appointment",
   "Family Emergency",
@@ -275,8 +371,10 @@ export const TRANSLATIONS = {
     telegramSettings: "Telegram Configuration",
     securityAlerts: "Security & E-Pass Alerts",
     receptionAlerts: "Reception & Early Leave Alerts",
+    attendanceAlerts: "Attendance Alerts (Social Worker)",
     botToken: "Bot Token",
     chatId: "Chat ID",
+    userChatId: "User Telegram Chat ID",
     saveCredentials: "Save Credentials",
     watchlist: "Targeted / Watchlist Student",
     watchlistAlerts: "Targeted Student Alerts",
@@ -291,6 +389,16 @@ export const TRANSLATIONS = {
     parentChatId: "Parent Telegram Chat ID",
     selectEvents: "Select Events to Notify Parent",
     saveParentSettings: "Save Parent Settings",
+    // Attendance Rules
+    attendanceRules: "Attendance Rules",
+    attendanceRulesDesc: "Configure how daily attendance status is calculated from period records.",
+    absentThreshold: "Absent Day Threshold (Periods)",
+    absentThresholdDesc: "Number of unexcused absences (periods) to count as a full Absent Day.",
+    countAllExcused: "Excused Absence Logic",
+    countAllExcusedDesc: "If checked, a student with ALL periods marked 'Excused' will be counted as 'Excused Absent' for the day.",
+    attendanceAlertThresholds: "Absence Alert Thresholds (Days)",
+    attendanceAlertDesc: "Select which days of accumulated absence trigger a notification to the assigned Social Worker.",
+    saveRules: "Save Rules",
     // User Management
     assignedClasses: "Assigned Classes",
     assignClass: "Assign Class",
@@ -523,8 +631,10 @@ export const TRANSLATIONS = {
     telegramSettings: "إعدادات تيليجرام",
     securityAlerts: "تنبيهات الأمن والتصاريح",
     receptionAlerts: "تنبيهات الاستقبال والمغادرة",
+    attendanceAlerts: "تنبيهات الحضور (الأخصائي الاجتماعي)",
     botToken: "رمز البوت (Bot Token)",
     chatId: "معرف المحادثة (Chat ID)",
+    userChatId: "معرف محادثة المستخدم (Chat ID)",
     saveCredentials: "حفظ البيانات",
     watchlist: "طالب مستهدف / قائمة المراقبة",
     watchlistAlerts: "تنبيهات الطلاب المستهدفين",
@@ -539,6 +649,16 @@ export const TRANSLATIONS = {
     parentChatId: "معرف محادثة الوالدين (Chat ID)",
     selectEvents: "اختر الأحداث لتنبيه الوالدين",
     saveParentSettings: "حفظ إعدادات الوالدين",
+    // Attendance Rules
+    attendanceRules: "قواعد الحضور",
+    attendanceRulesDesc: "تكوين كيفية حساب حالة الحضور اليومي من سجلات الحصص.",
+    absentThreshold: "حد الغياب اليومي (عدد الحصص)",
+    absentThresholdDesc: "عدد الحصص (بدون عذر) التي تُحسب كيوم غياب كامل.",
+    countAllExcused: "منطق الغياب بعذر",
+    countAllExcusedDesc: "إذا تم تحديده، سيتم احتساب الطالب الذي لديه عذر في جميع الحصص كـ 'غائب بعذر' لليوم.",
+    attendanceAlertThresholds: "عتبات تنبيه الغياب (أيام)",
+    attendanceAlertDesc: "حدد أيام الغياب التراكمي التي تؤدي إلى إرسال إشعار للأخصائي الاجتماعي المسؤول.",
+    saveRules: "حفظ القواعد",
     // User Management
     assignedClasses: "الفصول المسندة",
     assignClass: "إسناد فصل",
@@ -621,18 +741,3 @@ export const TRANSLATIONS = {
     noData: "لا توجد بيانات متاحة للفترة المحددة."
   }
 };
-
-// Mock Data Seeds
-export const MOCK_STUDENTS: Student[] = [
-  { id: 'S001', studentNumber: '2024001', name_en: 'Ahmed Ali', name_ar: 'أحمد علي', gender: 'Male', grade: '10', section: 'A', transportMode: 'Bus', busRoute: 'R-101', isWatchlisted: true, familyId: 'FAM001' },
-  { id: 'S002', studentNumber: '2024002', name_en: 'Sarah Smith', name_ar: 'سارة سميث', gender: 'Female', grade: '10', section: 'A', transportMode: 'Car', familyId: 'FAM002' },
-  { id: 'S003', studentNumber: '2024003', name_en: 'John Doe', name_ar: 'جون دو', gender: 'Male', grade: '10', section: 'B', transportMode: 'Walker' },
-  { id: 'S004', studentNumber: '2024004', name_en: 'Fatima Noor', name_ar: 'فاطمة نور', gender: 'Female', grade: '11', section: 'A', transportMode: 'Bus', busRoute: 'R-102' },
-  { id: 'S005', studentNumber: '2024005', name_en: 'Omar Hassan', name_ar: 'عمر حسن', gender: 'Male', grade: '11', section: 'B', transportMode: 'Car', familyId: 'FAM002' }, // Sibling to Sarah
-];
-
-export const MOCK_USERS_SEED: User[] = [
-  { id: 'U001', name: 'Admin User', email: 'admin@trackiva.com', role: UserRole.ADMIN_SGL },
-  { id: 'U002', name: 'Sarah Teacher', email: 'sarah@trackiva.com', role: UserRole.TEACHER, assignedClasses: [{ grade: '10', section: 'A' }] },
-  { id: 'U003', name: 'Mike Supervisor', email: 'mike@trackiva.com', role: UserRole.SUPERVISOR },
-];

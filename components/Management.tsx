@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
-import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions, AssignedClass, User } from '../types';
+import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions, AssignedClass, User, AttendanceConfig } from '../types';
 import { TRANSLATIONS, ROLES_LIST, AVAILABLE_ICONS, COLOR_THEMES, NAV_ITEMS } from '../constants';
-import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, FileJson, Search, Filter, ArrowUpDown, IdCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, UserCheck, Download, Loader2 } from 'lucide-react';
+import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, FileJson, Search, Filter, ArrowUpDown, IdCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, UserCheck, Download, Loader2, ListChecks, Megaphone } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -12,7 +12,7 @@ interface ManagementProps {
   lang: Language;
 }
 
-type Tab = 'users' | 'students' | 'timetable' | 'epass' | 'access' | 'notifications';
+type Tab = 'users' | 'students' | 'timetable' | 'epass' | 'access' | 'notifications' | 'attendance_rules';
 
 export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const t = TRANSLATIONS[lang];
@@ -50,6 +50,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const [telegramChatId, setTelegramChatId] = useState("");
   const [elTelegramToken, setElTelegramToken] = useState("");
   const [elTelegramChatId, setElTelegramChatId] = useState("");
+  const [attTelegramToken, setAttTelegramToken] = useState(""); // Attendance Bot
   
   // Watchlist Settings
   const [wlTelegramToken, setWlTelegramToken] = useState("");
@@ -58,6 +59,13 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   // Notification Rules
   const [notificationRules, setNotificationRules] = useState<Record<string, boolean>>({});
   
+  // Attendance Rules
+  const [attendanceRules, setAttendanceRules] = useState<AttendanceConfig>({
+      absentPeriodThreshold: 3,
+      countAllExcusedAsExcusedDay: true,
+      alertThresholds: [3, 6, 10, 15]
+  });
+
   const [rolePermissions, setRolePermissions] = useState<RolePermissions>({});
   const [selectedRoleForAccess, setSelectedRoleForAccess] = useState<string>(UserRole.TEACHER);
 
@@ -95,10 +103,12 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     setTelegramChatId(settings.telegramChatId || "");
     setElTelegramToken(settings.earlyLeaveBotToken || "");
     setElTelegramChatId(settings.earlyLeaveChatId || "");
+    setAttTelegramToken(settings.attendanceBotToken || "");
     setWlTelegramToken(settings.watchlistBotToken || "");
     setWlTelegramChatId(settings.watchlistChatId || "");
     setNotificationRules(settings.notificationRules || {});
     setRolePermissions(settings.rolePermissions);
+    setAttendanceRules(settings.attendanceSettings || { absentPeriodThreshold: 3, countAllExcusedAsExcusedDay: true, alertThresholds: [3, 6, 10, 15] });
   };
 
   // Generate QR Code when viewing card
@@ -444,11 +454,19 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           telegramChatId: telegramChatId,
           earlyLeaveBotToken: elTelegramToken,
           earlyLeaveChatId: elTelegramChatId,
+          attendanceBotToken: attTelegramToken,
           watchlistBotToken: wlTelegramToken,
           watchlistChatId: wlTelegramChatId,
           notificationRules: notificationRules
       });
       alert("Notification credentials saved successfully!");
+  };
+
+  const handleUpdateAttendanceRules = () => {
+      store.updateSettings({
+          attendanceSettings: attendanceRules
+      });
+      alert("Attendance rules updated successfully!");
   };
 
   const toggleNotificationRule = (key: string) => {
@@ -475,6 +493,17 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
       setRolePermissions(updatedRolePermissions);
       store.updateSettings({ rolePermissions: updatedRolePermissions });
+  };
+
+  const toggleAttendanceAlertThreshold = (days: number) => {
+      const current = attendanceRules.alertThresholds || [];
+      let next: number[];
+      if (current.includes(days)) {
+          next = current.filter(d => d !== days);
+      } else {
+          next = [...current, days].sort((a,b) => a-b);
+      }
+      setAttendanceRules({ ...attendanceRules, alertThresholds: next });
   };
 
   const renderIdCardModal = () => {
@@ -697,7 +726,19 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             </Select>
         </div>
         
-        {/* Assigned Classes Section (for non-Admin roles usually, but visible for all here for simplicity) */}
+        {/* Social Worker Chat ID Input */}
+        {formData.role === UserRole.SOCIAL_WORKER && (
+            <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">{t.userChatId}</label>
+                <Input 
+                    placeholder="e.g. 123456789" 
+                    value={formData.telegramChatId || ''} 
+                    onChange={e => setFormData({...formData, telegramChatId: e.target.value})} 
+                />
+            </div>
+        )}
+        
+        {/* Assigned Classes Section */}
         <div className="md:col-span-2 border-t border-slate-200 pt-4 mt-2">
              <h4 className="font-bold text-sm text-slate-700 mb-2">{t.assignedClasses}</h4>
              <div className="flex gap-2 mb-3">
@@ -728,7 +769,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                      ))}
                  </div>
              ) : (
-                 <p className="text-xs text-slate-400 italic">No classes assigned (User has access to all).</p>
+                 <p className="text-xs text-slate-400 italic">No classes assigned.</p>
              )}
         </div>
       </div>
@@ -843,13 +884,27 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       </div>
                   </div>
 
+                  {/* Attendance Alerts */}
+                  <div className="p-4 border border-slate-200 rounded-xl bg-blue-50/30">
+                      <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2">
+                          <Megaphone size={18} className="text-blue-600" /> {t.attendanceAlerts}
+                      </h4>
+                      <p className="text-xs text-slate-500 mb-4">Used for notifying Social Workers about absence thresholds.</p>
+                      <div className="space-y-3">
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
+                              <Input value={attTelegramToken} onChange={e => setAttTelegramToken(e.target.value)} type="password" />
+                          </div>
+                      </div>
+                  </div>
+
                   {/* Watchlist Alerts */}
-                  <div className="p-4 border border-slate-200 rounded-xl bg-yellow-50/30 md:col-span-2">
+                  <div className="p-4 border border-slate-200 rounded-xl bg-yellow-50/30 md:col-span-1">
                       <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2">
                           <Eye size={18} className="text-yellow-600" /> {t.watchlistAlerts}
                       </h4>
                       <p className="text-xs text-slate-500 mb-4">{t.watchlistDesc}</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 gap-4">
                           <div>
                               <label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
                               <Input value={wlTelegramToken} onChange={e => setWlTelegramToken(e.target.value)} type="password" />
@@ -992,6 +1047,74 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       </div>
   );
 
+  const renderAttendanceRules = () => (
+      <Card>
+          <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-slate-100 text-slate-600 rounded-full"><ListChecks size={24} /></div>
+              <div>
+                  <h3 className="text-lg font-bold text-slate-800">{t.attendanceRules}</h3>
+                  <p className="text-sm text-slate-500">{t.attendanceRulesDesc}</p>
+              </div>
+          </div>
+
+          <div className="space-y-6 max-w-xl">
+              {/* Threshold for calculating daily absent status */}
+              <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">{t.absentThreshold}</label>
+                  <p className="text-xs text-slate-500 mb-2">{t.absentThresholdDesc}</p>
+                  <Input 
+                      type="number" 
+                      min={1}
+                      max={10}
+                      value={attendanceRules.absentPeriodThreshold} 
+                      onChange={e => setAttendanceRules({...attendanceRules, absentPeriodThreshold: parseInt(e.target.value) || 3})} 
+                  />
+              </div>
+
+              {/* Excused Logic Toggle */}
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                      <input 
+                          type="checkbox" 
+                          className="mt-1 w-5 h-5 rounded text-blue-600 focus:ring-blue-500"
+                          checked={attendanceRules.countAllExcusedAsExcusedDay}
+                          onChange={e => setAttendanceRules({...attendanceRules, countAllExcusedAsExcusedDay: e.target.checked})}
+                      />
+                      <div>
+                          <span className="font-bold text-slate-800 text-sm block">{t.countAllExcused}</span>
+                          <span className="text-xs text-slate-600">{t.countAllExcusedDesc}</span>
+                      </div>
+                  </label>
+              </div>
+
+              {/* Notification Thresholds */}
+              <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">{t.attendanceAlertThresholds}</label>
+                  <p className="text-xs text-slate-500 mb-3">{t.attendanceAlertDesc}</p>
+                  
+                  <div className="flex flex-wrap gap-3">
+                      {[1, 3, 6, 10, 15].map(days => {
+                          const isSelected = attendanceRules.alertThresholds?.includes(days);
+                          return (
+                              <button 
+                                  key={days}
+                                  onClick={() => toggleAttendanceAlertThreshold(days)}
+                                  className={`px-4 py-2 rounded-lg border text-sm font-bold transition-all ${isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                              >
+                                  {days} Days
+                              </button>
+                          );
+                      })}
+                  </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-slate-100">
+                  <Button onClick={handleUpdateAttendanceRules}>{t.saveRules}</Button>
+              </div>
+          </div>
+      </Card>
+  );
+
   const renderAccessControl = () => (
       <Card>
           <div className="flex items-center gap-3 mb-6">
@@ -1069,6 +1192,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
              { id: 'students', label: t.students, icon: GraduationCap },
              { id: 'timetable', label: t.timetable, icon: Clock },
              { id: 'epass', label: t.destinations, icon: Ticket },
+             { id: 'attendance_rules', label: t.attendanceRules, icon: ListChecks },
              { id: 'access', label: t.accessControl, icon: Shield },
              { id: 'notifications', label: t.notifications, icon: Bell }
          ].map(tab => (
@@ -1423,6 +1547,9 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
       {/* NOTIFICATIONS TAB */}
       {activeTab === 'notifications' && renderNotificationsTab()}
+
+      {/* ATTENDANCE RULES TAB */}
+      {activeTab === 'attendance_rules' && renderAttendanceRules()}
 
       {/* ACCESS CONTROL TAB */}
       {activeTab === 'access' && renderAccessControl()}

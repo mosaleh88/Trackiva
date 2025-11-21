@@ -1,6 +1,6 @@
 
 import { store } from './store';
-import { Student, EPassDestination } from '../types';
+import { Student, EPassDestination, User } from '../types';
 
 // This service handles sending notifications to a Telegram channel/chat
 // It reads configuration from the App Store (localStorage)
@@ -141,4 +141,28 @@ ${student.isWatchlisted ? '⚠️ <i>Targeted/Watchlist Student</i>' : ''}
 
     // 2. Send to Parent (if enabled for this student)
     await notifyParent(student, message, eventType);
-}
+};
+
+// New Attendance Alert for Social Workers
+export const sendAttendanceAlert = async (student: Student, totalDays: number, socialWorker: User) => {
+    const settings = store.getSettings();
+    
+    // We need a global bot token specifically for attendance alerts if not reusing the main one
+    // For this implementation, we added 'attendanceBotToken' to AppSettings
+    const token = settings.attendanceBotToken || settings.telegramBotToken; 
+    
+    if (!token || !socialWorker.telegramChatId) return;
+
+    const message = `
+📅 <b>ATTENDANCE ALERT</b> 📅
+
+<b>Student:</b> ${student.name_en} (${student.name_ar})
+<b>Class:</b> ${student.grade} - ${student.section}
+<b>Absence Count:</b> ${totalDays} Days
+
+⚠️ <i>This student has reached a critical absence threshold.</i>
+Please initiate the required intervention protocol.
+    `;
+
+    await sendTelegramMessage(message, token, socialWorker.telegramChatId);
+};

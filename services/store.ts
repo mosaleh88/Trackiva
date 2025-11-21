@@ -1,6 +1,7 @@
 
 import { Student, AttendanceRecord, EPass, ReceptionLog, AttendanceStatus, UserRole, ScheduleConfig, TimeSlot, EPassDestination, AppSettings, ClinicVisit, User } from '../types';
 import { MOCK_STUDENTS, MOCK_USERS_SEED, DEFAULT_DESTINATIONS, NAV_ITEMS } from '../constants';
+import { sendAttendanceAlert } from './telegramService';
 
 // This service simulates the Supabase backend by persisting data to localStorage
 // ensuring the app works "offline" or without a real backend connected.
@@ -38,7 +39,7 @@ const generateDefaultPermissions = () => {
 };
 
 class MockStore {
-  private readonly STORAGE_KEY = 'trackiva_db_v9'; // Increment version
+  private readonly STORAGE_KEY = 'trackiva_db_v10'; // Increment version
   
   private data: {
     students: Student[];
@@ -70,6 +71,7 @@ class MockStore {
           this.data.settings = { 
               maxPassesPerDay: 4,
               rolePermissions: generateDefaultPermissions(),
+              attendanceSettings: { absentPeriodThreshold: 3, countAllExcusedAsExcusedDay: true, alertThresholds: [3, 6, 10, 15] },
               telegramBotToken: '',
               telegramChatId: '',
               earlyLeaveBotToken: '',
@@ -84,6 +86,12 @@ class MockStore {
       }
       if (!this.data.settings.notificationRules) {
           this.data.settings.notificationRules = { 'UNAUTHORIZED': true };
+      }
+      if (!this.data.settings.attendanceSettings) {
+          this.data.settings.attendanceSettings = { absentPeriodThreshold: 3, countAllExcusedAsExcusedDay: true, alertThresholds: [3, 6, 10, 15] };
+      }
+      if (!this.data.settings.attendanceSettings.alertThresholds) {
+          this.data.settings.attendanceSettings.alertThresholds = [3, 6, 10, 15];
       }
       if (!this.data.clinicVisits) {
           this.data.clinicVisits = [];
@@ -103,6 +111,7 @@ class MockStore {
         settings: { 
             maxPassesPerDay: 4,
             rolePermissions: generateDefaultPermissions(),
+            attendanceSettings: { absentPeriodThreshold: 3, countAllExcusedAsExcusedDay: true, alertThresholds: [3, 6, 10, 15] },
             telegramBotToken: '',
             telegramChatId: '',
             earlyLeaveBotToken: '',
@@ -221,6 +230,18 @@ class MockStore {
     this.save();
   }
 
+  // --- Social Worker Lookup ---
+  getSocialWorkerForStudent(studentId: string): User | undefined {
+      const student = this.data.students.find(s => s.id === studentId);
+      if (!student) return undefined;
+
+      // Find user with Role SOCIAL_WORKER who is assigned to this student's class
+      return this.data.users.find(u => 
+          u.role === UserRole.SOCIAL_WORKER && 
+          u.assignedClasses?.some(ac => ac.grade === student.grade && ac.section === student.section)
+      );
+  }
+
   // --- Schedule Management ---
   getSchedule() {
     return this.data.schedule;
@@ -284,6 +305,44 @@ class MockStore {
       a => !(a.studentId === studentId && a.date === date && a.period === period)
     );
     this.save();
+  }
+
+  // Check total absences for a student and trigger alert if threshold met
+  checkAttendanceAlert(studentId: string) {
+      const student = this.data.students.find(s => s.id === studentId);
+      if (!student) return;
+
+      const settings = this.data.settings.attendanceSettings;
+      const thresholds = settings?.alertThresholds || [3, 6, 10, 15];
+      const threshold = settings?.absentPeriodThreshold || 3;
+
+      // Get all attendance records
+      const records = this.data.attendance.filter(a => a.studentId === studentId);
+      
+      // Group by date
+      const byDate: Record<string, AttendanceRecord[]> = {};
+      records.forEach(r => {
+          if (!byDate[r.date]) byDate[r.date] = [];
+          byDate[r.date].push(r);
+      });
+
+      // Count Total Absent Days
+      let totalAbsentDays = 0;
+      Object.values(byDate).forEach(dayRecords => {
+          const unexcused = dayRecords.filter(r => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
+          if (unexcused >= threshold) {
+              totalAbsentDays++;
+          }
+      });
+
+      // Check if total matches a configured threshold
+      // Note: We check exact match to trigger only once per threshold
+      if (thresholds.includes(totalAbsentDays)) {
+          const socialWorker = this.getSocialWorkerForStudent(studentId);
+          if (socialWorker) {
+              sendAttendanceAlert(student, totalAbsentDays, socialWorker);
+          }
+      }
   }
 
   // --- EPass ---
@@ -412,6 +471,9 @@ class MockStore {
   getReportsData(startDate: string, endDate: string, filters?: { grade?: string, section?: string, gender?: string }) {
       const start = new Date(startDate).setHours(0,0,0,0);
       const end = new Date(endDate).setHours(23,59,59,999);
+      
+      const threshold = this.data.settings.attendanceSettings?.absentPeriodThreshold ?? 3;
+      const countExcusedAsDay = this.data.settings.attendanceSettings?.countAllExcusedAsExcusedDay ?? true;
 
       // 1. Filter Students based on Global Filters
       let targetStudents = this.data.students;
@@ -462,9 +524,9 @@ class MockStore {
 
           studentAttendance[studentId].total++;
 
-          if (unexcused >= 3) {
+          if (unexcused >= threshold) {
               studentAttendance[studentId].A++;
-          } else if (totalRecs > 0 && excused === totalRecs) {
+          } else if (countExcusedAsDay && totalRecs > 0 && excused === totalRecs) {
               studentAttendance[studentId].EA++;
           } else if (early) {
               studentAttendance[studentId].EL++;
@@ -598,6 +660,9 @@ class MockStore {
     const today = new Date().toISOString().split('T')[0];
     const activePasses = this.data.ePasses.filter(p => p.status === 'Active');
     
+    const threshold = this.data.settings.attendanceSettings?.absentPeriodThreshold ?? 3;
+    const countExcusedAsDay = this.data.settings.attendanceSettings?.countAllExcusedAsExcusedDay ?? true;
+
     // Calculate Overdue Passes
     const overduePasses = activePasses.filter(p => {
         if (p.type === 'UNAUTHORIZED') return true;
@@ -640,11 +705,11 @@ class MockStore {
         const early = records.some(r => r.status === AttendanceStatus.EARLY_LEAVE);
         const totalMarked = records.length;
 
-        // Rule 1: If 3 or more absent periods -> ABSENT (Excluded from P/L/EL counts)
-        if (unexcused >= 3) return; // Effectively counts as Unexcused Absent
+        // Rule 1: If threshold reached -> ABSENT (Excluded from P/L/EL counts)
+        if (unexcused >= threshold) return; // Effectively counts as Unexcused Absent
 
         // Rule 2: If ALL marked periods are Excused Absent -> ABSENT (Excused)
-        if (totalMarked > 0 && excused === totalMarked) {
+        if (countExcusedAsDay && totalMarked > 0 && excused === totalMarked) {
             excusedAbsentCount++;
             return;
         }
@@ -656,7 +721,7 @@ class MockStore {
         } else if (late) {
             lateCount++;
         } else {
-            // This captures students who are fully Present OR have 1-2 Absents but pass the threshold check
+            // This captures students who are fully Present OR have < threshold Absents
             presentCount++;
         }
     });

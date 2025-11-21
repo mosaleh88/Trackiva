@@ -49,6 +49,7 @@ export interface User {
   email: string;
   role: UserRole;
   assignedClasses?: AssignedClass[]; // Array of { grade, section }
+  telegramChatId?: string; // Personal Chat ID for notifications (Social Worker)
 }
 
 export interface AttendanceRecord {
@@ -84,9 +85,17 @@ export interface EPass {
 // Permissions: Key is Role Name, Value is array of NAV_ITEM IDs
 export type RolePermissions = Record<string, string[]>;
 
+export interface AttendanceConfig {
+  absentPeriodThreshold: number; // Default 3
+  countAllExcusedAsExcusedDay: boolean; // Default true
+  // Alerts configuration
+  alertThresholds: number[]; // e.g. [1, 3, 6, 10, 15]
+}
+
 export interface AppSettings {
   maxPassesPerDay: number;
   rolePermissions: RolePermissions;
+  attendanceSettings: AttendanceConfig;
   
   // Default Security/Unauthorized Alerts
   telegramBotToken?: string;
@@ -95,6 +104,9 @@ export interface AppSettings {
   // Early Leave Alerts
   earlyLeaveBotToken?: string;
   earlyLeaveChatId?: string;
+
+  // Attendance Alerts (Social Worker)
+  attendanceBotToken?: string;
 
   // Targeted/Watchlist Student Alerts
   watchlistBotToken?: string;
