@@ -355,8 +355,11 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     try {
         if (editingUser) {
           await store.updateUser(editingUser.id, formData);
+          alert("User updated successfully.");
         } else {
           await store.addUser(formData);
+          // Note: Backend now handles Auth creation via /api/create_user
+          alert("User created successfully!\n\nTemporary Password: TempPassword123!\nPlease share this with the user.");
         }
         setEditingUser(null);
         setIsAddingUser(false);
@@ -364,7 +367,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         await refreshData();
     } catch (e) {
         console.error(e);
-        alert("Failed to save user");
+        alert("Failed to save user: " + (e as any).message);
     } finally {
         setIsLoading(false);
     }
