@@ -186,12 +186,28 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   }, [students, searchTerm, filterGrade, filterSection, filterGender, sortBy, sortOrder]);
 
   const handleSaveStudent = async () => {
+    if (!formData.studentNumber || !formData.name_en || !formData.grade || !formData.section) {
+        alert("Please fill in all required fields (ID, Name EN, Grade, Section)");
+        return;
+    }
+
     setIsLoading(true);
     try {
+        const studentData = {
+            ...formData,
+            gender: formData.gender || 'Male',
+            transportMode: formData.transportMode || 'Bus',
+            // Ensure all fields are defined to prevent Supabase issues
+            name_ar: formData.name_ar || '',
+            busRoute: formData.busRoute || '',
+            familyId: formData.familyId || '',
+            isWatchlisted: formData.isWatchlisted || false
+        };
+
         if (editingStudent) {
-          await store.updateStudent(editingStudent.id, formData);
+          await store.updateStudent(editingStudent.id, studentData);
         } else {
-          await store.addStudent({ ...formData, gender: formData.gender || 'Male' });
+          await store.addStudent(studentData);
         }
         setEditingStudent(null);
         setIsAddingStudent(false);
@@ -199,7 +215,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         await refreshData();
     } catch (error) {
         console.error(error);
-        alert("Failed to save student.");
+        alert("Failed to save student. Ensure ID Number is unique.");
     } finally {
         setIsLoading(false);
     }
@@ -351,13 +367,26 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   };
 
   const handleSaveUser = async () => {
+    if (!formData.name || !formData.email) {
+        alert("Name and Email are required.");
+        return;
+    }
+
     setIsLoading(true);
     try {
+        const userData = {
+            name: formData.name,
+            email: formData.email,
+            role: formData.role || UserRole.TEACHER, // Enforce default Role
+            assignedClasses: formData.assignedClasses || [],
+            telegramChatId: formData.telegramChatId || null
+        };
+
         if (editingUser) {
-          await store.updateUser(editingUser.id, formData);
+          await store.updateUser(editingUser.id, userData);
           alert("User updated successfully.");
         } else {
-          await store.addUser(formData);
+          await store.addUser(userData);
           // Note: Backend now handles Auth creation via /api/create_user
           alert("User created successfully!\n\nTemporary Password: TempPassword123!\nPlease share this with the user.");
         }
@@ -457,16 +486,18 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const handleSaveDest = async () => {
       setIsLoading(true);
       try {
+          const destData = {
+              label_en: formData.label_en || 'New Destination',
+              label_ar: formData.label_ar || 'وجهة جديدة',
+              iconName: formData.iconName || 'Ticket', // Default icon
+              colorTheme: formData.colorTheme || 'blue', // Default color
+              maxDuration: parseInt(formData.maxDuration) || 10 // Default duration
+          };
+
           if (editingDest) {
-              await store.updateDestination(editingDest.id, formData);
+              await store.updateDestination(editingDest.id, destData);
           } else {
-              await store.addDestination({
-                  label_en: formData.label_en || 'New Destination',
-                  label_ar: formData.label_ar || 'وجهة جديدة',
-                  iconName: formData.iconName || 'Ticket',
-                  colorTheme: formData.colorTheme || 'blue',
-                  maxDuration: parseInt(formData.maxDuration) || 10
-              });
+              await store.addDestination(destData);
           }
           setEditingDest(null);
           setIsAddingDest(false);
