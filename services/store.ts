@@ -415,10 +415,11 @@ class SupabaseStore {
               const schedule = this.data.schedule[scheduleType];
               const currentMinutes = today.getHours() * 60 + today.getMinutes();
 
+              // FIX: Only mark periods that START AFTER current time
               const remainingPeriods = schedule.filter(s => {
                   if (s.type !== 'Period') return false;
-                  const [endH, endM] = s.endTime.split(':').map(Number);
-                  return (endH * 60 + endM) > currentMinutes;
+                  const [startH, startM] = s.startTime.split(':').map(Number);
+                  return (startH * 60 + startM) > currentMinutes;
               });
 
               // Async mark attendance

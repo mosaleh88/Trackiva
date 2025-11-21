@@ -263,25 +263,30 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
                                 : 'border-slate-200 shadow-sm hover:shadow-md';
 
                             return (
-                                <div key={student.id} className={`bg-white border rounded-xl p-4 transition-all ${cardBorderClass} relative`}>
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div>
-                                            <h4 className="font-bold text-slate-800 truncate">{lang === 'en' ? student.name_en : student.name_ar}</h4>
+                                <div key={student.id} className={`bg-white border rounded-xl p-4 transition-all ${cardBorderClass} relative overflow-hidden`}>
+                                    {/* Card Header: Fixed layout to prevent overflow */}
+                                    <div className="flex justify-between items-start mb-3 gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-bold text-slate-800 truncate" title={lang === 'en' ? student.name_en : student.name_ar}>
+                                                {lang === 'en' ? student.name_en : student.name_ar}
+                                            </h4>
                                             <p className="text-xs text-slate-500 font-mono">#{student.studentNumber}</p>
                                         </div>
-                                        {activePass ? (
-                                            isUnauthorized ? (
-                                                <Badge color='red' className="animate-pulse font-bold">{t.unauthorized}</Badge>
+                                        <div className="shrink-0">
+                                            {activePass ? (
+                                                isUnauthorized ? (
+                                                    <Badge color='red' className="animate-pulse font-bold">{t.unauthorized}</Badge>
+                                                ) : (
+                                                    <Badge color={isOverdue ? 'red' : 'green'} className="animate-pulse">
+                                                        {isOverdue ? t.passOverdue : t.passActive}
+                                                    </Badge>
+                                                )
                                             ) : (
-                                                <Badge color={isOverdue ? 'red' : 'green'} className="animate-pulse">
-                                                    {isOverdue ? t.passOverdue : t.passActive}
-                                                </Badge>
-                                            )
-                                        ) : (
-                                            <div className={`text-[10px] font-bold px-2 py-1 rounded-full ${limitReached ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
-                                                {t.passes}: {dailyCount}/{maxPasses}
-                                            </div>
-                                        )}
+                                                <div className={`text-[10px] font-bold px-2 py-1 rounded-full ${limitReached ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                    {t.passes}: {dailyCount}/{maxPasses}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {isUnauthorized && activePass ? (

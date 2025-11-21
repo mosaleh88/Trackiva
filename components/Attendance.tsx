@@ -258,7 +258,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
   const currentStudent = students.find(s => s.id === selectedStudentForReason);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24"> {/* Add padding bottom to clear fixed button */}
       {/* Reason Modal */}
       {showReasonModal && currentStudent && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -515,12 +515,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
             </div>
           </Card>
 
-          {/* Submit Button */}
-          <div className="flex justify-end sticky bottom-4 z-20">
+          {/* Submit Button - Floating at bottom right */}
+          <div className="fixed bottom-8 right-8 z-50">
             <Button 
                 onClick={handleSubmitAttendance} 
                 disabled={isSubmitting}
-                className={`shadow-xl text-lg px-8 py-3 transition-all ${unsavedChanges ? 'bg-primary hover:bg-blue-700 translate-y-0' : 'bg-slate-400 hover:bg-slate-500 translate-y-0 opacity-90'}`}
+                className={`shadow-xl text-lg px-8 py-3 transition-all rounded-full ${unsavedChanges ? 'bg-primary hover:bg-blue-700 translate-y-0 animate-bounce' : 'bg-slate-400 hover:bg-slate-500 translate-y-0 opacity-90'}`}
             >
                 <Save size={20} /> {isSubmitting ? 'Saving...' : (unsavedChanges ? t.submitChanges : t.attendanceSaved)}
             </Button>

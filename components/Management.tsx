@@ -144,6 +144,13 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const uniqueGrades = Array.from(new Set(students.map(s => s.grade))).sort();
   const uniqueSections = Array.from(new Set(students.map(s => s.section))).sort();
 
+  // FIX: Dynamic Sections for Assigned Classes based on selected grade
+  const availableAssignedClassSections = useMemo(() => {
+      if (!assignedClassGrade) return [];
+      const gradeStudents = students.filter(s => s.grade === assignedClassGrade);
+      return Array.from(new Set(gradeStudents.map(s => s.section))).sort();
+  }, [students, assignedClassGrade]);
+
   const filteredStudents = useMemo(() => {
     let result = students;
 
@@ -825,9 +832,13 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       </Select>
                   </div>
                   <div className="flex-1">
-                       <Select value={assignedClassSection} onChange={e => setAssignedClassSection(e.target.value)}>
+                       <Select 
+                          value={assignedClassSection} 
+                          onChange={e => setAssignedClassSection(e.target.value)}
+                          disabled={!assignedClassGrade}
+                       >
                           <option value="">{t.section}</option>
-                          {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
+                          {availableAssignedClassSections.map(s => <option key={s} value={s}>{s}</option>)}
                       </Select>
                   </div>
                   <Button onClick={handleAddAssignedClass} disabled={!assignedClassGrade || !assignedClassSection} variant="secondary">

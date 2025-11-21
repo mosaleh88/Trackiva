@@ -4,7 +4,7 @@ import { store } from '../services/store';
 import { generateSchoolInsights } from '../services/geminiService';
 import { Language, Student, User } from '../types';
 import { TRANSLATIONS } from '../constants';
-import { BarChart3, Calendar, Download, Filter, Search, User as UserIcon, LayoutDashboard, Activity, Ticket, DoorOpen, ChevronDown, ChevronRight, Printer, Stethoscope, Clock, AlertTriangle, CheckCircle2, ArrowRight, BrainCircuit } from 'lucide-react';
+import { BarChart3, Calendar, Download, Filter, Search, User as UserIcon, LayoutDashboard, Activity, Ticket, DoorOpen, ChevronDown, ChevronRight, Printer, Stethoscope, Clock, AlertTriangle, CheckCircle2, ArrowRight, BrainCircuit, UserCheck } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 interface ReportsProps {
@@ -45,8 +45,9 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   const [student360, setStudent360] = useState<Student | null>(null);
   const [student360Data, setStudent360Data] = useState<any>(null);
   
-  // Attendance Pagination
+  // Pagination States
   const [attendancePage, setAttendancePage] = useState(1);
+  const [epassPage, setEpassPage] = useState(1);
 
   // AI Analyst State
   const [aiInsight, setAiInsight] = useState<string | null>(null);
@@ -61,6 +62,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   // Reset pagination and AI when student changes
   useEffect(() => {
       setAttendancePage(1);
+      setEpassPage(1);
       setAiInsight(null);
   }, [student360]);
 
@@ -150,6 +152,29 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
 
   const totalPages = Math.ceil(dailyAttendance.length / ITEMS_PER_PAGE);
 
+  // --- E-Pass 360 Logic ---
+  const epassHistory = useMemo(() => {
+      if (!student360Data?.history?.epasses) return [];
+      return student360Data.history.epasses;
+  }, [student360Data]);
+
+  const paginatedEPasses = useMemo(() => {
+      const start = (epassPage - 1) * ITEMS_PER_PAGE;
+      return epassHistory.slice(start, start + ITEMS_PER_PAGE);
+  }, [epassHistory, epassPage]);
+
+  const totalEpassPages = Math.ceil(epassHistory.length / ITEMS_PER_PAGE);
+
+  const epassStats = useMemo(() => {
+      const counts: Record<string, number> = {};
+      epassHistory.forEach((p: any) => {
+          const type = p.type === 'UNAUTHORIZED' ? 'Unauthorized' : p.type; 
+          // If type is an ID, try to get label (simplified here to ID/type string)
+          counts[type] = (counts[type] || 0) + 1;
+      });
+      return counts;
+  }, [epassHistory]);
+
   // Recalculate Pie Data based on DAILY status
   const pieData = useMemo(() => {
       let p = 0, ea = 0, a = 0; 
@@ -237,25 +262,10 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   );
 
   // ... (Rest of Render Methods - renderDailySummary, renderAttendanceReports, etc. remain unchanged but utilize the filtered `data` and `students`) ...
-  // Due to file length constraints, I'm including the full logic for the parts that need it and the updated structure.
-
+  
   // --- Daily Summary Logic ---
   const renderDailySummary = () => {
-      // Note: Daily summary in store currently calculates for ALL students. 
-      // Ideally, store.getDataSummary should also accept a userId filter, but for now, 
-      // reports rely on `data` which IS filtered by getReportsData. 
-      // However, the "Daily Summary" tab calls store.getDataSummary() directly usually. 
-      // Let's use the `data` object we fetched if available, or call a filtered summary if needed.
-      
-      // For simplicity in this patch, let's assume the dashboard handles the main daily summary view
-      // and reports focuses on the ranges. 
-      // However, if we want strict consistency, `store.getDataSummary` should also filter. 
-      // But let's stick to the requested changes: ensuring the reports generated here are correct.
-      
       const summary = store.getDataSummary(); 
-      // In a perfect world, we pass userId to getDataSummary too. 
-      // But for this specific task "users... should only see the classes", the primary concern is the detailed lists and dropdowns.
-      
       return (
           <div className="space-y-6 animate-in fade-in">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -697,7 +707,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                            )}
                        </div>
 
-                        {/* E-Pass Log */}
+                        {/* E-Pass Log - ENHANCED */}
                        <div className="border border-slate-200 rounded-xl bg-white overflow-hidden">
                            <button 
                                onClick={() => setShowEPassHistory(!showEPassHistory)}
@@ -711,32 +721,80 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                            </button>
                            
                            {showEPassHistory && (
-                               <div className="max-h-60 overflow-y-auto">
+                               <div>
+                                   {/* Pass Stats */}
+                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-4 bg-slate-50 border-b border-slate-100">
+                                       {Object.entries(epassStats).map(([type, count]: any) => (
+                                           <div key={type} className="bg-white p-2 rounded border border-slate-200 text-center shadow-sm">
+                                               <div className="text-[10px] uppercase text-slate-500 font-bold">{type}</div>
+                                               <div className="text-lg font-bold text-slate-800">{count}</div>
+                                           </div>
+                                       ))}
+                                   </div>
+
                                    <table className="w-full text-left text-sm">
                                        <thead className="bg-white border-b border-slate-100 text-slate-500">
                                            <tr>
                                                <th className="px-6 py-3">{t.date}</th>
+                                               <th className="px-6 py-3">Time</th>
                                                <th className="px-6 py-3">{t.type}</th>
+                                               <th className="px-6 py-3">{t.issuedBy}</th>
                                                <th className="px-6 py-3">Duration</th>
                                            </tr>
                                        </thead>
                                        <tbody className="divide-y divide-slate-50">
-                                           {student360Data.history.epasses.map((p: any) => (
-                                               <tr key={p.id}>
-                                                   <td className="px-6 py-3">{new Date(p.startTime).toLocaleDateString()}</td>
-                                                   <td className="px-6 py-3">
-                                                       {p.type === 'UNAUTHORIZED' ? <span className="text-red-600 font-bold">Unauthorized</span> : p.type}
-                                                   </td>
-                                                   <td className="px-6 py-3 text-slate-500">
-                                                       {p.endTime ? Math.floor((p.endTime - p.startTime) / 60000) + ' mins' : 'Active'}
-                                                   </td>
-                                               </tr>
-                                           ))}
-                                           {student360Data.history.epasses.length === 0 && (
-                                               <tr><td colSpan={3} className="px-6 py-4 text-center text-slate-400">No e-pass records found</td></tr>
+                                           {paginatedEPasses.length === 0 ? (
+                                               <tr><td colSpan={5} className="px-6 py-4 text-center text-slate-400">No e-pass records found</td></tr>
+                                           ) : (
+                                               paginatedEPasses.map((p: any) => {
+                                                   // Resolve Issuer Name
+                                                   const issuer = store.getUser(p.teacherId)?.name || 'Unknown';
+                                                   // Resolve Destination Name (if not unauthorized)
+                                                   let destName = p.type;
+                                                   if (p.type !== 'UNAUTHORIZED') {
+                                                       const d = store.getDestinations().find(dest => dest.id === p.type);
+                                                       if (d) destName = lang === 'en' ? d.label_en : d.label_ar;
+                                                   }
+
+                                                   return (
+                                                       <tr key={p.id}>
+                                                           <td className="px-6 py-3">{new Date(p.startTime).toLocaleDateString()}</td>
+                                                           <td className="px-6 py-3 font-mono text-xs text-slate-500">
+                                                               {new Date(p.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                           </td>
+                                                           <td className="px-6 py-3">
+                                                               {p.type === 'UNAUTHORIZED' ? <span className="text-red-600 font-bold text-xs bg-red-50 px-2 py-1 rounded">Unauthorized</span> : <Badge color="blue">{destName}</Badge>}
+                                                           </td>
+                                                           <td className="px-6 py-3 text-slate-600 text-xs">{issuer}</td>
+                                                           <td className="px-6 py-3 text-slate-500 font-mono text-xs">
+                                                               {p.endTime ? Math.floor((p.endTime - p.startTime) / 60000) + ' mins' : <span className="text-green-600 font-bold animate-pulse">Active</span>}
+                                                           </td>
+                                                       </tr>
+                                                   );
+                                               })
                                            )}
                                        </tbody>
                                    </table>
+                                   {/* E-Pass Pagination Controls */}
+                                   {totalEpassPages > 1 && (
+                                       <div className="flex justify-end items-center gap-2 p-3 border-t border-slate-100">
+                                           <button 
+                                               onClick={() => setEpassPage(p => Math.max(1, p - 1))}
+                                               disabled={epassPage === 1}
+                                               className="px-3 py-1 text-xs border rounded hover:bg-slate-50 disabled:opacity-50"
+                                           >
+                                               Previous
+                                           </button>
+                                           <span className="text-xs text-slate-500">Page {epassPage} of {totalEpassPages}</span>
+                                           <button 
+                                               onClick={() => setEpassPage(p => Math.min(totalEpassPages, p + 1))}
+                                               disabled={epassPage === totalEpassPages}
+                                               className="px-3 py-1 text-xs border rounded hover:bg-slate-50 disabled:opacity-50"
+                                           >
+                                               Next
+                                           </button>
+                                       </div>
+                                   )}
                                </div>
                            )}
                        </div>
@@ -794,57 +852,70 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
     <div className="space-y-6 pb-12">
       {/* Header Controls */}
       <Card>
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-end lg:items-center mb-6">
-            <div className="flex gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto max-w-full">
-                {TABS.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab.id ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        <tab.icon size={16} />
-                        {(t as any)[tab.labelKey]}
-                    </button>
-                ))}
-            </div>
-            
-            <div className="flex flex-wrap gap-2 items-end">
+        {/* Tabs */}
+        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg inline-flex mb-6 overflow-x-auto max-w-full">
+            {TABS.map(tab => (
+                <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab.id ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    <tab.icon size={16} />
+                    {(t as any)[tab.labelKey]}
+                </button>
+            ))}
+        </div>
+
+        {/* Unified Toolbar - Only show for non-daily, non-360 tabs, OR allow dates for all if applicable */}
+        {activeTab !== 'student360' && activeTab !== 'daily' && (
+            <div className="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4">
+                {/* Date Pickers - NOW FIRST */}
                 <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">{t.startDate}</label>
-                    <div className="relative">
-                        <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="py-1.5 text-sm w-36" />
-                    </div>
+                    <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="py-2 text-sm w-36" />
                 </div>
                 <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">{t.endDate}</label>
-                    <div className="relative">
-                        <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="py-1.5 text-sm w-36" />
-                    </div>
+                    <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="py-2 text-sm w-36" />
                 </div>
-                <Button onClick={refreshReport} className="h-[34px] text-sm">
+
+                {/* Generate Button */}
+                <Button onClick={refreshReport} className="h-[38px]">
                     {t.generate}
                 </Button>
-            </div>
-        </div>
 
-        {/* Advanced Filters (Only for applicable tabs) */}
-        {activeTab !== 'student360' && activeTab !== 'daily' && (
-            <div className="flex flex-wrap gap-3 items-center pt-4 border-t border-slate-100">
-                <Filter size={14} className="text-slate-400" />
-                <span className="text-xs font-bold text-slate-500">{t.filterBy}:</span>
-                <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="py-1 text-xs w-24">
-                    <option value="All">{t.allGrades}</option>
-                    {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
-                </Select>
-                <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="py-1 text-xs w-24">
-                    <option value="All">{t.allSections}</option>
-                    {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
-                </Select>
-                <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="py-1 text-xs w-24">
-                    <option value="All">{t.allGenders}</option>
-                    <option value="Male">{t.male}</option>
-                    <option value="Female">{t.female}</option>
-                </Select>
+                {/* Divider */}
+                <div className="w-px h-8 bg-slate-200 mx-2 self-center"></div>
+
+                {/* Filters */}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-slate-400">
+                        <Filter size={16} />
+                        <span className="text-xs font-bold text-slate-500 hidden md:inline">{t.filterBy}:</span>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">{t.grade}</label>
+                        <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="py-2 text-sm w-24">
+                            <option value="All">{t.allGrades}</option>
+                            {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                        </Select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">{t.section}</label>
+                        <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="py-2 text-sm w-24">
+                            <option value="All">{t.allSections}</option>
+                            {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
+                        </Select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">{t.gender}</label>
+                        <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="py-2 text-sm w-24">
+                            <option value="All">{t.allGenders}</option>
+                            <option value="Male">{t.male}</option>
+                            <option value="Female">{t.female}</option>
+                        </Select>
+                    </div>
+                </div>
             </div>
         )}
       </Card>
