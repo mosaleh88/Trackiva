@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Select, Badge, Input } from './ui';
 import { store } from '../services/store';
-import { Language, EPass as EPassType, Student, EPassDestination, UserRole } from '../types';
+import { Language, EPass as EPassType, Student, EPassDestination, UserRole, User } from '../types';
 import { TRANSLATIONS, ROLES_LIST } from '../constants';
 import { Search, Filter, Ticket, Library, Stethoscope, Armchair, Briefcase, Coffee, Gamepad2, Music, Dumbbell, Beaker, BookOpen, Users, Ban, AlertOctagon, LayoutDashboard, AlertTriangle, Clock } from 'lucide-react';
 import { sendUnauthorizedAlert, sendPassCreatedAlert } from '../services/telegramService';
@@ -20,13 +20,14 @@ const ICON_MAP: any = {
 
 const UNAUTHORIZED_TYPE = 'UNAUTHORIZED';
 
-export const EPass: React.FC<EPassProps> = ({ lang }) => {
+export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole }) => {
   const t = TRANSLATIONS[lang];
   const [activeTab, setActiveTab] = useState<'issue' | 'dashboard'>('issue');
   const [passes, setPasses] = useState<EPassType[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [destinations, setDestinations] = useState<EPassDestination[]>([]);
   const [maxPasses, setMaxPasses] = useState(4);
+  const [users, setUsers] = useState<User[]>([]);
   
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState("");
@@ -46,6 +47,7 @@ export const EPass: React.FC<EPassProps> = ({ lang }) => {
       // In a real implementation: setStudents(store.getStudentsForUser(currentUserId));
       setStudents(store.getStudents()); 
       
+      setUsers(store.getUsers());
       setDestinations(store.getDestinations());
       setMaxPasses(store.getSettings().maxPassesPerDay);
   };
@@ -55,6 +57,13 @@ export const EPass: React.FC<EPassProps> = ({ lang }) => {
     const interval = setInterval(refresh, 5000); // Poll every 5s
     return () => clearInterval(interval);
   }, []);
+
+  const currentUser = useMemo(() => {
+      if (!currentUserRole) return undefined;
+      // Find a user that matches the current simulated role.
+      // In a real app, this would be the actual logged-in user from auth context.
+      return users.find(u => u.role === currentUserRole);
+  }, [currentUserRole, users]);
 
   // --- Derived Data for Dashboard ---
   const destinationStats = useMemo(() => {
@@ -123,6 +132,7 @@ export const EPass: React.FC<EPassProps> = ({ lang }) => {
     store.createEPass({
         studentId,
         type,
+        teacherId: currentUser?.id
     });
 
     const student = students.find(s => s.id === studentId);
@@ -404,6 +414,7 @@ export const EPass: React.FC<EPassProps> = ({ lang }) => {
                           <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
                               <th className="p-3 rounded-tl-lg text-start">{t.studentName}</th>
                               <th className="p-3 text-start">{t.grade}</th>
+                              <th className="p-3 text-start">{t.issuedBy}</th>
                               <th className="p-3 text-start">{t.where}</th>
                               <th className="p-3 text-start">{t.startTime}</th>
                               <th className="p-3 text-start">{t.timeElapsed}</th>
@@ -413,13 +424,14 @@ export const EPass: React.FC<EPassProps> = ({ lang }) => {
                       <tbody className="divide-y divide-slate-100">
                           {passes.length === 0 ? (
                               <tr>
-                                  <td colSpan={6} className="p-8 text-center text-slate-400 italic">
+                                  <td colSpan={7} className="p-8 text-center text-slate-400 italic">
                                       No active passes
                                   </td>
                               </tr>
                           ) : (
                               passes.map(pass => {
                                   const student = students.find(s => s.id === pass.studentId);
+                                  const issuer = users.find(u => u.id === pass.teacherId);
                                   const isUnauthorized = pass.type === UNAUTHORIZED_TYPE;
                                   let destLabel = t.unauthorized;
                                   let destColor = 'red';
@@ -441,6 +453,9 @@ export const EPass: React.FC<EPassProps> = ({ lang }) => {
                                           </td>
                                           <td className="p-3">
                                               <Badge color="gray">{student?.grade} - {student?.section}</Badge>
+                                          </td>
+                                          <td className="p-3 text-sm text-slate-600">
+                                              {issuer ? issuer.name : <span className="text-slate-300">-</span>}
                                           </td>
                                           <td className="p-3">
                                               <Badge color={isUnauthorized ? 'red' : (destColor as any)}>

@@ -330,6 +330,7 @@ export const TRANSLATIONS = {
     activeStudentList: "Active Students List",
     timeElapsed: "Time Elapsed",
     where: "Where",
+    issuedBy: "Issued By",
     // Reception
     readyToProcess: "Ready to Process",
     selectStudentMsg: "Select a student from the list to begin",
@@ -590,6 +591,7 @@ export const TRANSLATIONS = {
     activeStudentList: "قائمة الطلاب النشطين",
     timeElapsed: "المدة المنقضية",
     where: "الوجهة",
+    issuedBy: "صدر بواسطة",
     // Reception
     readyToProcess: "جاهز للمعالجة",
     selectStudentMsg: "اختر طالباً من القائمة للبدء",
