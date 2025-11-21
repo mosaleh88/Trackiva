@@ -1,4 +1,3 @@
-
 import { Student, AttendanceRecord, EPass, ReceptionLog, AttendanceStatus, UserRole, ScheduleConfig, TimeSlot, EPassDestination, AppSettings, ClinicVisit, User } from '../types';
 import { DEFAULT_DESTINATIONS, NAV_ITEMS } from '../constants';
 import { sendAttendanceAlert } from './telegramService';
@@ -520,14 +519,15 @@ class SupabaseStore {
     };
   }
 
-  getReportsData(startDate: string, endDate: string, filters?: { grade?: string, section?: string, gender?: string }) {
+  getReportsData(startDate: string, endDate: string, filters?: { grade?: string, section?: string, gender?: string }, userId?: string) {
       const start = new Date(startDate).setHours(0,0,0,0);
       const end = new Date(endDate).setHours(23,59,59,999);
       
       const threshold = this.data.settings.attendanceSettings?.absentPeriodThreshold ?? 3;
       const countExcusedAsDay = this.data.settings.attendanceSettings?.countAllExcusedAsExcusedDay ?? true;
 
-      let targetStudents = this.data.students;
+      let targetStudents = userId ? this.getStudentsForUser(userId) : this.data.students;
+      
       if (filters) {
           if (filters.grade && filters.grade !== 'All') targetStudents = targetStudents.filter(s => s.grade === filters.grade);
           if (filters.section && filters.section !== 'All') targetStudents = targetStudents.filter(s => s.section === filters.section);

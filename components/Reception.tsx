@@ -1,18 +1,18 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
-import { Student, Language } from '../types';
+import { Student, Language, User } from '../types';
 import { TRANSLATIONS, EARLY_LEAVE_REASONS, PICKUP_RELATIONS } from '../constants';
-import { Search, ArrowRight, UserCheck, LogOut, Clock, MapPin, Bus, User, X, Filter, AlertTriangle, CheckCircle2, Info, Users } from 'lucide-react';
+import { Search, ArrowRight, UserCheck, LogOut, Clock, MapPin, Bus, User as UserIcon, X, Filter, AlertTriangle, CheckCircle2, Info, Users } from 'lucide-react';
 import QRCode from 'qrcode';
 import { sendEarlyLeaveAlert } from '../services/telegramService';
 
 interface ReceptionProps {
   lang: Language;
+  currentUser: User | null;
 }
 
-export const Reception: React.FC<ReceptionProps> = ({ lang }) => {
+export const Reception: React.FC<ReceptionProps> = ({ lang, currentUser }) => {
   const t = TRANSLATIONS[lang];
   const [mode, setMode] = useState<'LateArrival' | 'EarlyLeave'>('LateArrival');
   const [lastLog, setLastLog] = useState<any>(null);
@@ -39,8 +39,10 @@ export const Reception: React.FC<ReceptionProps> = ({ lang }) => {
   const [pickerId, setPickerId] = useState("");
 
   useEffect(() => {
-    setStudents(store.getStudents());
-  }, []);
+    if (currentUser) {
+        setStudents(store.getStudentsForUser(currentUser.id));
+    }
+  }, [currentUser]);
 
   // Handle Student Selection Changes (QR Code + Siblings Check)
   useEffect(() => {

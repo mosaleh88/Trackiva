@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Select, Badge, Input } from './ui';
 import { store } from '../services/store';
@@ -40,13 +39,19 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
   const [overrideMap, setOverrideMap] = useState<Record<string, boolean>>({});
 
   const refresh = () => {
-      setPasses(store.getEPasses().filter(p => p.status === 'Active'));
+      let relevantStudents: Student[];
       
       if (currentUserId) {
-          setStudents(store.getStudentsForUser(currentUserId));
+          relevantStudents = store.getStudentsForUser(currentUserId);
       } else {
-          setStudents(store.getStudents()); 
+          relevantStudents = store.getStudents(); 
       }
+      setStudents(relevantStudents);
+      
+      // Filter active passes to only show those for the relevant students
+      const relevantStudentIds = new Set(relevantStudents.map(s => s.id));
+      const allActivePasses = store.getEPasses().filter(p => p.status === 'Active');
+      setPasses(allActivePasses.filter(p => relevantStudentIds.has(p.studentId)));
       
       setUsers(store.getUsers());
       setDestinations(store.getDestinations());

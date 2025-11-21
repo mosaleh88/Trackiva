@@ -221,8 +221,8 @@ const App = () => {
         <div className="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50/50">
             <div className="max-w-7xl mx-auto">
                 {activeTab === 'dashboard' && <Dashboard role={currentUser.role} lang={lang} />}
-                {activeTab === 'attendance' && <Attendance lang={lang} />}
-                {activeTab === 'reception' && <Reception lang={lang} />}
+                {activeTab === 'attendance' && <Attendance lang={lang} currentUser={currentUser} />}
+                {activeTab === 'reception' && <Reception lang={lang} currentUser={currentUser} />}
                 {activeTab === 'epass' && (
                     <EPass 
                         lang={lang} 
@@ -231,8 +231,8 @@ const App = () => {
                     />
                 )}
                 {activeTab === 'management' && <Management lang={lang} />}
-                {activeTab === 'clinic' && <Clinic lang={lang} />}
-                {activeTab === 'reports' && <Reports lang={lang} />}
+                {activeTab === 'clinic' && <Clinic lang={lang} currentUser={currentUser} />}
+                {activeTab === 'reports' && <Reports lang={lang} currentUser={currentUser} />}
                 
                 {(activeTab === 'transport') && (
                     <div className="flex items-center justify-center h-64 text-slate-400">

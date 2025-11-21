@@ -1,17 +1,17 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
-import { Language, ClinicVisit, Student, EPass } from '../types';
+import { Language, ClinicVisit, Student, EPass, User } from '../types';
 import { TRANSLATIONS, CLINIC_SYMPTOMS } from '../constants';
-import { Stethoscope, Activity, AlertTriangle, Search, User, ArrowRight, Siren, FileText, Coffee, Plus, X } from 'lucide-react';
+import { Stethoscope, Activity, AlertTriangle, Search, User as UserIcon, ArrowRight, Siren, FileText, Coffee, Plus, X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface ClinicProps {
   lang: Language;
+  currentUser: User | null;
 }
 
-export const Clinic: React.FC<ClinicProps> = ({ lang }) => {
+export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
   const t = TRANSLATIONS[lang];
   
   const [activeTab, setActiveTab] = useState<'queue' | 'history' | 'analytics' | 'report'>('queue');
@@ -47,11 +47,13 @@ export const Clinic: React.FC<ClinicProps> = ({ lang }) => {
       refresh();
       const interval = setInterval(refresh, 10000);
       return () => clearInterval(interval);
-  }, []);
+  }, [currentUser]);
 
   const refresh = () => {
       setVisits(store.getClinicVisits());
-      setStudents(store.getStudents());
+      if (currentUser) {
+          setStudents(store.getStudentsForUser(currentUser.id));
+      }
       // Filter for passes headed to Clinic (assuming ID is 'Clinic' from default destinations)
       const passes = store.getEPasses().filter(p => p.status === 'Active' && p.type === 'Clinic');
       setActivePasses(passes);
@@ -229,7 +231,7 @@ export const Clinic: React.FC<ClinicProps> = ({ lang }) => {
               <div className="flex justify-between items-start mb-4">
                   <div>
                       <h3 className="text-lg font-bold flex items-center gap-2">
-                          <User size={20} /> {lang === 'en' ? student.name_en : student.name_ar}
+                          <UserIcon size={20} /> {lang === 'en' ? student.name_en : student.name_ar}
                       </h3>
                       <p className="text-sm text-slate-500">ID: {student.studentNumber} | {student.grade}-{student.section}</p>
                   </div>
@@ -342,7 +344,7 @@ export const Clinic: React.FC<ClinicProps> = ({ lang }) => {
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                      <Card className="md:col-span-2 flex items-center gap-6">
                          <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
-                             <User size={40} />
+                             <UserIcon size={40} />
                          </div>
                          <div>
                              <h2 className="text-2xl font-bold">{lang === 'en' ? reportStudent.name_en : reportStudent.name_ar}</h2>

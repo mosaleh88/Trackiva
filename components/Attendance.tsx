@@ -1,16 +1,16 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Badge, Input, Select } from './ui';
 import { store } from '../services/store';
-import { Student, AttendanceStatus, Language, TimeSlot } from '../types';
+import { Student, AttendanceStatus, Language, TimeSlot, User } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { Clock, Calendar, Filter, Save, Users, X } from 'lucide-react';
 
 interface AttendanceProps {
   lang: Language;
+  currentUser: User | null;
 }
 
-export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
+export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => {
   const t = TRANSLATIONS[lang];
   const [students, setStudents] = useState<Student[]>([]);
   const [marked, setMarked] = useState<Record<string, AttendanceStatus>>({});
@@ -39,8 +39,10 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang }) => {
   const [bulkActionValue, setBulkActionValue] = useState<string>("");
 
   useEffect(() => {
-    setStudents(store.getStudents()); 
-  }, []);
+    if (currentUser) {
+        setStudents(store.getStudentsForUser(currentUser.id)); 
+    }
+  }, [currentUser]);
 
   // Calculate Available Periods based on Date & Auto-Select Current Period
   useEffect(() => {
