@@ -15,6 +15,27 @@ type Tab = 'users' | 'students' | 'timetable' | 'epass' | 'access' | 'notificati
 
 const STUDENTS_PER_PAGE = 10;
 
+// Helper for natural grade sorting (KG1, KG2, 1, 2, ... 10, 11)
+const gradeSort = (a: string, b: string) => {
+    const isAKG = a.toUpperCase().startsWith('KG');
+    const isBKG = b.toUpperCase().startsWith('KG');
+
+    if (isAKG && isBKG) {
+        return a.localeCompare(b); // KG1 before KG2
+    }
+    if (isAKG) return -1; // KG comes before numbers
+    if (isBKG) return 1;  // Numbers come after KG
+
+    const numA = parseInt(a);
+    const numB = parseInt(b);
+
+    if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB;
+    }
+    return a.localeCompare(b);
+};
+
+
 export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const t = TRANSLATIONS[lang];
   const [activeTab, setActiveTab] = useState<Tab>('users');
@@ -151,7 +172,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
   // --- Student Logic ---
 
-  const uniqueGrades = Array.from(new Set(students.map(s => s.grade))).sort();
+  // Use the custom gradeSort to ensure KG1, KG2, 1, 2 order
+  const uniqueGrades = Array.from(new Set(students.map(s => s.grade))).sort(gradeSort);
   const uniqueSections = Array.from(new Set(students.map(s => s.section))).sort();
 
   // FIX: Dynamic Sections for Assigned Classes based on selected grade
@@ -186,8 +208,12 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         valA = a.name_en.toLowerCase();
         valB = b.name_en.toLowerCase();
       } else if (sortBy === 'grade') {
-        valA = `${a.grade}-${a.section}`;
-        valB = `${b.grade}-${b.section}`;
+        // Sort by Grade using custom sorter, then by Section
+        const gradeDiff = gradeSort(a.grade, b.grade);
+        if (gradeDiff !== 0) return sortOrder === 'asc' ? gradeDiff : -gradeDiff;
+        
+        valA = a.section;
+        valB = b.section;
       } else {
         valA = a.studentNumber;
         valB = b.studentNumber;
