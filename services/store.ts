@@ -3,7 +3,6 @@ import { Student, AttendanceRecord, EPass, ReceptionLog, AttendanceStatus, UserR
 import { DEFAULT_DESTINATIONS, NAV_ITEMS } from '../constants';
 import { sendAttendanceAlert } from './telegramService';
 import { supabase } from './supabase';
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 // ... (Default Schedules remain unchanged) ...
 const DEFAULT_STANDARD_SCHEDULE: TimeSlot[] = [
@@ -100,7 +99,7 @@ class SupabaseStore {
 
   subscribe(callback: () => void) {
     this.subscribers.add(callback);
-    return () => this.subscribers.delete(callback);
+    return () => { this.subscribers.delete(callback); };
   }
 
   private notify() {
@@ -112,12 +111,12 @@ class SupabaseStore {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public' },
-        (payload) => this.handleRealtimeEvent(payload)
+        (payload: any) => this.handleRealtimeEvent(payload)
       )
       .subscribe();
   }
 
-  private handleRealtimeEvent(payload: RealtimePostgresChangesPayload<any>) {
+  private handleRealtimeEvent(payload: any) {
       const { table, eventType, new: newRecord, old: oldRecord } = payload;
       
       switch (table) {
