@@ -12,6 +12,9 @@ interface AttendanceProps {
 
 export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => {
   const t = TRANSLATIONS[lang];
+  // Initialize with standardized local date
+  const [selectedDate, setSelectedDate] = useState<string>(store.getTodayStr());
+  
   const [students, setStudents] = useState<Student[]>([]);
   const [marked, setMarked] = useState<Record<string, AttendanceStatus>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
@@ -22,9 +25,6 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [selectedStudentForReason, setSelectedStudentForReason] = useState<string | null>(null);
   const [tempReason, setTempReason] = useState("");
-  
-  // Filters & Settings
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
   // Hierarchical Filters
   const [selectedGender, setSelectedGender] = useState<string>("");
@@ -43,6 +43,18 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
         setStudents(store.getStudentsForUser(currentUser.id)); 
     }
   }, [currentUser]);
+
+  // Fetch data if navigating to past dates (older than 7 days)
+  useEffect(() => {
+      const todayStr = store.getTodayStr();
+      const selectedTs = new Date(selectedDate).getTime();
+      const sevenDaysAgoTs = new Date(todayStr).getTime() - (7 * 24 * 60 * 60 * 1000);
+      
+      if (selectedTs < sevenDaysAgoTs) {
+          // Fetch specific date
+          store.fetchDataForRange(selectedDate, selectedDate);
+      }
+  }, [selectedDate]);
 
   // Calculate Available Periods based on Date & Auto-Select Current Period
   useEffect(() => {
@@ -68,7 +80,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
 
     // Logic to auto-select period based on current time
     if (periods.length > 0) {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = store.getTodayStr();
         
         if (selectedDate === todayStr) {
             const now = new Date();
@@ -124,18 +136,16 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
     setMarked(map);
     setReasons(reasonMap);
     setUnsavedChanges(false);
-  }, [selectedDate, selectedPeriod]); 
+  }, [selectedDate, selectedPeriod, store]); // Dependency on store allows re-render on Realtime update
 
   // --- Derived Data for Hierarchical Dropdowns ---
   
-  // 1. Available Grades depend on Gender
   const availableGrades = useMemo(() => {
     if (!selectedGender) return [];
     const genderStudents = students.filter(s => s.gender === selectedGender);
     return Array.from(new Set(genderStudents.map(s => s.grade))).sort();
   }, [students, selectedGender]);
 
-  // 2. Available Sections depend on Gender AND Grade
   const availableSections = useMemo(() => {
     if (!selectedGender || !selectedGrade) return [];
     const classStudents = students.filter(s => 
@@ -144,7 +154,6 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
     return Array.from(new Set(classStudents.map(s => s.section))).sort();
   }, [students, selectedGender, selectedGrade]);
 
-  // 3. Filtered Students (Only show if Section is selected)
   const filteredStudents = useMemo(() => {
     if (!selectedGender || !selectedGrade || !selectedSection) return [];
 
@@ -175,7 +184,6 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
         setShowReasonModal(true);
     } else {
         setMarked(prev => ({ ...prev, [studentId]: status }));
-        // Clear reason if status changes to something else
         setReasons(prev => {
             const next = { ...prev };
             delete next[studentId];
@@ -221,7 +229,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
   const handleSubmitAttendance = async () => {
     setIsSubmitting(true);
     
-    // 1. Save all positive marks (covers all sections modified)
+    // 1. Save all positive marks
     const updates = Object.entries(marked).map(([studentId, status]) => {
         return store.markAttendance({
             studentId,
@@ -230,14 +238,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
             status,
             reason: reasons[studentId]
         }).then(() => {
-            // Trigger check for Absent status to send Alert after save
             if (status === AttendanceStatus.ABSENT_UNEXCUSED) {
                 store.checkAttendanceAlert(studentId);
             }
         });
     });
 
-    // 2. Handle deletions (Unmarking) for visible students
+    // 2. Handle deletions (Unmarking)
     const deletions = filteredStudents.filter(s => !marked[s.id]).map(s => {
         return store.deleteAttendance(s.id, selectedDate, selectedPeriod);
     });
@@ -258,7 +265,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
   const currentStudent = students.find(s => s.id === selectedStudentForReason);
 
   return (
-    <div className="space-y-6 pb-24"> {/* Add padding bottom to clear fixed button */}
+    <div className="space-y-6 pb-24">
       {/* Reason Modal */}
       {showReasonModal && currentStudent && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -515,12 +522,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
             </div>
           </Card>
 
-          {/* Submit Button - Floating at bottom right */}
-          <div className="fixed bottom-8 right-8 z-50">
+          {/* Submit Button - Static at bottom */}
+          <div className="flex justify-end pt-6 border-t border-slate-200 mt-6">
             <Button 
                 onClick={handleSubmitAttendance} 
                 disabled={isSubmitting}
-                className={`shadow-xl text-lg px-8 py-3 transition-all rounded-full ${unsavedChanges ? 'bg-primary hover:bg-blue-700 translate-y-0 animate-bounce' : 'bg-slate-400 hover:bg-slate-500 translate-y-0 opacity-90'}`}
+                className={`shadow-lg text-lg px-8 py-3 transition-all rounded-xl ${unsavedChanges ? 'bg-primary hover:bg-blue-700 animate-pulse' : 'bg-slate-400 hover:bg-slate-50 opacity-90'}`}
             >
                 <Save size={20} /> {isSubmitting ? 'Saving...' : (unsavedChanges ? t.submitChanges : t.attendanceSaved)}
             </Button>

@@ -66,11 +66,33 @@ export const Reception: React.FC<ReceptionProps> = ({ lang, currentUser }) => {
     setIsLoading(true);
     const currentStudent = students.find(s => s.id === selectedStudentId);
     const finalReason = reasonSelect === 'Other' ? reasonText : reasonSelect;
+    
     try {
-        const log = await store.logReception({ studentId: selectedStudentId, type: mode, reason: mode === 'EarlyLeave' ? finalReason : undefined, pickupBy: mode === 'EarlyLeave' ? pickedBy : undefined, pickupId: mode === 'EarlyLeave' ? pickerId : undefined });
-        if (mode === 'EarlyLeave' && currentStudent) sendEarlyLeaveAlert(currentStudent, finalReason, pickedBy, pickerId);
-        setLastLog(log); setSelectedStudentId(""); setReasonSelect(""); setReasonText(""); setPickedBy(""); setPickerId(""); setTimeout(() => setLastLog(null), 4000);
-    } catch (e) { console.error(e); alert("Failed to log reception event"); } finally { setIsLoading(false); }
+        const log = await store.logReception({ 
+            studentId: selectedStudentId, 
+            type: mode, 
+            reason: mode === 'EarlyLeave' ? finalReason : undefined, 
+            pickupBy: mode === 'EarlyLeave' ? pickedBy : undefined, 
+            pickupId: mode === 'EarlyLeave' ? pickerId : undefined 
+        });
+        
+        if (mode === 'EarlyLeave' && currentStudent) {
+            sendEarlyLeaveAlert(currentStudent, finalReason, pickedBy, pickerId);
+        }
+        
+        setLastLog(log); 
+        setSelectedStudentId(""); 
+        setReasonSelect(""); 
+        setReasonText(""); 
+        setPickedBy(""); 
+        setPickerId(""); 
+        setTimeout(() => setLastLog(null), 4000);
+    } catch (e) { 
+        console.error(e); 
+        alert("Failed to log reception event"); 
+    } finally { 
+        setIsLoading(false); 
+    }
   };
 
   const currentStudent = students.find(s => s.id === selectedStudentId);

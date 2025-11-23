@@ -20,15 +20,15 @@ const gradeSort = (a: string, b: string) => {
     const valA = String(a).trim().toUpperCase();
     const valB = String(b).trim().toUpperCase();
 
-    // Check for KG/Pre-K
-    const isAKG = valA.startsWith('K') || valA.startsWith('P') || valA.startsWith('F'); // KG, Pre-K, FS
-    const isBKG = valB.startsWith('K') || valB.startsWith('P') || valB.startsWith('F');
+    // Explicitly check for KG/Pre-K/FS and prioritize them
+    const isAKG = /^(KG|FS|PRE)/.test(valA);
+    const isBKG = /^(KG|FS|PRE)/.test(valB);
 
-    if (isAKG && !isBKG) return -1;
-    if (!isAKG && isBKG) return 1;
-    if (isAKG && isBKG) return valA.localeCompare(valB);
+    if (isAKG && !isBKG) return -1; // KG before Numbers
+    if (!isAKG && isBKG) return 1;  // Numbers after KG
+    if (isAKG && isBKG) return valA.localeCompare(valB); // Sort KG1 before KG2
 
-    // Numeric check
+    // Numeric check for standard grades
     const numA = parseInt(valA.replace(/\D/g, ''));
     const numB = parseInt(valB.replace(/\D/g, ''));
 
@@ -1360,7 +1360,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   <Select 
                       value={userRoleFilter}
                       onChange={e => setUserRoleFilter(e.target.value)}
-                      className="w-40 pr-8"
+                      className="w-40 pr-8 rtl:pl-8"
                   >
                       <option value="All">All Roles</option>
                       {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
@@ -1457,15 +1457,15 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       </div>
                       
                       <div className="flex gap-2">
-                          <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="py-2 text-sm w-24 pr-8">
+                          <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="py-2 text-sm w-24 pr-8 rtl:pl-8">
                               <option value="All">{t.allGrades}</option>
                               {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
                           </Select>
-                          <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="py-2 text-sm w-24 pr-8">
+                          <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="py-2 text-sm w-24 pr-8 rtl:pl-8">
                               <option value="All">{t.allSections}</option>
                               {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
                           </Select>
-                          <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="py-2 text-sm w-24 pr-8">
+                          <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="py-2 text-sm w-24 pr-8 rtl:pl-8">
                               <option value="All">{t.allGenders}</option>
                               <option value="Male">{t.male}</option>
                               <option value="Female">{t.female}</option>
@@ -1478,7 +1478,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                            <ArrowUpDown size={16} className="text-slate-400" />
                            <span className="text-xs font-bold text-slate-500 whitespace-nowrap">{t.sortBy}:</span>
                            <div className="flex items-center gap-1">
-                                <Select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="py-2 text-sm w-32 pr-8">
+                                <Select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="py-2 text-sm w-32 pr-8 rtl:pl-8">
                                     <option value="name">{t.studentName}</option>
                                     <option value="grade">{t.grade}</option>
                                     <option value="number">{t.studentNumber}</option>
