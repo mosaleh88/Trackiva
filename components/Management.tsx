@@ -3,7 +3,7 @@ import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
 import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions, AssignedClass, User, AttendanceConfig } from '../types';
 import { TRANSLATIONS, ROLES_LIST, AVAILABLE_ICONS, COLOR_THEMES, NAV_ITEMS } from '../constants';
-import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, Search, Filter, ArrowUpDown, CreditCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, Download, Loader2, ListChecks, Megaphone } from 'lucide-react';
+import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, Search, Filter, ArrowUpDown, CreditCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, Download, Loader2, ListChecks, Megaphone, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -12,6 +12,8 @@ interface ManagementProps {
 }
 
 type Tab = 'users' | 'students' | 'timetable' | 'epass' | 'access' | 'notifications' | 'attendance_rules';
+
+const STUDENTS_PER_PAGE = 10;
 
 export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const t = TRANSLATIONS[lang];
@@ -32,6 +34,9 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const [filterGender, setFilterGender] = useState("All");
   const [sortBy, setSortBy] = useState<"name" | "grade" | "number">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  
+  // Student Pagination
+  const [studentPage, setStudentPage] = useState(1);
 
   // Editing States
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -91,6 +96,11 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   useEffect(() => {
     refreshData();
   }, []);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+      setStudentPage(1);
+  }, [searchTerm, filterGrade, filterSection, filterGender]);
 
   const refreshData = async () => {
     // Ensure data is fresh
@@ -191,6 +201,15 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     return result;
   }, [students, searchTerm, filterGrade, filterSection, filterGender, sortBy, sortOrder]);
 
+  // Pagination
+  const paginatedStudents = useMemo(() => {
+      const start = (studentPage - 1) * STUDENTS_PER_PAGE;
+      return filteredStudents.slice(start, start + STUDENTS_PER_PAGE);
+  }, [filteredStudents, studentPage]);
+
+  const totalStudentPages = Math.ceil(filteredStudents.length / STUDENTS_PER_PAGE);
+
+
   const handleSaveStudent = async () => {
     if (!formData.studentNumber || !formData.name_en || !formData.grade || !formData.section) {
         alert("Please fill in all required fields (ID, Name EN, Grade, Section)");
@@ -290,7 +309,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!confirm(`Are you sure you want to upload "${file.name}"? This will add/update students in the database.`)) {
+    // UPDATE: Clarified message about upsert behavior
+    if (!confirm(`Are you sure you want to upload "${file.name}"?\n\nNote: This will UPDATE existing students (by ID Number) and ADD new ones.`)) {
       e.target.value = ''; // Reset input
       return;
     }
@@ -1311,7 +1331,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   <Select 
                       value={userRoleFilter}
                       onChange={e => setUserRoleFilter(e.target.value)}
-                      className="w-40"
+                      className="w-40 pr-8"
                   >
                       <option value="All">All Roles</option>
                       {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
@@ -1371,7 +1391,10 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         <div>
            <Card className="mb-6">
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                  <h2 className="text-xl font-bold text-slate-800">{t.students}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-slate-800">{t.students}</h2>
+                    <span className="text-sm text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded-lg">({students.length})</span>
+                  </div>
                   <div className="flex gap-2">
                       <label className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
                           {isUploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
@@ -1387,8 +1410,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   </div>
               </div>
               
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="lg:col-span-2 relative">
+              <div className="mt-4 flex flex-wrap items-center gap-4">
+                  <div className="flex-1 min-w-[250px] relative">
                       <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
                       <Input 
                           placeholder={t.searchPlaceholder} 
@@ -1397,37 +1420,48 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                           onChange={e => setSearchTerm(e.target.value)}
                       />
                   </div>
-                  <div className="flex gap-2 items-center">
-                      <Filter size={16} className="text-slate-400" />
-                      <span className="text-xs font-bold text-slate-500 whitespace-nowrap">{t.filterBy}:</span>
-                      <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="py-1 text-sm">
-                          <option value="All">{t.allGrades}</option>
-                          {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
-                      </Select>
-                      <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="py-1 text-sm">
-                          <option value="All">{t.allSections}</option>
-                          {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
-                      </Select>
-                      <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="py-1 text-sm">
-                          <option value="All">{t.allGenders}</option>
-                          <option value="Male">{t.male}</option>
-                          <option value="Female">{t.female}</option>
-                      </Select>
-                  </div>
-                  <div className="flex gap-2 items-center justify-end">
-                       <ArrowUpDown size={16} className="text-slate-400" />
-                       <span className="text-xs font-bold text-slate-500 whitespace-nowrap">{t.sortBy}:</span>
-                       <Select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="py-1 text-sm w-32">
-                           <option value="name">{t.studentName}</option>
-                           <option value="grade">{t.grade}</option>
-                           <option value="number">{t.studentNumber}</option>
-                       </Select>
-                       <button 
-                          onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                          className="p-2 bg-slate-100 rounded hover:bg-slate-200"
-                       >
-                           {sortOrder === 'asc' ? <ArrowDownAZ size={16} /> : <ArrowUpDown size={16} className="rotate-180" />}
-                       </button>
+                  
+                  <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-2 text-slate-400">
+                          <Filter size={16} />
+                          <span className="text-xs font-bold text-slate-500 whitespace-nowrap">{t.filterBy}:</span>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                          <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="py-2 text-sm w-24 pr-8">
+                              <option value="All">{t.allGrades}</option>
+                              {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                          </Select>
+                          <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="py-2 text-sm w-24 pr-8">
+                              <option value="All">{t.allSections}</option>
+                              {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
+                          </Select>
+                          <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="py-2 text-sm w-24 pr-8">
+                              <option value="All">{t.allGenders}</option>
+                              <option value="Male">{t.male}</option>
+                              <option value="Female">{t.female}</option>
+                          </Select>
+                      </div>
+                      
+                      <div className="h-8 w-px bg-slate-200 mx-2 hidden md:block"></div>
+
+                      <div className="flex items-center gap-2">
+                           <ArrowUpDown size={16} className="text-slate-400" />
+                           <span className="text-xs font-bold text-slate-500 whitespace-nowrap">{t.sortBy}:</span>
+                           <div className="flex items-center gap-1">
+                                <Select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="py-2 text-sm w-32 pr-8">
+                                    <option value="name">{t.studentName}</option>
+                                    <option value="grade">{t.grade}</option>
+                                    <option value="number">{t.studentNumber}</option>
+                                </Select>
+                                <button 
+                                    onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                    className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 border border-slate-200"
+                                >
+                                    {sortOrder === 'asc' ? <ArrowDownAZ size={16} /> : <ArrowUpDown size={16} className="rotate-180" />}
+                                </button>
+                           </div>
+                      </div>
                   </div>
               </div>
            </Card>
@@ -1436,51 +1470,83 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
            {editingStudent && renderStudentForm()}
 
            <Card className="overflow-hidden p-0">
-              <table className="w-full text-left border-collapse">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm">
-                      <tr>
-                          <th className="p-4">{t.studentNumber}</th>
-                          <th className="p-4">{t.studentName}</th>
-                          <th className="p-4">{t.gender}</th>
-                          <th className="p-4">{t.grade}</th>
-                          <th className="p-4">{t.transport}</th>
-                          <th className="p-4 text-right">{t.actions}</th>
-                      </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                      {filteredStudents.map(student => (
-                          <tr key={student.id} className={`hover:bg-slate-50 ${student.isWatchlisted ? 'bg-red-50/30' : ''}`}>
-                              <td className="p-4 font-mono text-slate-600">{student.studentNumber}</td>
-                              <td className="p-4">
-                                  <div className="font-bold text-slate-800 flex items-center gap-2">
-                                      {lang === 'en' ? student.name_en : student.name_ar}
-                                      {student.name_ar && lang === 'en' && <span className="text-xs text-slate-400 font-normal">{student.name_ar}</span>}
-                                  </div>
-                              </td>
-                              <td className="p-4">
-                                  <Badge color={student.gender === 'Male' ? 'blue' : 'red'}>
-                                      {student.gender === 'Male' ? t.male : t.female}
-                                  </Badge>
-                              </td>
-                              <td className="p-4 font-bold">{student.grade} - {student.section}</td>
-                              <td className="p-4 text-sm text-slate-600">
-                                  {student.transportMode} {student.busRoute && <span className="text-slate-400">({student.busRoute})</span>}
-                              </td>
-                              <td className="p-4 text-right flex justify-end gap-2">
-                                  <Button variant="secondary" className="px-2 py-1" onClick={() => setViewingCard(student)}>
-                                      <CreditCard size={16} />
-                                  </Button>
-                                  <Button variant="ghost" onClick={() => { setEditingStudent(student); setFormData(student); }}>
-                                      <Edit2 size={16} />
-                                  </Button>
-                                  <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteStudent(student.id)}>
-                                      <Trash2 size={16} />
-                                  </Button>
-                              </td>
+              <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm">
+                          <tr>
+                              <th className="p-4">{t.studentNumber}</th>
+                              <th className="p-4">{t.studentName}</th>
+                              <th className="p-4">{t.gender}</th>
+                              <th className="p-4">{t.grade}</th>
+                              <th className="p-4">{t.transport}</th>
+                              <th className="p-4 text-right">{t.actions}</th>
                           </tr>
-                      ))}
-                  </tbody>
-              </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                          {paginatedStudents.map(student => (
+                              <tr key={student.id} className={`hover:bg-slate-50 ${student.isWatchlisted ? 'bg-red-50/30' : ''}`}>
+                                  <td className="p-4 font-mono text-slate-600">{student.studentNumber}</td>
+                                  <td className="p-4">
+                                      <div className="font-bold text-slate-800 flex items-center gap-2">
+                                          {lang === 'en' ? student.name_en : student.name_ar}
+                                          {student.name_ar && lang === 'en' && <span className="text-xs text-slate-400 font-normal">{student.name_ar}</span>}
+                                      </div>
+                                  </td>
+                                  <td className="p-4">
+                                      <Badge color={student.gender === 'Male' ? 'blue' : 'red'}>
+                                          {student.gender === 'Male' ? t.male : t.female}
+                                      </Badge>
+                                  </td>
+                                  <td className="p-4 font-bold">{student.grade} - {student.section}</td>
+                                  <td className="p-4 text-sm text-slate-600">
+                                      {student.transportMode} {student.busRoute && <span className="text-slate-400">({student.busRoute})</span>}
+                                  </td>
+                                  <td className="p-4 text-right flex justify-end gap-2">
+                                      <Button variant="secondary" className="px-2 py-1" onClick={() => setViewingCard(student)}>
+                                          <CreditCard size={16} />
+                                      </Button>
+                                      <Button variant="ghost" onClick={() => { setEditingStudent(student); setFormData(student); }}>
+                                          <Edit2 size={16} />
+                                      </Button>
+                                      <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteStudent(student.id)}>
+                                          <Trash2 size={16} />
+                                      </Button>
+                                  </td>
+                              </tr>
+                          ))}
+                          {paginatedStudents.length === 0 && (
+                              <tr><td colSpan={6} className="p-6 text-center text-slate-400">No students found</td></tr>
+                          )}
+                      </tbody>
+                  </table>
+              </div>
+              
+              {/* Pagination Controls */}
+              {totalStudentPages > 1 && (
+                  <div className="flex justify-between items-center p-4 border-t border-slate-200 bg-slate-50/50">
+                      <span className="text-sm text-slate-500">
+                          Page {studentPage} of {totalStudentPages}
+                      </span>
+                      <div className="flex gap-2">
+                          <Button 
+                              variant="secondary" 
+                              disabled={studentPage === 1}
+                              onClick={() => setStudentPage(p => Math.max(1, p - 1))}
+                              className="h-8 text-xs px-3"
+                          >
+                              <ChevronLeft size={14} /> Previous
+                          </Button>
+                          <Button 
+                              variant="secondary" 
+                              disabled={studentPage === totalStudentPages}
+                              onClick={() => setStudentPage(p => Math.min(totalStudentPages, p + 1))}
+                              className="h-8 text-xs px-3"
+                          >
+                              Next <ChevronRight size={14} />
+                          </Button>
+                      </div>
+                  </div>
+              )}
            </Card>
         </div>
       )}

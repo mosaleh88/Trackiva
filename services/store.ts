@@ -75,13 +75,14 @@ class SupabaseStore {
 
   async refreshData() {
     try {
+        // Use range(0, 9999) to fetch more than default 1000 rows
         const [students, users, attendance, epasses, logs, visits, settings, destinations] = await Promise.all([
-            supabase.from('students').select('*'),
-            supabase.from('users').select('*'),
-            supabase.from('attendance').select('*'),
-            supabase.from('epasses').select('*'),
-            supabase.from('reception_logs').select('*'),
-            supabase.from('clinic_visits').select('*'),
+            supabase.from('students').select('*').range(0, 9999),
+            supabase.from('users').select('*').range(0, 9999),
+            supabase.from('attendance').select('*').range(0, 9999),
+            supabase.from('epasses').select('*').range(0, 9999),
+            supabase.from('reception_logs').select('*').range(0, 9999),
+            supabase.from('clinic_visits').select('*').range(0, 9999),
             supabase.from('settings').select('*').single(),
             supabase.from('destinations').select('*')
         ]);
@@ -414,13 +415,18 @@ class SupabaseStore {
           // Auto-attendance for Early Leave
           if (log.type === 'EarlyLeave') {
               const today = new Date();
-              const dateStr = today.toISOString().split('T')[0];
+              // Fix: Use local date string format YYYY-MM-DD to match Attendance Date Picker
+              const offset = today.getTimezoneOffset();
+              const localDate = new Date(today.getTime() - (offset*60*1000));
+              const dateStr = localDate.toISOString().split('T')[0];
+
               const day = today.getDay();
               const scheduleType = (day === 5) ? 'friday' : 'standard';
               const schedule = this.data.schedule[scheduleType];
               const currentMinutes = today.getHours() * 60 + today.getMinutes();
 
               // FIX: Only mark periods that START AFTER current time
+              // This ensures the current ongoing period is NOT overwritten
               const remainingPeriods = schedule.filter(s => {
                   if (s.type !== 'Period') return false;
                   const [startH, startM] = s.startTime.split(':').map(Number);
@@ -488,17 +494,21 @@ class SupabaseStore {
     this.data.students.forEach(s => studentMap[s.id] = []);
     todayRecords.forEach(r => { if(studentMap[r.studentId]) studentMap[r.studentId].push(r); });
 
-    let presentCount = 0, lateCount = 0, earlyLeaveCount = 0, excusedAbsentCount = 0;
+    let presentCount = 0, lateCount = 0, earlyLeaveCount = 0, excusedAbsentCount = 0, unexcusedAbsentCount = 0;
 
     Object.values(studentMap).forEach(records => {
-        if (records.length === 0) return; 
+        if (records.length === 0) return; // Unmarked, do not count in any category
+        
         const unexcused = records.filter(r => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
         const excused = records.filter(r => r.status === AttendanceStatus.ABSENT_EXCUSED).length;
         const late = records.some(r => r.status === AttendanceStatus.LATE);
         const early = records.some(r => r.status === AttendanceStatus.EARLY_LEAVE);
         const totalMarked = records.length;
 
-        if (unexcused >= threshold) return;
+        if (unexcused >= threshold) {
+            unexcusedAbsentCount++;
+            return;
+        }
         if (countExcusedAsDay && totalMarked > 0 && excused === totalMarked) {
             excusedAbsentCount++;
             return;
@@ -516,6 +526,7 @@ class SupabaseStore {
       lateToday: lateCount,
       earlyLeaveToday: earlyLeaveCount,
       excusedAbsentToday: excusedAbsentCount,
+      unexcusedAbsentToday: unexcusedAbsentCount,
       activePasses: activePasses.length,
       overduePasses: overduePasses,
       ePassBreakdown: ePassDestinations,
