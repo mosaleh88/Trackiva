@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react';
 import { Student, AttendanceRecord, EPass, ReceptionLog, AttendanceStatus, UserRole, ScheduleConfig, TimeSlot, EPassDestination, AppSettings, ClinicVisit, User } from '../types';
 import { DEFAULT_DESTINATIONS, NAV_ITEMS } from '../constants';
 import { sendAttendanceAlert } from './telegramService';
 import { supabase } from './supabase';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
-// Default schedules used if not present in DB settings
+// ... (Default Schedules remain unchanged) ...
 const DEFAULT_STANDARD_SCHEDULE: TimeSlot[] = [
   { id: 'p1', name: 'Period 1', startTime: '08:00', endTime: '08:45', type: 'Period' },
   { id: 'p2', name: 'Period 2', startTime: '08:45', endTime: '09:30', type: 'Period' },
@@ -65,26 +67,113 @@ class SupabaseStore {
   };
 
   private initialized = false;
+  private subscribers: Set<() => void> = new Set();
 
-  // Initialize: Fetch all data from Supabase
+  // Initialize: Fetch initial window of data & Subscribe to Realtime
   async init() {
     if (this.initialized) return;
     await this.refreshData();
+    this.initRealtime();
     this.initialized = true;
+  }
+
+  subscribe(callback: () => void) {
+    this.subscribers.add(callback);
+    return () => this.subscribers.delete(callback);
+  }
+
+  private notify() {
+    this.subscribers.forEach(callback => callback());
+  }
+
+  initRealtime() {
+    const channel = supabase.channel('db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public' },
+        (payload) => this.handleRealtimeEvent(payload)
+      )
+      .subscribe();
+  }
+
+  private handleRealtimeEvent(payload: RealtimePostgresChangesPayload<any>) {
+      const { table, eventType, new: newRecord, old: oldRecord } = payload;
+      
+      switch (table) {
+          case 'students': this.updateCache('students', eventType, newRecord, oldRecord); break;
+          case 'users': this.updateCache('users', eventType, newRecord, oldRecord); break;
+          case 'attendance': this.updateCache('attendance', eventType, newRecord, oldRecord); break;
+          case 'epasses': this.updateCache('ePasses', eventType, newRecord, oldRecord); break;
+          case 'reception_logs': this.updateCache('receptionLogs', eventType, newRecord, oldRecord); break;
+          case 'clinic_visits': this.updateCache('clinicVisits', eventType, newRecord, oldRecord); break;
+          case 'destinations': this.updateCache('destinations', eventType, newRecord, oldRecord); break;
+          case 'settings':
+              if (eventType === 'UPDATE' && newRecord) {
+                  this.data.settings = { ...this.data.settings, ...newRecord };
+                  if (newRecord.attendanceSettings?.schedule) {
+                      this.data.schedule = newRecord.attendanceSettings.schedule;
+                  }
+                  this.notify();
+              }
+              break;
+      }
+  }
+
+  private updateCache(key: keyof typeof this.data, event: string, newRec: any, oldRec: any) {
+      const list = this.data[key] as any[];
+      if (!Array.isArray(list)) return;
+
+      if (event === 'INSERT') {
+          // Prevent duplicate inserts if we already fetched it
+          if (!list.some(i => i.id === newRec.id)) {
+              list.push(newRec);
+          }
+      } else if (event === 'UPDATE') {
+          const idx = list.findIndex(item => item.id === newRec.id);
+          if (idx !== -1) list[idx] = newRec;
+          else list.push(newRec); // Update might bring a record into our scope
+      } else if (event === 'DELETE') {
+          const idx = list.findIndex(item => item.id === oldRec.id);
+          if (idx !== -1) list.splice(idx, 1);
+      }
+      
+      // Sort time-based lists
+      if (['receptionLogs', 'clinicVisits'].includes(key)) {
+          list.sort((a, b) => b.timestamp - a.timestamp);
+      }
+      this.notify();
+  }
+
+  // Helper to merge new fetched data into cache without duplicates
+  private mergeData<T extends { id: string }>(current: T[], incoming: T[]): T[] {
+      const map = new Map(current.map(i => [i.id, i]));
+      incoming.forEach(i => map.set(i.id, i));
+      return Array.from(map.values());
   }
 
   async refreshData() {
     try {
-        // Use range(0, 9999) to fetch more than default 1000 rows
-        const [students, users, attendance, epasses, logs, visits, settings, destinations] = await Promise.all([
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(today.getDate() - 7);
+        
+        const dateStr = sevenDaysAgo.toISOString().split('T')[0];
+        const timestamp = sevenDaysAgo.getTime();
+
+        // Fetch metadata tables fully
+        const [students, users, settings, destinations] = await Promise.all([
             supabase.from('students').select('*').range(0, 9999),
             supabase.from('users').select('*').range(0, 9999),
-            supabase.from('attendance').select('*').range(0, 9999),
-            supabase.from('epasses').select('*').range(0, 9999),
-            supabase.from('reception_logs').select('*').range(0, 9999),
-            supabase.from('clinic_visits').select('*').range(0, 9999),
             supabase.from('settings').select('*').single(),
             supabase.from('destinations').select('*')
+        ]);
+
+        // Fetch operational tables with date limit (Last 7 Days)
+        const [attendance, epasses, logs, visits] = await Promise.all([
+            supabase.from('attendance').select('*').gte('date', dateStr).range(0, 9999),
+            supabase.from('epasses').select('*').gte('startTime', timestamp).range(0, 9999),
+            supabase.from('reception_logs').select('*').gte('timestamp', timestamp).range(0, 9999),
+            supabase.from('clinic_visits').select('*').gte('timestamp', timestamp).range(0, 9999),
         ]);
 
         if (students.data) this.data.students = students.data;
@@ -104,22 +193,46 @@ class SupabaseStore {
             this.data.settings = {
                 ...this.data.settings,
                 ...settings.data,
-                // Merge JSON fields safely
                 rolePermissions: settings.data.rolePermissions || this.data.settings.rolePermissions,
                 notificationRules: settings.data.notificationRules || this.data.settings.notificationRules,
                 attendanceSettings: settings.data.attendanceSettings || this.data.settings.attendanceSettings
             };
-            // If schedule is saved in settings, use it
             if (this.data.settings.attendanceSettings?.schedule) {
                 this.data.schedule = this.data.settings.attendanceSettings.schedule;
             }
         }
+        this.notify();
     } catch (error) {
         console.error("Error initializing store from Supabase:", error);
     }
   }
 
+  // Fetch historical data for reports
+  async fetchDataForRange(startDate: string, endDate: string) {
+      try {
+          const startTs = new Date(startDate).setHours(0,0,0,0);
+          const endTs = new Date(endDate).setHours(23,59,59,999);
+
+          const [attendance, epasses, logs, visits] = await Promise.all([
+              supabase.from('attendance').select('*').gte('date', startDate).lte('date', endDate).range(0, 9999),
+              supabase.from('epasses').select('*').gte('startTime', startTs).lte('startTime', endTs).range(0, 9999),
+              supabase.from('reception_logs').select('*').gte('timestamp', startTs).lte('timestamp', endTs).range(0, 9999),
+              supabase.from('clinic_visits').select('*').gte('timestamp', startTs).lte('timestamp', endTs).range(0, 9999),
+          ]);
+
+          if (attendance.data) this.data.attendance = this.mergeData(this.data.attendance, attendance.data);
+          if (epasses.data) this.data.ePasses = this.mergeData(this.data.ePasses, epasses.data);
+          if (logs.data) this.data.receptionLogs = this.mergeData(this.data.receptionLogs, logs.data);
+          if (visits.data) this.data.clinicVisits = this.mergeData(this.data.clinicVisits, visits.data);
+          
+          this.notify();
+      } catch (error) {
+          console.error("Error fetching historical data:", error);
+      }
+  }
+
   // --- READ Operations (Synchronous from Cache) ---
+  // ... (Getters remain same)
   getStudents() { return this.data.students; }
   getUsers() { return this.data.users; }
   getEPasses() { return this.data.ePasses; }
@@ -164,49 +277,33 @@ class SupabaseStore {
 
   async addStudent(student: Omit<Student, 'id'>) {
     const { data, error } = await supabase.from('students').insert(student).select().single();
-    if (data) {
-        this.data.students.push(data);
-        return data;
-    }
     if (error) throw error;
+    return data;
   }
 
   async updateStudent(id: string, updates: Partial<Student>) {
     const { data, error } = await supabase.from('students').update(updates).eq('id', id).select().single();
-    if (data) {
-        const idx = this.data.students.findIndex(s => s.id === id);
-        if (idx !== -1) this.data.students[idx] = data;
-    }
     if (error) throw error;
+    return data;
   }
 
   async deleteStudent(id: string) {
     const { error } = await supabase.from('students').delete().eq('id', id);
-    if (!error) {
-        this.data.students = this.data.students.filter(s => s.id !== id);
-    } else { throw error; }
-  }
-
-  // UPDATED: Use upsert to update existing students
-  async bulkImportStudents(students: Omit<Student, 'id'>[]) {
-    const { data, error } = await supabase.from('students')
-        .upsert(students, { onConflict: 'studentNumber' }) // Update if exists
-        .select();
-        
-    if (data) {
-        // Re-fetch all students to ensure cache is consistent with upsert
-        await this.refreshData(); 
-    }
     if (error) throw error;
   }
 
+  async bulkImportStudents(students: Omit<Student, 'id'>[]) {
+    const { data, error } = await supabase.from('students')
+        .upsert(students, { onConflict: 'studentNumber' })
+        .select();
+    if (error) throw error;
+    return data;
+  }
+
   async addUser(user: Omit<User, 'id'>) {
-    // 1. Call Cloudflare Function to create Auth User (requires server-side logic)
-    // We generate a temporary password for the user
     const tempPassword = "TempPassword123!"; 
-    
     try {
-        const response = await fetch('/api/create_user', {
+        await fetch('/api/create_user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -215,58 +312,32 @@ class SupabaseStore {
                 user_metadata: { name: user.name, role: user.role }
             })
         });
+    } catch (e) { console.error(e); }
 
-        if (!response.ok) {
-            const err = await response.json();
-            // If error is that user exists, we proceed to try creating the profile
-            // Otherwise, throw error
-            if (!err.error?.includes("already registered")) {
-                throw new Error(err.error || "Failed to create auth user");
-            }
-        } else {
-            const { user: authUser } = await response.json();
-            // Optionally use authUser.id if we want tight coupling
-        }
-    } catch (e) {
-        console.error("Auth creation warning:", e);
-        // Proceeding to create profile anyway, user might have been created manually
-    }
-
-    // 2. Create Profile in public.users
     const { data, error } = await supabase.from('users').insert(user).select().single();
-    if (data) this.data.users.push(data);
     if (error) throw error;
+    return data;
   }
 
   async updateUser(id: string, updates: Partial<User>) {
     const { data, error } = await supabase.from('users').update(updates).eq('id', id).select().single();
-    if (data) {
-        const idx = this.data.users.findIndex(u => u.id === id);
-        if (idx !== -1) this.data.users[idx] = data;
-    }
     if (error) throw error;
+    return data;
   }
 
   async deleteUser(id: string) {
     const { error } = await supabase.from('users').delete().eq('id', id);
-    if (!error) {
-        this.data.users = this.data.users.filter(u => u.id !== id);
-    } else { throw error; }
+    if (error) throw error;
   }
 
   async updateSettings(settings: Partial<AppSettings>) {
-    // We assume ID 1 is the single settings row
     const { data, error } = await supabase.from('settings').update(settings).eq('id', 1).select().single();
-    if (data) {
-        this.data.settings = { ...this.data.settings, ...data };
-    } else if (error) {
-        console.error(error);
-    }
+    if (error) console.error(error);
+    return data;
   }
 
   async updateSchedule(type: 'standard' | 'friday', slots: TimeSlot[]) {
       this.data.schedule[type] = slots;
-      // Save schedule inside attendanceSettings JSONB
       const currentAttendanceSettings = this.data.settings.attendanceSettings;
       const newAttendanceSettings = { 
           ...currentAttendanceSettings,
@@ -276,27 +347,20 @@ class SupabaseStore {
   }
 
   async addDestination(dest: Omit<EPassDestination, 'id'>) {
-      // Assuming ID is provided or auto-generated by text input in form, 
-      // but here we let Supabase or Logic handle it. 
-      // Ideally dest.id should be unique string like 'Library'
       const { data, error } = await supabase.from('destinations').insert(dest).select().single();
-      if (data) this.data.destinations.push(data);
       if (error) throw error;
+      return data;
   }
 
   async updateDestination(id: string, updates: Partial<EPassDestination>) {
       const { data, error } = await supabase.from('destinations').update(updates).eq('id', id).select().single();
-      if (data) {
-          const idx = this.data.destinations.findIndex(d => d.id === id);
-          if (idx !== -1) this.data.destinations[idx] = data;
-      }
+      if (error) throw error;
+      return data;
   }
 
   async deleteDestination(id: string) {
       const { error } = await supabase.from('destinations').delete().eq('id', id);
-      if (!error) {
-          this.data.destinations = this.data.destinations.filter(d => d.id !== id);
-      }
+      if (error) throw error;
   }
 
   async markAttendance(record: Omit<AttendanceRecord, 'id' | 'timestamp'>) {
@@ -309,15 +373,14 @@ class SupabaseStore {
               .update({ status: record.status, reason: record.reason, timestamp: Date.now() })
               .eq('id', existing.id)
               .select().single();
-          if (data) {
-              const idx = this.data.attendance.findIndex(a => a.id === existing.id);
-              this.data.attendance[idx] = data;
-          }
+          if (error) throw error;
+          return data;
       } else {
           const { data, error } = await supabase.from('attendance')
               .insert({ ...record, timestamp: Date.now() })
               .select().single();
-          if (data) this.data.attendance.push(data);
+          if (error) throw error;
+          return data;
       }
   }
 
@@ -327,13 +390,10 @@ class SupabaseStore {
       );
       if (existing) {
           const { error } = await supabase.from('attendance').delete().eq('id', existing.id);
-          if (!error) {
-              this.data.attendance = this.data.attendance.filter(a => a.id !== existing.id);
-          }
+          if (error) throw error;
       }
   }
 
-  // Logic only, no DB write (DB write happened in markAttendance)
   checkAttendanceAlert(studentId: string) {
       const student = this.data.students.find(s => s.id === studentId);
       if (!student) return;
@@ -380,11 +440,8 @@ class SupabaseStore {
           startTime: Date.now()
       };
       const { data, error } = await supabase.from('epasses').insert(newPass).select().single();
-      if (data) {
-          this.data.ePasses.push(data);
-          return data;
-      }
       if (error) throw error;
+      return data;
   }
 
   async completeEPass(id: string) {
@@ -392,11 +449,8 @@ class SupabaseStore {
           .update({ status: 'Completed', endTime: Date.now() })
           .eq('id', id)
           .select().single();
-      
-      if (data) {
-          const idx = this.data.ePasses.findIndex(p => p.id === id);
-          if (idx !== -1) this.data.ePasses[idx] = data;
-      }
+      if (error) throw error;
+      return data;
   }
 
   async logReception(log: Omit<ReceptionLog, 'id' | 'timestamp'>) {
@@ -410,12 +464,8 @@ class SupabaseStore {
       const { data, error } = await supabase.from('reception_logs').insert(newLog).select().single();
       
       if (data) {
-          this.data.receptionLogs.unshift(data);
-          
-          // Auto-attendance for Early Leave
           if (log.type === 'EarlyLeave') {
               const today = new Date();
-              // Fix: Use local date string format YYYY-MM-DD to match Attendance Date Picker
               const offset = today.getTimezoneOffset();
               const localDate = new Date(today.getTime() - (offset*60*1000));
               const dateStr = localDate.toISOString().split('T')[0];
@@ -425,15 +475,12 @@ class SupabaseStore {
               const schedule = this.data.schedule[scheduleType];
               const currentMinutes = today.getHours() * 60 + today.getMinutes();
 
-              // FIX: Only mark periods that START AFTER current time
-              // This ensures the current ongoing period is NOT overwritten
               const remainingPeriods = schedule.filter(s => {
                   if (s.type !== 'Period') return false;
                   const [startH, startM] = s.startTime.split(':').map(Number);
                   return (startH * 60 + startM) > currentMinutes;
               });
 
-              // Async mark attendance
               for (const p of remainingPeriods) {
                   await this.markAttendance({
                       studentId: log.studentId,
@@ -453,7 +500,6 @@ class SupabaseStore {
       const { data, error } = await supabase.from('clinic_visits').insert(newVisit).select().single();
       
       if (data) {
-          this.data.clinicVisits.unshift(data);
           if (visit.linkedPassId && visit.outcome !== 'ReturnToClass') {
               await this.completeEPass(visit.linkedPassId);
           }
@@ -462,7 +508,9 @@ class SupabaseStore {
       if (error) throw error;
   }
 
-  // --- Reporting Helpers (Same as before, using cached data) ---
+  // ... (getCycle, getDataSummary, getReportsData, getStudent360Data remain largely the same, 
+  // just ensure getDataSummary only counts students with >0 records as Absent/Present) ...
+  
   getCycle(grade: string): 'Cycle 1' | 'Cycle 2' | 'Cycle 3' | 'Unknown' {
     if (['KG1', 'KG2', '1', '2', '3', '4'].includes(grade)) return 'Cycle 1';
     if (['5', '6', '7', '8'].includes(grade)) return 'Cycle 2';
@@ -497,7 +545,7 @@ class SupabaseStore {
     let presentCount = 0, lateCount = 0, earlyLeaveCount = 0, excusedAbsentCount = 0, unexcusedAbsentCount = 0;
 
     Object.values(studentMap).forEach(records => {
-        if (records.length === 0) return; // Unmarked, do not count in any category
+        if (records.length === 0) return; 
         
         const unexcused = records.filter(r => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
         const excused = records.filter(r => r.status === AttendanceStatus.ABSENT_EXCUSED).length;
@@ -539,10 +587,8 @@ class SupabaseStore {
   getReportsData(startDate: string, endDate: string, filters?: { grade?: string, section?: string, gender?: string }, userId?: string) {
       const start = new Date(startDate).setHours(0,0,0,0);
       const end = new Date(endDate).setHours(23,59,59,999);
-      
       const threshold = this.data.settings.attendanceSettings?.absentPeriodThreshold ?? 3;
       const countExcusedAsDay = this.data.settings.attendanceSettings?.countAllExcusedAsExcusedDay ?? true;
-
       let targetStudents = userId ? this.getStudentsForUser(userId) : this.data.students;
       
       if (filters) {
@@ -551,16 +597,13 @@ class SupabaseStore {
           if (filters.gender && filters.gender !== 'All') targetStudents = targetStudents.filter(s => s.gender === filters.gender);
       }
       const targetStudentIds = new Set(targetStudents.map(s => s.id));
-
       const filteredAttendance = this.data.attendance.filter(a => {
           const d = new Date(a.date).getTime();
           return d >= start && d <= end && targetStudentIds.has(a.studentId);
       });
-
       const filteredVisits = this.data.clinicVisits.filter(v => v.timestamp >= start && v.timestamp <= end && targetStudentIds.has(v.studentId));
       const filteredPasses = this.data.ePasses.filter(p => p.startTime >= start && p.startTime <= end && targetStudentIds.has(p.studentId));
       const filteredLogs = this.data.receptionLogs.filter(l => l.timestamp >= start && l.timestamp <= end && targetStudentIds.has(l.studentId));
-
       const studentAttendance: any = {};
       const attendanceByDateStudent: any = {};
       filteredAttendance.forEach(r => {
@@ -568,34 +611,27 @@ class SupabaseStore {
           if (!attendanceByDateStudent[key]) attendanceByDateStudent[key] = [];
           attendanceByDateStudent[key].push(r);
       });
-
       Object.entries(attendanceByDateStudent).forEach(([key, records]: any) => {
           const studentId = key.split('-')[1];
           if (!studentAttendance[studentId]) studentAttendance[studentId] = { P: 0, A: 0, EA: 0, L: 0, EL: 0, total: 0 };
-          
           const unexcused = records.filter((r:any) => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
           const excused = records.filter((r:any) => r.status === AttendanceStatus.ABSENT_EXCUSED).length;
           const late = records.some((r:any) => r.status === AttendanceStatus.LATE);
           const early = records.some((r:any) => r.status === AttendanceStatus.EARLY_LEAVE);
           const totalRecs = records.length;
-
           studentAttendance[studentId].total++;
-
           if (unexcused >= threshold) studentAttendance[studentId].A++;
           else if (countExcusedAsDay && totalRecs > 0 && excused === totalRecs) studentAttendance[studentId].EA++;
           else if (early) studentAttendance[studentId].EL++;
           else if (late) studentAttendance[studentId].L++;
           else studentAttendance[studentId].P++;
       });
-
       const absenteeBuckets = { '1-2': 0, '3-5': 0, '6-9': 0, '10-14': 0, '15+': 0 };
       const excusedBuckets = { '1-2': 0, '3-5': 0, '6-9': 0, '10-14': 0, '15+': 0 };
       const absenteeList: any[] = [];
-
       Object.entries(studentAttendance).forEach(([sid, stats]: any) => {
           const student = this.data.students.find(s => s.id === sid);
           if (!student) return;
-          
           if (stats.A > 0) {
               if (stats.A >= 15) absenteeBuckets['15+']++;
               else if (stats.A >= 10) absenteeBuckets['10-14']++;
@@ -612,34 +648,26 @@ class SupabaseStore {
               else excusedBuckets['1-2']++;
           }
       });
-
       const epassCounts: Record<string, number> = {};
       const unauthorizedCounts: Record<string, number> = {};
       const teacherCounts: Record<string, number> = {};
-
       filteredPasses.forEach(p => {
           epassCounts[p.studentId] = (epassCounts[p.studentId] || 0) + 1;
           if (p.type === 'UNAUTHORIZED') unauthorizedCounts[p.studentId] = (unauthorizedCounts[p.studentId] || 0) + 1;
           if (p.teacherId) teacherCounts[p.teacherId] = (teacherCounts[p.teacherId] || 0) + 1;
       });
-
       const topEPassUsers = Object.entries(epassCounts)
           .map(([sid, count]) => ({ student: this.data.students.find(s => s.id === sid), count }))
           .filter(i => i.student)
-          .sort((a,b) => b.count - a.count)
-          .slice(0, 10);
-
+          .sort((a,b) => b.count - a.count).slice(0, 10);
       const topUnauthorized = Object.entries(unauthorizedCounts)
            .map(([sid, count]) => ({ student: this.data.students.find(s => s.id === sid), count }))
            .filter(i => i.student)
-           .sort((a,b) => b.count - a.count)
-           .slice(0, 10);
-
+           .sort((a,b) => b.count - a.count).slice(0, 10);
        const teacherStats = Object.entries(teacherCounts)
            .map(([tid, count]) => ({ user: this.data.users.find(u => u.id === tid), count }))
            .filter(i => i.user)
            .sort((a,b) => b.count - a.count);
-
       return {
           attendance: { buckets: absenteeBuckets, excusedBuckets: excusedBuckets, list: absenteeList, raw: studentAttendance },
           clinic: filteredVisits,
@@ -651,26 +679,21 @@ class SupabaseStore {
   getStudent360Data(studentId: string, startDate: string, endDate: string) {
       const start = new Date(startDate).setHours(0,0,0,0);
       const end = new Date(endDate).setHours(23,59,59,999);
-
       const history = {
           attendance: this.data.attendance.filter(a => {
               const d = new Date(a.date).getTime();
               return d >= start && d <= end && a.studentId === studentId;
           }).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-
           clinic: this.data.clinicVisits.filter(v => 
               v.timestamp >= start && v.timestamp <= end && v.studentId === studentId
           ).sort((a,b) => b.timestamp - a.timestamp),
-
           epasses: this.data.ePasses.filter(p => 
               p.startTime >= start && p.startTime <= end && p.studentId === studentId
           ).sort((a,b) => b.startTime - a.startTime),
-
           reception: this.data.receptionLogs.filter(l => 
               l.timestamp >= start && l.timestamp <= end && l.studentId === studentId
           ).sort((a,b) => b.timestamp - a.timestamp)
       };
-
       const attendanceStats = { P: 0, EA: 0, A: 0, L: 0, EL: 0 };
       history.attendance.forEach(a => {
           if(a.status === AttendanceStatus.PRESENT) attendanceStats.P++;
@@ -679,9 +702,15 @@ class SupabaseStore {
           else if(a.status === AttendanceStatus.LATE) attendanceStats.L++;
           else if(a.status === AttendanceStatus.EARLY_LEAVE) attendanceStats.EL++;
       });
-
       return { history, stats: attendanceStats };
   }
 }
 
 export const store = new SupabaseStore();
+export const useStore = () => {
+    const [state, setState] = useState(0);
+    useEffect(() => {
+        return store.subscribe(() => setState(prev => prev + 1));
+    }, []);
+    return store;
+};

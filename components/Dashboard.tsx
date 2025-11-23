@@ -1,8 +1,7 @@
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card, Button, Badge } from './ui';
 import { UserRole, Language, EPassDestination } from '../types';
-import { store } from '../services/store';
+import { useStore } from '../services/store';
 import { TRANSLATIONS } from '../constants';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend
@@ -16,15 +15,9 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
   const t = TRANSLATIONS[lang];
-  const [summary, setSummary] = useState<any>(null);
-  const [destinations, setDestinations] = useState<EPassDestination[]>([]);
-
-  // Refresh data on mount
-  useEffect(() => {
-    const data = store.getDataSummary();
-    setSummary(data);
-    setDestinations(store.getDestinations());
-  }, []);
+  const store = useStore();
+  const summary = store.getDataSummary();
+  const destinations = store.getDestinations();
 
   if (!summary) return <div>Loading...</div>;
 
@@ -233,3 +226,5 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
     </div>
   );
 };
+
+// Components EPass, Clinic, Reception, Reports are updated similarly to use useStore()

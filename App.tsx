@@ -35,20 +35,26 @@ const App = () => {
           setIsLoadingData(true);
           try {
               // 1. CRITICAL: Check URL Hash for Recovery BEFORE anything else
-              // This handles the case where the app loads with #access_token=...&type=recovery
               const hash = window.location.hash;
               if (hash && hash.includes('type=recovery')) {
                   console.log("Password recovery detected from URL hash");
                   setIsPasswordRecovery(true);
-                  // Do not init store yet if we want to show recovery screen fast, 
-                  // but usually we need store for login logic later.
               }
 
-              // 2. Load Store Data
+              // 2. Check for existing Supabase Session
+              const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+              
+              if (sessionError) {
+                  console.warn("Session check error:", sessionError.message);
+                  if (sessionError.message.includes("Refresh Token") || sessionError.message.includes("Not Found")) {
+                      await supabase.auth.signOut();
+                  }
+              }
+
+              // 3. Load Store Data
               await store.init();
 
-              // 3. Check for existing Supabase Session
-              const { data: { session } } = await supabase.auth.getSession();
+              // 4. Restore User Session
               if (session?.user?.email) {
                   const users = store.getUsers();
                   const userProfile = users.find(u => u.email.toLowerCase() === session.user.email!.toLowerCase());
@@ -57,10 +63,8 @@ const App = () => {
                   }
               }
 
-              // 4. Listen for Auth Changes
+              // 5. Listen for Auth Changes
               const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
-                  console.log("Auth Event:", event);
-                  
                   if (event === 'PASSWORD_RECOVERY') {
                       setIsPasswordRecovery(true);
                   } else if (event === 'SIGNED_IN' && session?.user?.email) {
@@ -73,8 +77,6 @@ const App = () => {
                       const userProfile = users.find(u => u.email.toLowerCase() === session.user.email!.toLowerCase());
                       if (userProfile) {
                           setCurrentUser(userProfile);
-                          // Only reset recovery if we are NOT currently in the process of updating it
-                          // (handled inside Login component usually, but safe to keep here)
                       }
                   } else if (event === 'SIGNED_OUT') {
                       setCurrentUser(null);
@@ -86,8 +88,11 @@ const App = () => {
                   authListener.subscription.unsubscribe();
               };
 
-          } catch (e) {
+          } catch (e: any) {
               console.error("Failed to load initial data", e);
+              if (e?.message?.includes("Refresh Token")) {
+                  await supabase.auth.signOut();
+              }
           } finally {
               setIsLoadingData(false);
           }
@@ -117,8 +122,6 @@ const App = () => {
       );
   }
 
-  // Login Screen (or Password Recovery Screen)
-  // We show Login component if no user is logged in OR if we are in recovery mode (even if session exists technically)
   if (!currentUser || isPasswordRecovery) {
     return (
         <Login 

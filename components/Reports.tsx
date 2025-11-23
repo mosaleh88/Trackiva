@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
@@ -53,6 +52,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   // AI Analyst State
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Added loading state for reports
   
   // 360 View Collapsibles
   const [showAttendanceHistory, setShowAttendanceHistory] = useState(true);
@@ -75,8 +75,12 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   // Auto-refresh Student 360 data when dates change
   useEffect(() => {
       if (student360) {
-          const sData = store.getStudent360Data(student360.id, startDate, endDate);
-          setStudent360Data(sData);
+          const load360 = async () => {
+             await store.fetchDataForRange(startDate, endDate);
+             const sData = store.getStudent360Data(student360.id, startDate, endDate);
+             setStudent360Data(sData);
+          };
+          load360();
       }
   }, [startDate, endDate, student360]);
 
@@ -199,16 +203,26 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       }
   }, [currentUser]);
 
-  const refreshReport = () => {
+  const refreshReport = async () => {
       if (!currentUser) return;
-      // Fetch aggregated data with filters, restricted by user ID
-      const reportData = store.getReportsData(startDate, endDate, {
-          grade: filterGrade,
-          section: filterSection,
-          gender: filterGender
-      }, currentUser.id);
-      setData(reportData);
-      setAiInsight(null);
+      setIsLoading(true);
+      try {
+          // Fetch historical data for the requested range
+          await store.fetchDataForRange(startDate, endDate);
+          
+          // Fetch aggregated data with filters, restricted by user ID
+          const reportData = store.getReportsData(startDate, endDate, {
+              grade: filterGrade,
+              section: filterSection,
+              gender: filterGender
+          }, currentUser.id);
+          setData(reportData);
+          setAiInsight(null);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsLoading(false);
+      }
   };
 
   // Initial load
@@ -883,7 +897,8 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                 </div>
 
                 {/* Generate Button */}
-                <Button onClick={refreshReport} className="h-[38px]">
+                <Button onClick={refreshReport} className="h-[38px]" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
                     {t.generate}
                 </Button>
 

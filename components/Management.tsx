@@ -17,22 +17,25 @@ const STUDENTS_PER_PAGE = 10;
 
 // Helper for natural grade sorting (KG1, KG2, 1, 2, ... 10, 11)
 const gradeSort = (a: string, b: string) => {
-    const isAKG = a.toUpperCase().startsWith('KG');
-    const isBKG = b.toUpperCase().startsWith('KG');
+    const valA = String(a).trim().toUpperCase();
+    const valB = String(b).trim().toUpperCase();
 
-    if (isAKG && isBKG) {
-        return a.localeCompare(b); // KG1 before KG2
-    }
-    if (isAKG) return -1; // KG comes before numbers
-    if (isBKG) return 1;  // Numbers come after KG
+    // Check for KG/Pre-K
+    const isAKG = valA.startsWith('K') || valA.startsWith('P') || valA.startsWith('F'); // KG, Pre-K, FS
+    const isBKG = valB.startsWith('K') || valB.startsWith('P') || valB.startsWith('F');
 
-    const numA = parseInt(a);
-    const numB = parseInt(b);
+    if (isAKG && !isBKG) return -1;
+    if (!isAKG && isBKG) return 1;
+    if (isAKG && isBKG) return valA.localeCompare(valB);
+
+    // Numeric check
+    const numA = parseInt(valA.replace(/\D/g, ''));
+    const numB = parseInt(valB.replace(/\D/g, ''));
 
     if (!isNaN(numA) && !isNaN(numB)) {
         return numA - numB;
     }
-    return a.localeCompare(b);
+    return valA.localeCompare(valB);
 };
 
 
