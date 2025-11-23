@@ -91,7 +91,7 @@ class SupabaseStore {
     if (this.initialized) return;
     await this.refreshData();
     // Lazily generate permissions after modules are loaded
-    if (Object.keys(this.data.settings.rolePermissions).length === 0) {
+    if (!this.data.settings.rolePermissions || Object.keys(this.data.settings.rolePermissions).length === 0) {
         this.data.settings.rolePermissions = generateDefaultPermissions();
     }
     this.initRealtime();
@@ -231,7 +231,7 @@ class SupabaseStore {
         if (logs.data) this.data.receptionLogs = logs.data;
         if (visits.data) this.data.clinicVisits = visits.data;
         if (destinations.data) this.data.destinations = destinations.data;
-        if (settings.data) {
+        if (settings.data) { // Ensure settings.data is not null
             this.data.settings = { ...this.data.settings, ...settings.data };
             if (this.data.settings.attendanceSettings?.schedule) {
                 this.data.schedule = this.data.settings.attendanceSettings.schedule;
