@@ -51,8 +51,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
       const sevenDaysAgoTs = new Date(todayStr).getTime() - (7 * 24 * 60 * 60 * 1000);
       
       if (selectedTs < sevenDaysAgoTs) {
-          // Fetch specific date
-          store.fetchDataForRange(selectedDate, selectedDate);
+          // FIX: Fetch specific date with cache=true so editing works
+          store.fetchDataForRange(selectedDate, selectedDate, { cache: true });
       }
   }, [selectedDate]);
 

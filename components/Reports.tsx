@@ -76,8 +76,10 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   useEffect(() => {
       if (student360) {
           const load360 = async () => {
-             await store.fetchDataForRange(startDate, endDate);
-             const sData = store.getStudent360Data(student360.id, startDate, endDate);
+             // FIX: Fetch data without caching to avoid memory leaks
+             const fetchedData = await store.fetchDataForRange(startDate, endDate, { cache: false });
+             // Pass the fetched data explicitly to the helper
+             const sData = store.getStudent360Data(student360.id, startDate, endDate, fetchedData);
              setStudent360Data(sData);
           };
           load360();
@@ -207,15 +209,16 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       if (!currentUser) return;
       setIsLoading(true);
       try {
-          // Fetch historical data for the requested range
-          await store.fetchDataForRange(startDate, endDate);
+          // FIX: Fetch data without caching to avoid memory leaks
+          const fetchedData = await store.fetchDataForRange(startDate, endDate, { cache: false });
           
-          // Fetch aggregated data with filters, restricted by user ID
+          // Pass the fetched data explicitly to the report generator
           const reportData = store.getReportsData(startDate, endDate, {
               grade: filterGrade,
               section: filterSection,
               gender: filterGender
-          }, currentUser.id);
+          }, currentUser.id, fetchedData);
+          
           setData(reportData);
           setAiInsight(null);
       } catch (e) {
@@ -519,10 +522,14 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                       key={s.id}
                                       onClick={() => { 
                                           // Fetch directly to ensure data loads immediately on click
-                                          const sData = store.getStudent360Data(s.id, startDate, endDate);
-                                          setStudent360Data(sData);
-                                          setStudent360(s); 
-                                          setSearch360(lang === 'en' ? s.name_en : s.name_ar); 
+                                          const load360 = async () => {
+                                              const fetchedData = await store.fetchDataForRange(startDate, endDate, { cache: false });
+                                              const sData = store.getStudent360Data(s.id, startDate, endDate, fetchedData);
+                                              setStudent360Data(sData);
+                                              setStudent360(s); 
+                                              setSearch360(lang === 'en' ? s.name_en : s.name_ar); 
+                                          };
+                                          load360();
                                       }}
                                       className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm"
                                   >
