@@ -60,7 +60,7 @@ class SupabaseStore {
     destinations: [],
     settings: { 
         maxPassesPerDay: 4,
-        rolePermissions: generateDefaultPermissions(),
+        rolePermissions: {}, // Initialize as empty
         attendanceSettings: { absentPeriodThreshold: 3, countAllExcusedAsExcusedDay: true, alertThresholds: [3, 6, 10, 15] },
         notificationRules: { 'UNAUTHORIZED': true }
     },
@@ -90,6 +90,10 @@ class SupabaseStore {
   async init() {
     if (this.initialized) return;
     await this.refreshData();
+    // Lazily generate permissions after modules are loaded
+    if (Object.keys(this.data.settings.rolePermissions).length === 0) {
+        this.data.settings.rolePermissions = generateDefaultPermissions();
+    }
     this.initRealtime();
     this.initialized = true;
   }

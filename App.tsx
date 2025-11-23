@@ -104,7 +104,7 @@ const App = () => {
   useEffect(() => {
       if (currentUser) {
           const allPermissions = store.getSettings().rolePermissions;
-          const rolePerms = allPermissions[currentUser.role] || [];
+          const rolePerms = (allPermissions && allPermissions[currentUser.role]) || [];
           setPermissions(rolePerms);
           
           if (!rolePerms.includes(activeTab)) {
