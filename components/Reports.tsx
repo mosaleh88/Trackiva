@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
@@ -313,7 +314,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   <Card>
                       <h3 className="font-bold mb-4 text-slate-700">{t.absentBuckets}</h3>
                       <div className="h-64">
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                               <BarChart data={bucketData}>
                                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                   <XAxis dataKey="name" fontSize={10} />
@@ -386,7 +387,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   <Card>
                       <h3 className="font-bold mb-4 text-slate-700">{t.topComplaints}</h3>
                       <div className="h-80">
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                               <BarChart data={chartData} layout="vertical">
                                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                   <XAxis type="number" />
@@ -401,7 +402,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   <Card>
                       <h3 className="font-bold mb-4 text-slate-700">{t.visitsByGrade}</h3>
                       <div className="h-80">
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                               <BarChart data={gradeData}>
                                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                   <XAxis dataKey="name" fontSize={12} />
@@ -517,20 +518,22 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                           </div>
                       )}
                   </div>
+                  
+                  {/* Date Range in Student 360 View */}
                   <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200">
                       <span className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap px-2">{t.dateRange}</span>
                       <input 
                           type="date" 
                           value={startDate} 
                           onChange={e => setStartDate(e.target.value)}
-                          className="text-xs border-none focus:ring-0 p-0 text-slate-700"
+                          className="text-xs border-none focus:ring-0 p-0 text-slate-700 w-full"
                       />
                       <span className="text-slate-400">-</span>
                       <input 
                           type="date" 
                           value={endDate} 
                           onChange={e => setEndDate(e.target.value)}
-                          className="text-xs border-none focus:ring-0 p-0 text-slate-700"
+                          className="text-xs border-none focus:ring-0 p-0 text-slate-700 w-full"
                       />
                   </div>
               </div>
@@ -562,7 +565,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                    <h3 className="font-bold text-slate-700 uppercase text-sm tracking-wider">Attendance Report</h3>
                                </div>
                                <div className="flex-1 min-h-[200px]">
-                                   <ResponsiveContainer width="100%" height="100%">
+                                   <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                        <PieChart>
                                            <Pie 
                                                data={pieData} 

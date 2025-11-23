@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
@@ -688,56 +689,64 @@ export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
           {/* ANALYTICS TAB */}
           {activeTab === 'analytics' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card className="h-80">
+                  <Card className="h-80 flex flex-col">
                       <h3 className="font-bold mb-4">{t.commonComplaints}</h3>
-                      <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={symptomData} layout="vertical">
-                              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                              <XAxis type="number" />
-                              <YAxis dataKey="name" type="category" width={100} fontSize={12} />
-                              <Tooltip />
-                              <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-                          </BarChart>
-                      </ResponsiveContainer>
+                      <div className="flex-1 min-h-0">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                              <BarChart data={symptomData} layout="vertical">
+                                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                  <XAxis type="number" />
+                                  <YAxis dataKey="name" type="category" width={100} fontSize={12} />
+                                  <Tooltip />
+                                  <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                              </BarChart>
+                          </ResponsiveContainer>
+                      </div>
                   </Card>
 
-                  <Card className="h-80">
+                  <Card className="h-80 flex flex-col">
                       <h3 className="font-bold mb-4">{t.visitsByGrade}</h3>
-                      <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={gradeData}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                              <XAxis dataKey="name" fontSize={12} />
-                              <YAxis allowDecimals={false} />
-                              <Tooltip />
-                              <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                      </ResponsiveContainer>
+                      <div className="flex-1 min-h-0">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                              <BarChart data={gradeData}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                  <XAxis dataKey="name" fontSize={12} />
+                                  <YAxis allowDecimals={false} />
+                                  <Tooltip />
+                                  <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                              </BarChart>
+                          </ResponsiveContainer>
+                      </div>
                   </Card>
 
-                  <Card className="h-80">
+                  <Card className="h-80 flex flex-col">
                       <h3 className="font-bold mb-4">{t.visitsBySection}</h3>
-                       <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={sectionData}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                              <XAxis dataKey="name" fontSize={12} />
-                              <YAxis allowDecimals={false} />
-                              <Tooltip />
-                              <Bar dataKey="value" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                      </ResponsiveContainer>
+                       <div className="flex-1 min-h-0">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                              <BarChart data={sectionData}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                  <XAxis dataKey="name" fontSize={12} />
+                                  <YAxis allowDecimals={false} />
+                                  <Tooltip />
+                                  <Bar dataKey="value" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                              </BarChart>
+                          </ResponsiveContainer>
+                       </div>
                   </Card>
 
-                  <Card className="h-80">
+                  <Card className="h-80 flex flex-col">
                       <h3 className="font-bold mb-4">{t.visitsByGender}</h3>
-                       <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={genderData}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                              <XAxis dataKey="name" fontSize={12} />
-                              <YAxis allowDecimals={false} />
-                              <Tooltip />
-                              <Bar dataKey="value" fill="#ec4899" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                      </ResponsiveContainer>
+                       <div className="flex-1 min-h-0">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                              <BarChart data={genderData}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                  <XAxis dataKey="name" fontSize={12} />
+                                  <YAxis allowDecimals={false} />
+                                  <Tooltip />
+                                  <Bar dataKey="value" fill="#ec4899" radius={[4, 4, 0, 0]} />
+                              </BarChart>
+                          </ResponsiveContainer>
+                       </div>
                   </Card>
               </div>
           )}
