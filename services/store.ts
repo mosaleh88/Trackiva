@@ -186,10 +186,15 @@ class SupabaseStore {
     } else { throw error; }
   }
 
+  // UPDATED: Use upsert to update existing students
   async bulkImportStudents(students: Omit<Student, 'id'>[]) {
-    const { data, error } = await supabase.from('students').insert(students).select();
+    const { data, error } = await supabase.from('students')
+        .upsert(students, { onConflict: 'studentNumber' }) // Update if exists
+        .select();
+        
     if (data) {
-        this.data.students = [...this.data.students, ...data];
+        // Re-fetch all students to ensure cache is consistent with upsert
+        await this.refreshData(); 
     }
     if (error) throw error;
   }

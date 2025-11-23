@@ -290,7 +290,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!confirm(`Are you sure you want to upload "${file.name}"? This will add students to the database.`)) {
+    if (!confirm(`Are you sure you want to upload "${file.name}"? This will add/update students in the database.`)) {
       e.target.value = ''; // Reset input
       return;
     }
@@ -322,7 +322,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             if (mappedStudents.length > 0) {
                 await store.bulkImportStudents(mappedStudents);
                 await refreshData();
-                alert(`Successfully imported ${mappedStudents.length} students.`);
+                alert(`Successfully updated/imported ${mappedStudents.length} students.`);
             } else {
                 alert("No valid student data found in the Excel file.");
             }
