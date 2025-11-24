@@ -170,12 +170,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
           {view === 'login' ? (
               <form onSubmit={handleLogin} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t.email}</label>
+                  <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-1">{t.email}</label>
                     <Input 
                     id="login-email"
                     name="email"
                     type="email" 
                     value={email} 
+                    autoComplete="email"
                     onChange={e => { setEmail(e.target.value); setError(""); }}
                     placeholder="name@school.com"
                     className="h-12"
@@ -185,7 +186,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
                 
                 <div>
                   <div className="flex justify-between mb-1">
-                      <label className="block text-sm font-medium text-slate-700">{t.password}</label>
+                      <label htmlFor="login-password" className="block text-sm font-medium text-slate-700">{t.password}</label>
                       <button 
                           type="button" 
                           onClick={() => { setView('forgot'); setError(""); setSuccessMsg(""); }}
@@ -200,6 +201,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
                       name="password"
                       type={showPassword ? "text" : "password"} 
                       value={password} 
+                      autoComplete="current-password"
                       onChange={e => { setPassword(e.target.value); setError(""); }}
                       placeholder="••••••••"
                       className="h-12 pr-10"
@@ -228,12 +230,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
           ) : view === 'forgot' ? (
               <form onSubmit={handleForgotPassword} className="space-y-6">
                   <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">{t.email}</label>
+                      <label htmlFor="forgot-email" className="block text-sm font-medium text-slate-700 mb-1">{t.email}</label>
                       <div className="relative">
                           <Input 
                             id="forgot-email"
                             name="email"
                             type="email" 
+                            autoComplete="email"
                             value={email} 
                             onChange={e => { setEmail(e.target.value); setError(""); }}
                             placeholder="name@school.com"
@@ -271,12 +274,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
           ) : (
               <form onSubmit={handleUpdatePassword} className="space-y-6">
                   <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
+                      <label htmlFor="update-password" className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
                       <div className="relative">
                           <Input 
                             id="update-password"
                             name="password"
                             type={showPassword ? "text" : "password"}
+                            autoComplete="new-password"
                             value={password} 
                             onChange={e => { setPassword(e.target.value); setError(""); }}
                             placeholder="Enter new password"
