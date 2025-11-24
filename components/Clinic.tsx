@@ -5,7 +5,7 @@ import { useStore } from '../services/store';
 import { Language, ClinicVisit, Student, EPass, User } from '../types';
 import { TRANSLATIONS, CLINIC_SYMPTOMS } from '../constants';
 import { Stethoscope, Activity, AlertTriangle, Search, User as UserIcon, ArrowRight, Siren, FileText, Coffee, Plus, X } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts/lib';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface ClinicProps {
   lang: Language;
