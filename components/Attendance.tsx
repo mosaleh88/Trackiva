@@ -3,7 +3,7 @@ import { Card, Button, Badge, Input, Select } from './ui';
 import { store } from '../services/store';
 import { Student, AttendanceStatus, Language, TimeSlot, User } from '../types';
 import { TRANSLATIONS } from '../constants';
-import { Clock, Calendar, Filter, Save, Users, X } from 'lucide-react';
+import { Clock, Calendar, Filter, Save, Users, X, Trash2, AlertCircle } from 'lucide-react';
 
 interface AttendanceProps {
   lang: Language;
@@ -178,12 +178,30 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
   };
 
   const handleMark = (studentId: string, status: AttendanceStatus) => {
+    // Toggle check: if clicking the same status, remove it
+    if (marked[studentId] === status) {
+        const newMarked = { ...marked };
+        delete newMarked[studentId];
+        setMarked(newMarked);
+        
+        if (reasons[studentId]) {
+             setReasons(prev => {
+                const next = { ...prev };
+                delete next[studentId];
+                return next;
+             });
+        }
+        setUnsavedChanges(true);
+        return;
+    }
+
     if (status === AttendanceStatus.ABSENT_EXCUSED) {
         setSelectedStudentForReason(studentId);
         setTempReason(reasons[studentId] || "");
         setShowReasonModal(true);
     } else {
         setMarked(prev => ({ ...prev, [studentId]: status }));
+        // If we switched away from Excused, clear the reason
         setReasons(prev => {
             const next = { ...prev };
             delete next[studentId];
@@ -226,6 +244,24 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
     setBulkActionValue(""); // Reset dropdown
   };
 
+  const handleClearAll = () => {
+      if (Object.keys(marked).length === 0) return;
+      
+      if (window.confirm(t.confirmClear)) {
+          const newMarked = { ...marked };
+          const newReasons = { ...reasons };
+          
+          filteredStudents.forEach(s => {
+              delete newMarked[s.id];
+              delete newReasons[s.id];
+          });
+          
+          setMarked(newMarked);
+          setReasons(newReasons);
+          setUnsavedChanges(true);
+      }
+  };
+
   const handleSubmitAttendance = async () => {
     setIsSubmitting(true);
     
@@ -263,6 +299,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
 
   const currentPeriodInfo = availablePeriods.find(p => p.id === selectedPeriod);
   const currentStudent = students.find(s => s.id === selectedStudentForReason);
+  
+  // Validation: Check if all filtered students have a mark
+  const allStudentsMarked = filteredStudents.length > 0 && filteredStudents.every(s => marked[s.id]);
 
   return (
     <div className="space-y-6 pb-24">
@@ -413,6 +452,15 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
             </div>
 
             <div className="flex items-center gap-2 w-full md:w-auto">
+                <Button 
+                    variant="ghost" 
+                    onClick={handleClearAll}
+                    className="text-red-500 hover:bg-red-50 hover:text-red-700 text-sm"
+                    title={t.clearAll}
+                >
+                    <Trash2 size={16} /> {t.clearAll}
+                </Button>
+                <div className="h-8 w-px bg-slate-200 mx-1 hidden md:block"></div>
                 <div className="relative w-full md:w-48">
                     <Select 
                         value={bulkActionValue}
@@ -523,11 +571,21 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
           </Card>
 
           {/* Submit Button - Static at bottom */}
-          <div className="flex justify-end pt-6 border-t border-slate-200 mt-6">
+          <div className="flex flex-col items-end gap-2 pt-6 border-t border-slate-200 mt-6">
+            {!allStudentsMarked && (
+                <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg text-sm">
+                    <AlertCircle size={16} />
+                    <span>Please mark attendance for all students before submitting.</span>
+                </div>
+            )}
             <Button 
                 onClick={handleSubmitAttendance} 
-                disabled={isSubmitting}
-                className={`shadow-lg text-lg px-8 py-3 transition-all rounded-xl ${unsavedChanges ? 'bg-primary hover:bg-blue-700 animate-pulse' : 'bg-slate-400 hover:bg-slate-50 opacity-90'}`}
+                disabled={isSubmitting || !allStudentsMarked}
+                className={`shadow-lg text-lg px-8 py-3 transition-all rounded-xl ${
+                    !allStudentsMarked ? 'bg-slate-300 cursor-not-allowed opacity-70' :
+                    unsavedChanges ? 'bg-primary hover:bg-blue-700 animate-pulse' : 
+                    'bg-slate-400 hover:bg-slate-50 opacity-90'
+                }`}
             >
                 <Save size={20} /> {isSubmitting ? 'Saving...' : (unsavedChanges ? t.submitChanges : t.attendanceSaved)}
             </Button>

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
@@ -155,7 +156,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     setWlTelegramToken(settings.watchlistBotToken || "");
     setWlTelegramChatId(settings.watchlistChatId || "");
     setNotificationRules(settings.notificationRules || {});
-    setRolePermissions(settings.rolePermissions);
+    setRolePermissions(settings.rolePermissions || generateDefaultPermissions());
     setAttendanceRules(settings.attendanceSettings || { absentPeriodThreshold: 3, countAllExcusedAsExcusedDay: true, alertThresholds: [3, 6, 10, 15] });
   };
 
@@ -267,7 +268,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             name_ar: formData.name_ar || '',
             busRoute: formData.busRoute || '',
             familyId: formData.familyId || '',
-            isWatchlisted: formData.isWatchlisted || false
+            isWatchlisted: formData.isWatchlisted === 'true' || formData.isWatchlisted === true
         };
 
         if (editingStudent) {
@@ -632,7 +633,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   };
 
   const handleToggleAccess = async (navId: string) => {
-      const currentPerms = rolePermissions[selectedRoleForAccess] || [];
+      const safePermissions = rolePermissions || generateDefaultPermissions();
+      const currentPerms = safePermissions[selectedRoleForAccess] || [];
       let newPerms: string[];
       
       if (currentPerms.includes(navId)) {
@@ -642,7 +644,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       }
 
       const updatedRolePermissions = {
-          ...rolePermissions,
+          ...safePermissions,
           [selectedRoleForAccess]: newPerms
       };
 
@@ -785,1010 +787,595 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             <label htmlFor="name_ar" className="block text-xs font-bold text-slate-500 mb-1">{t.labelAr}</label>
             <Input 
                 id="name_ar"
-                placeholder="الاسم" 
+                placeholder="جون دو" 
                 value={formData.name_ar || ''} 
                 onChange={e => setFormData({...formData, name_ar: e.target.value})} 
             />
         </div>
-        <div className="flex gap-2 col-span-1">
-            <div className="w-1/2">
-                <label htmlFor="grade" className="block text-xs font-bold text-slate-500 mb-1">{t.grade} *</label>
-                <Input 
-                    id="grade"
-                    placeholder="10" 
-                    value={formData.grade || ''} 
-                    onChange={e => setFormData({...formData, grade: e.target.value})} 
-                />
-            </div>
-            <div className="w-1/2">
-                <label htmlFor="section" className="block text-xs font-bold text-slate-500 mb-1">{t.section} *</label>
-                <Input 
-                    id="section"
-                    placeholder="A" 
-                    value={formData.section || ''} 
-                    onChange={e => setFormData({...formData, section: e.target.value})} 
-                />
-            </div>
+        <div className="col-span-1">
+             <label htmlFor="watchlist" className="block text-xs font-bold text-slate-500 mb-1">{t.watchlist}</label>
+             <Select 
+                id="watchlist"
+                value={formData.isWatchlisted ? 'true' : 'false'}
+                onChange={e => setFormData({...formData, isWatchlisted: e.target.value})}
+            >
+                <option value="false">Normal Status</option>
+                <option value="true">Targeted / Watchlisted</option>
+            </Select>
         </div>
-        
-        {/* Family ID Input */}
+
+        <div className="col-span-1">
+            <label htmlFor="grade" className="block text-xs font-bold text-slate-500 mb-1">{t.grade} *</label>
+            <Select 
+                id="grade"
+                value={formData.grade || ''} 
+                onChange={e => setFormData({...formData, grade: e.target.value})}
+            >
+                <option value="">Select Grade</option>
+                {Array.from({length: 12}, (_, i) => i + 1).map(g => <option key={g} value={g}>{g}</option>)}
+                <option value="KG1">KG1</option>
+                <option value="KG2">KG2</option>
+            </Select>
+        </div>
+        <div className="col-span-1">
+            <label htmlFor="section" className="block text-xs font-bold text-slate-500 mb-1">{t.section} *</label>
+            <Input 
+                id="section"
+                placeholder="A, B, C..." 
+                value={formData.section || ''} 
+                onChange={e => setFormData({...formData, section: e.target.value})} 
+            />
+        </div>
+        <div className="col-span-1">
+            <label htmlFor="busRoute" className="block text-xs font-bold text-slate-500 mb-1">Bus Route</label>
+            <Input 
+                id="busRoute"
+                placeholder="e.g. R-101" 
+                value={formData.busRoute || ''} 
+                onChange={e => setFormData({...formData, busRoute: e.target.value})} 
+            />
+        </div>
         <div className="col-span-1">
             <label htmlFor="familyId" className="block text-xs font-bold text-slate-500 mb-1">{t.familyId}</label>
             <Input 
                 id="familyId"
-                placeholder="FAM-001" 
+                placeholder="Shared ID for siblings" 
                 value={formData.familyId || ''} 
                 onChange={e => setFormData({...formData, familyId: e.target.value})} 
             />
-            <p className="text-[10px] text-slate-400 mt-1">Assign same ID to link siblings.</p>
         </div>
-
-        <div className="col-span-1 md:col-span-2 bg-red-50 p-4 rounded-lg border border-red-100">
-            <label htmlFor="isWatchlisted" className="flex items-center gap-3 cursor-pointer">
-                <input 
-                    id="isWatchlisted"
-                    type="checkbox" 
-                    className="w-5 h-5 rounded text-red-600 focus:ring-red-500"
-                    checked={formData.isWatchlisted || false}
-                    onChange={e => setFormData({...formData, isWatchlisted: e.target.checked})}
-                />
-                <div>
-                    <span className="font-bold text-red-800 text-sm block">{t.watchlist}</span>
-                    <span className="text-xs text-red-600">Flag this student for strict monitoring and targeted alerts.</span>
-                </div>
-            </label>
-        </div>
-    </div>
-    {formData.transportMode === 'Bus' && (
-         <div className="mt-4">
-            <label htmlFor="busRoute" className="block text-xs font-bold text-slate-500 mb-1">Bus Route Number</label>
-            <Input 
-                id="busRoute"
-                placeholder="R-101" 
-                value={formData.busRoute || ''} 
-                onChange={e => setFormData({...formData, busRoute: e.target.value})} 
-            />
-         </div>
-    )}
-      <div className="flex gap-2 mt-6 justify-end border-t border-slate-200 pt-4">
+      </div>
+      <div className="mt-6 flex justify-end gap-2">
         <Button disabled={isLoading} onClick={handleSaveStudent}>{t.save}</Button>
       </div>
     </div>
   );
 
-  const renderUserForm = () => (
-    <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6 animate-in fade-in shadow-sm">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg text-slate-800">{editingUser ? t.actions : t.addUser}</h3>
-        <Button variant="ghost" onClick={() => { setEditingUser(null); setIsAddingUser(false); setFormData({}); }}>{t.cancel}</Button>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-            <label htmlFor="userName" className="block text-xs font-bold text-slate-500 mb-1">{t.studentName}</label>
-            <Input 
-                id="userName"
-                placeholder="Name" 
-                value={formData.name || ''} 
-                onChange={e => setFormData({...formData, name: e.target.value})} 
-            />
-        </div>
-        <div>
-            <label htmlFor="userEmail" className="block text-xs font-bold text-slate-500 mb-1">{t.email}</label>
-            <Input 
-                id="userEmail"
-                autoComplete="email"
-                placeholder="Email" 
-                value={formData.email || ''} 
-                onChange={e => setFormData({...formData, email: e.target.value})} 
-            />
-        </div>
-        <div>
-            <label htmlFor="userRole" className="block text-xs font-bold text-slate-500 mb-1">{t.role}</label>
-            <Select 
-                id="userRole"
-                value={formData.role || UserRole.TEACHER} 
-                onChange={e => setFormData({...formData, role: e.target.value})}
-            >
-                {ROLES_LIST.map(r => (
-                    <option key={r} value={r}>{r}</option>
-                ))}
-            </Select>
-        </div>
-        
-        {/* Social Worker Chat ID Input */}
-        {formData.role === UserRole.SOCIAL_WORKER && (
-            <div>
-                <label htmlFor="userChatId" className="block text-xs font-bold text-slate-500 mb-1">{t.userChatId}</label>
-                <Input 
-                    id="userChatId"
-                    placeholder="e.g. 123456789" 
-                    value={formData.telegramChatId || ''} 
-                    onChange={e => setFormData({...formData, telegramChatId: e.target.value})} 
-                />
-            </div>
-        )}
-        
-        {/* Assigned Classes Section */}
-        <div className="md:col-span-2 border-t border-slate-200 pt-4 mt-2">
-             <h4 className="font-bold text-sm text-slate-700 mb-2">{t.assignedClasses}</h4>
-             <div className="flex gap-2 mb-3">
-                  <div className="flex-1">
-                      <label htmlFor="assignedClassGrade" className="sr-only">{t.grade}</label>
-                      <Select id="assignedClassGrade" value={assignedClassGrade} onChange={e => setAssignedClassGrade(e.target.value)}>
-                          <option value="">{t.grade}</option>
-                          {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
-                      </Select>
-                  </div>
-                  <div className="flex-1">
-                       <label htmlFor="assignedClassSection" className="sr-only">{t.section}</label>
-                       <Select 
-                          value={assignedClassSection} 
-                          onChange={e => setAssignedClassSection(e.target.value)}
-                          disabled={!assignedClassGrade}
-                       >
-                          <option value="">{t.section}</option>
-                          {availableAssignedClassSections.map(s => <option key={s} value={s}>{s}</option>)}
-                      </Select>
-                  </div>
-                  <Button onClick={handleAddAssignedClass} disabled={!assignedClassGrade || !assignedClassSection} variant="secondary">
-                      <Plus size={16} /> {t.addClass}
-                  </Button>
-             </div>
-             
-             {formData.assignedClasses && formData.assignedClasses.length > 0 ? (
-                 <div className="flex flex-wrap gap-2">
-                     {formData.assignedClasses.map((cls: AssignedClass, index: number) => (
-                         <div key={`${cls.grade}-${cls.section}`} className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-100">
-                             <span>{cls.grade} - {cls.section}</span>
-                             <button onClick={() => handleRemoveAssignedClass(index)} className="hover:text-red-600"><X size={14} /></button>
-                         </div>
-                     ))}
-                 </div>
-             ) : (
-                 <p className="text-xs text-slate-400 italic">No classes assigned.</p>
-             )}
-        </div>
-      </div>
-      <div className="flex gap-2 mt-6 justify-end">
-        <Button disabled={isLoading} onClick={handleSaveUser}>{t.save}</Button>
-      </div>
-    </div>
-  );
-
-  const renderDestForm = () => (
-      <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6 animate-in fade-in shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg text-slate-800">{editingDest ? t.editDestination : t.addDestination}</h3>
-              <Button variant="ghost" onClick={() => { setEditingDest(null); setIsAddingDest(false); setFormData({}); }}>{t.cancel}</Button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                  <label htmlFor="destLabelEn" className="block text-xs font-bold text-slate-500 mb-1">{t.labelEn}</label>
-                  <Input id="destLabelEn" value={formData.label_en || ''} onChange={e => setFormData({...formData, label_en: e.target.value})} />
-              </div>
-              <div>
-                  <label htmlFor="destLabelAr" className="block text-xs font-bold text-slate-500 mb-1">{t.labelAr}</label>
-                  <Input id="destLabelAr" value={formData.label_ar || ''} onChange={e => setFormData({...formData, label_ar: e.target.value})} />
-              </div>
-              <div>
-                  <label htmlFor="destDuration" className="block text-xs font-bold text-slate-500 mb-1">{t.duration}</label>
-                  <Input id="destDuration" type="number" value={formData.maxDuration || ''} onChange={e => setFormData({...formData, maxDuration: e.target.value})} />
-              </div>
-              <div>
-                  <label id="destColorLabel" className="block text-xs font-bold text-slate-500 mb-1">{t.color}</label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                      {COLOR_THEMES.map(c => (
-                          <button
-                              aria-labelledby="destColorLabel"
-                              key={c.name}
-                              onClick={() => setFormData({...formData, colorTheme: c.name})}
-                              className={`w-6 h-6 rounded-full border-2 ${formData.colorTheme === c.name ? 'border-slate-800 scale-110' : 'border-transparent'} ${c.class.split(' ')[0]}`}
-                          />
-                      ))}
-                  </div>
-              </div>
-              <div className="col-span-2">
-                  <label id="destIconLabel" className="block text-xs font-bold text-slate-500 mb-1">{t.icon}</label>
-                  <div className="flex flex-wrap gap-2 p-2 bg-white border border-slate-200 rounded-lg h-32 overflow-y-auto">
-                      {AVAILABLE_ICONS.map(iconName => {
-                          // Dynamic icon rendering
-                          const Icon = (LucideIcons as any)[iconName] || Ticket;
-                          return (
-                              <button 
-                                  aria-labelledby="destIconLabel"
-                                  key={iconName}
-                                  onClick={() => setFormData({...formData, iconName: iconName})}
-                                  className={`p-2 rounded-lg hover:bg-slate-100 transition-colors ${formData.iconName === iconName ? 'bg-blue-100 text-blue-600 ring-1 ring-blue-500' : 'text-slate-500'}`}
-                              >
-                                  <Icon size={20} />
-                              </button>
-                          )
-                      })}
-                  </div>
-              </div>
-          </div>
-          <div className="flex gap-2 mt-6 justify-end">
-              <Button disabled={isLoading} onClick={handleSaveDest}>{t.save}</Button>
-          </div>
-      </div>
-  );
-
-  const renderNotificationsTab = () => (
-      <div className="space-y-6">
-          <Card>
-              <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 bg-blue-100 text-blue-600 rounded-full"><Bell size={24} /></div>
-                  <div>
-                      <h3 className="text-lg font-bold text-slate-800">{t.telegramSettings}</h3>
-                      <p className="text-sm text-slate-500">Configure alerting channels for different modules.</p>
-                  </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Security Alerts */}
-                  <div className="p-4 border border-slate-200 rounded-xl bg-red-50/30">
-                      <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2">
-                          <ShieldAlert size={18} className="text-red-500" /> {t.securityAlerts}
-                      </h4>
-                      <p className="text-xs text-slate-500 mb-4">Used for unauthorized exits and security breaches.</p>
-                      <div className="space-y-3">
-                          <div>
-                              <label htmlFor="securityBotToken" className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
-                              <Input id="securityBotToken" value={telegramToken} onChange={e => setTelegramToken(e.target.value)} type="password" />
-                          </div>
-                          <div>
-                              <label htmlFor="securityChatId" className="block text-xs font-bold text-slate-500 mb-1">{t.chatId}</label>
-                              <Input id="securityChatId" value={telegramChatId} onChange={e => setTelegramChatId(e.target.value)} />
-                          </div>
-                      </div>
-                  </div>
-
-                  {/* Reception Alerts */}
-                  <div className="p-4 border border-slate-200 rounded-xl bg-orange-50/30">
-                      <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2">
-                          <LogOut size={18} className="text-orange-500" /> {t.receptionAlerts}
-                      </h4>
-                      <p className="text-xs text-slate-500 mb-4">Used for notifying parents/admins about Early Leave.</p>
-                      <div className="space-y-3">
-                          <div>
-                              <label htmlFor="receptionBotToken" className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
-                              <Input id="receptionBotToken" value={elTelegramToken} onChange={e => setElTelegramToken(e.target.value)} type="password" />
-                          </div>
-                          <div>
-                              <label htmlFor="receptionChatId" className="block text-xs font-bold text-slate-500 mb-1">{t.chatId}</label>
-                              <Input id="receptionChatId" value={elTelegramChatId} onChange={e => setElTelegramChatId(e.target.value)} />
-                          </div>
-                      </div>
-                  </div>
-
-                  {/* Attendance Alerts */}
-                  <div className="p-4 border border-slate-200 rounded-xl bg-blue-50/30">
-                      <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2">
-                          <Megaphone size={18} className="text-blue-600" /> {t.attendanceAlerts}
-                      </h4>
-                      <p className="text-xs text-slate-500 mb-4">Used for notifying Social Workers about absence thresholds.</p>
-                      <div className="space-y-3">
-                          <div>
-                              <label htmlFor="attendanceBotToken" className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
-                              <Input id="attendanceBotToken" value={attTelegramToken} onChange={e => setAttTelegramToken(e.target.value)} type="password" />
-                          </div>
-                      </div>
-                  </div>
-
-                  {/* Watchlist Alerts */}
-                  <div className="p-4 border border-slate-200 rounded-xl bg-yellow-50/30 md:col-span-1">
-                      <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2">
-                          <Eye size={18} className="text-yellow-600" /> {t.watchlistAlerts}
-                      </h4>
-                      <p className="text-xs text-slate-500 mb-4">{t.watchlistDesc}</p>
-                      <div className="grid grid-cols-1 gap-4">
-                          <div>
-                              <label htmlFor="watchlistBotToken" className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
-                              <Input id="watchlistBotToken" value={wlTelegramToken} onChange={e => setWlTelegramToken(e.target.value)} type="password" />
-                          </div>
-                          <div>
-                              <label htmlFor="watchlistChatId" className="block text-xs font-bold text-slate-500 mb-1">{t.chatId}</label>
-                              <Input id="watchlistChatId" value={wlTelegramChatId} onChange={e => setWlTelegramChatId(e.target.value)} />
-                          </div>
-                      </div>
-                  </div>
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-slate-100">
-                  <h4 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                      <Check size={18} className="text-green-500" /> {t.notificationRules}
-                  </h4>
-                  <p className="text-xs text-slate-500 mb-4">{t.enableNotificationsFor}</p>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                       <label htmlFor="notif-UNAUTHORIZED" className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
-                          <input 
-                              id="notif-UNAUTHORIZED"
-                              type="checkbox" 
-                              checked={notificationRules['UNAUTHORIZED'] !== false} // Default true
-                              onChange={() => toggleNotificationRule('UNAUTHORIZED')}
-                              className="rounded text-primary focus:ring-primary"
-                          />
-                          <span className="text-sm font-medium text-red-600">{t.unauthorized}</span>
-                       </label>
-                       
-                       {destinations.map(d => (
-                           <label htmlFor={`notif-${d.id}`} key={d.id} className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
-                              <input 
-                                  id={`notif-${d.id}`}
-                                  type="checkbox" 
-                                  checked={notificationRules[d.id] === true}
-                                  onChange={() => toggleNotificationRule(d.id)}
-                                  className="rounded text-primary focus:ring-primary"
-                              />
-                              <span className="text-sm font-medium">{lang === 'en' ? d.label_en : d.label_ar}</span>
-                           </label>
-                       ))}
-                  </div>
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                  <Button onClick={handleUpdateNotificationSettings}>{t.saveCredentials}</Button>
-              </div>
-          </Card>
-          
-          {/* Parent Notification Section */}
-          <Card>
-              <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 bg-purple-100 text-purple-600 rounded-full"><MessageCircle size={24} /></div>
-                  <div>
-                      <h3 className="text-lg font-bold text-slate-800">{t.parentNotifications}</h3>
-                      <p className="text-sm text-slate-500">{t.parentNotificationsDesc}</p>
-                  </div>
-              </div>
-
-              <div className="max-w-lg relative mb-6">
-                  <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-                  <Input 
-                      aria-label={t.searchStudent}
-                      placeholder={t.searchStudent} 
-                      className="pl-10"
-                      value={parentSearch}
-                      onChange={e => setParentSearch(e.target.value)}
-                  />
-                  {parentSearch && (
-                      <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg mt-1 z-10">
-                          {filteredParentSearch.map(s => (
-                              <button 
-                                  key={s.id}
-                                  onClick={() => handleParentSearchSelect(s)}
-                                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm"
-                              >
-                                  {lang === 'en' ? s.name_en : s.name_ar} ({s.studentNumber})
-                              </button>
-                          ))}
-                      </div>
-                  )}
-              </div>
-
-              {selectedStudentForParent && (
-                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 animate-in fade-in">
-                      <div className="flex justify-between items-start mb-4">
-                          <div>
-                              <h4 className="font-bold text-slate-800">{lang === 'en' ? selectedStudentForParent.name_en : selectedStudentForParent.name_ar}</h4>
-                              <p className="text-xs text-slate-500">ID: {selectedStudentForParent.studentNumber}</p>
-                          </div>
-                          <button onClick={() => setSelectedStudentForParent(null)} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
-                      </div>
-                      
-                      <div className="space-y-4">
-                          <div>
-                              <label htmlFor="parentChatId" className="block text-xs font-bold text-slate-500 mb-1">{t.parentChatId}</label>
-                              <Input id="parentChatId" value={parentChatId} onChange={e => setParentChatId(e.target.value)} placeholder="e.g. 123456789" />
-                          </div>
-
-                          <div>
-                              <label className="block text-xs font-bold text-slate-500 mb-2">{t.selectEvents}</label>
-                              <div className="grid grid-cols-2 gap-3">
-                                   <label htmlFor="parent-notif-UNAUTHORIZED" className="flex items-center gap-2">
-                                      <input 
-                                          id="parent-notif-UNAUTHORIZED"
-                                          type="checkbox" 
-                                          checked={parentRules['UNAUTHORIZED'] || false}
-                                          onChange={() => toggleParentRule('UNAUTHORIZED')}
-                                          className="rounded text-purple-600 focus:ring-purple-500"
-                                      />
-                                      <span className="text-sm">{t.unauthorized}</span>
-                                  </label>
-                                  <label htmlFor="parent-notif-EARLY_LEAVE" className="flex items-center gap-2">
-                                      <input 
-                                          id="parent-notif-EARLY_LEAVE"
-                                          type="checkbox" 
-                                          checked={parentRules['EARLY_LEAVE'] || false}
-                                          onChange={() => toggleParentRule('EARLY_LEAVE')}
-                                          className="rounded text-purple-600 focus:ring-purple-500"
-                                      />
-                                      <span className="text-sm">{t.earlyLeave}</span>
-                                  </label>
-                                  {destinations.map(d => (
-                                      <label htmlFor={`parent-notif-${d.id}`} key={d.id} className="flex items-center gap-2">
-                                          <input 
-                                              id={`parent-notif-${d.id}`}
-                                              type="checkbox" 
-                                              checked={parentRules[d.id] || false}
-                                              onChange={() => toggleParentRule(d.id)}
-                                          />
-                                          <span className="text-sm">{lang === 'en' ? d.label_en : d.label_ar}</span>
-                                      </label>
-                                  ))}
-                              </div>
-                          </div>
-                          
-                          <Button disabled={isLoading} onClick={handleSaveParentSettings} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
-                              {t.saveParentSettings}
-                          </Button>
-                      </div>
-                  </div>
-              )}
-          </Card>
-      </div>
-  );
-
-  const renderAttendanceRules = () => (
-      <Card>
-          <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-slate-100 text-slate-600 rounded-full"><ListChecks size={24} /></div>
-              <div>
-                  <h3 className="text-lg font-bold text-slate-800">{t.attendanceRules}</h3>
-                  <p className="text-sm text-slate-500">{t.attendanceRulesDesc}</p>
-              </div>
-          </div>
-
-          <div className="space-y-6 max-w-xl">
-              {/* Threshold for calculating daily absent status */}
-              <div>
-                  <label htmlFor="absentThreshold" className="block text-sm font-bold text-slate-700 mb-1">{t.absentThreshold}</label>
-                  <p className="text-xs text-slate-500 mb-2">{t.absentThresholdDesc}</p>
-                  <Input 
-                      id="absentThreshold"
-                      type="number" 
-                      min={1}
-                      max={10}
-                      value={attendanceRules.absentPeriodThreshold} 
-                      onChange={e => setAttendanceRules({...attendanceRules, absentPeriodThreshold: parseInt(e.target.value) || 3})} 
-                  />
-              </div>
-
-              {/* Excused Logic Toggle */}
-              <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                  <label htmlFor="countAllExcused" className="flex items-start gap-3 cursor-pointer">
-                      <input 
-                          id="countAllExcused"
-                          type="checkbox" 
-                          className="mt-1 w-5 h-5 rounded text-blue-600 focus:ring-blue-500"
-                          checked={attendanceRules.countAllExcusedAsExcusedDay}
-                          onChange={e => setAttendanceRules({...attendanceRules, countAllExcusedAsExcusedDay: e.target.checked})}
-                      />
-                      <div>
-                          <span className="font-bold text-slate-800 text-sm block">{t.countAllExcused}</span>
-                          <span className="text-xs text-slate-600">{t.countAllExcusedDesc}</span>
-                      </div>
-                  </label>
-              </div>
-
-              {/* Notification Thresholds */}
-              <div>
-                  <label id="attendanceAlertLabel" className="block text-sm font-bold text-slate-700 mb-1">{t.attendanceAlertThresholds}</label>
-                  <p className="text-xs text-slate-500 mb-3">{t.attendanceAlertDesc}</p>
-                  
-                  <div className="flex flex-wrap gap-3">
-                      {[1, 3, 6, 10, 15].map(days => {
-                          const isSelected = attendanceRules.alertThresholds?.includes(days);
-                          return (
-                              <button 
-                                  aria-labelledby="attendanceAlertLabel"
-                                  key={days}
-                                  onClick={() => toggleAttendanceAlertThreshold(days)}
-                                  className={`px-4 py-2 rounded-lg border text-sm font-bold transition-all ${isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-                              >
-                                  {days} Days
-                              </button>
-                          );
-                      })}
-                  </div>
-              </div>
-
-              <div className="flex justify-end pt-4 border-t border-slate-100">
-                  <Button disabled={isLoading} onClick={handleUpdateAttendanceRules}>{t.saveRules}</Button>
-              </div>
-          </div>
-      </Card>
-  );
-
-  const renderAccessControl = () => (
-      <Card>
-          <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-slate-100 text-slate-600 rounded-full"><Shield size={24} /></div>
-              <div>
-                  <h3 className="text-lg font-bold text-slate-800">{t.accessControl}</h3>
-                  <p className="text-sm text-slate-500">{t.manageRoles}</p>
-              </div>
-          </div>
-
-          <div className="mb-6">
-              <label htmlFor="accessControlRole" className="block text-xs font-bold text-slate-500 mb-1">{t.selectRole}</label>
-              <Select 
-                  id="accessControlRole"
-                  value={selectedRoleForAccess} 
-                  onChange={e => setSelectedRoleForAccess(e.target.value)}
-                  className="max-w-xs"
-              >
-                  {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
-              </Select>
-          </div>
-
-          <div className="border rounded-xl overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                  <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm">
-                          <th className="p-4 font-bold">{t.module}</th>
-                          <th className="p-4 font-bold text-center">{t.access}</th>
-                      </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                      {NAV_ITEMS.map(item => {
-                          const hasAccess = (rolePermissions[selectedRoleForAccess] || []).includes(item.id);
-                          const Icon = item.icon;
-                          return (
-                              <tr key={item.id} className="hover:bg-slate-50">
-                                  <td className="p-4 flex items-center gap-3">
-                                      <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
-                                          <Icon size={18} />
-                                      </div>
-                                      <span className="font-medium text-slate-700">{lang === 'en' ? item.label_en : item.label_ar}</span>
-                                  </td>
-                                  <td className="p-4 text-center">
-                                      <label htmlFor={`access-toggle-${item.id}`} className="relative inline-flex items-center cursor-pointer">
-                                          <input 
-                                              id={`access-toggle-${item.id}`}
-                                              type="checkbox" 
-                                              className="sr-only peer"
-                                              checked={hasAccess}
-                                              onChange={() => handleToggleAccess(item.id)}
-                                          />
-                                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                      </label>
-                                  </td>
-                              </tr>
-                          );
-                      })}
-                  </tbody>
-              </table>
-          </div>
-          
-          <div className="mt-4 p-3 bg-yellow-50 text-yellow-800 text-sm rounded-lg flex gap-2 items-start">
-              <ShieldAlert size={16} className="mt-0.5 shrink-0" />
-              <p>Changes to access control are saved immediately but may require users to refresh their session to take effect.</p>
-          </div>
-      </Card>
-  );
-
   return (
-    <div className="space-y-6">
-      {renderIdCardModal()}
-      
-      {/* Top Navigation */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto">
-         {[
-             { id: 'users', label: t.users, icon: Users },
-             { id: 'students', label: t.students, icon: GraduationCap },
-             { id: 'timetable', label: t.timetable, icon: Clock },
-             { id: 'epass', label: t.destinations, icon: Ticket },
-             { id: 'attendance_rules', label: t.attendanceRules, icon: ListChecks },
-             { id: 'access', label: t.accessControl, icon: Shield },
-             { id: 'notifications', label: t.notifications, icon: Bell }
-         ].map(tab => (
-             <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as Tab)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab.id ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-             >
-                 <tab.icon size={16} />
-                 {tab.label}
-             </button>
-         ))}
-      </div>
-
-      {/* USERS TAB */}
-      {activeTab === 'users' && (
-        <div>
-          <div className="flex justify-between items-center mb-6">
-              <div className="flex gap-4 w-full max-w-lg">
-                  <div className="relative flex-1">
-                      <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-                      <Input 
-                          placeholder="Search Users..." 
-                          className="pl-10" 
-                          value={userSearchTerm}
-                          onChange={e => setUserSearchTerm(e.target.value)}
-                      />
-                  </div>
-                  <Select 
-                      value={userRoleFilter}
-                      onChange={e => setUserRoleFilter(e.target.value)}
-                      className="w-40 pr-8 rtl:pl-8"
-                  >
-                      <option value="All">All Roles</option>
-                      {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
-                  </Select>
-              </div>
-              <Button onClick={() => { setIsAddingUser(true); setFormData({}); }}><Plus size={18} /> {t.addUser}</Button>
+      <div className="space-y-6">
+          {renderIdCardModal()}
+          
+          {/* Top Tabs */}
+          <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex flex-wrap gap-1">
+              <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+                  {t.users}
+              </button>
+              <button onClick={() => setActiveTab('students')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'students' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+                  {t.students}
+              </button>
+              <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'timetable' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+                  {t.timetable}
+              </button>
+              <button onClick={() => setActiveTab('epass')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'epass' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+                  {t.destinations}
+              </button>
+              <button onClick={() => setActiveTab('access')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'access' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+                  {t.accessControl}
+              </button>
+              <button onClick={() => setActiveTab('notifications')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'notifications' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+                  {t.notifications}
+              </button>
+              <button onClick={() => setActiveTab('attendance_rules')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'attendance_rules' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+                  {t.attendanceRules}
+              </button>
           </div>
 
-          {isAddingUser && renderUserForm()}
-          {editingUser && renderUserForm()}
-
-          <Card className="overflow-hidden p-0">
-             <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm">
-                    <tr>
-                        <th className="p-4">{t.studentName}</th>
-                        <th className="p-4">{t.email}</th>
-                        <th className="p-4">{t.role}</th>
-                        <th className="p-4 text-right">{t.actions}</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {filteredUsers.map(user => (
-                        <tr key={user.id} className="hover:bg-slate-50">
-                            <td className="p-4 font-medium">
-                                <div>{user.name}</div>
-                                {user.assignedClasses && user.assignedClasses.length > 0 && (
-                                    <div className="flex gap-1 mt-1">
-                                        {user.assignedClasses.map((c, i) => (
-                                            <span key={i} className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100">
-                                                {c.grade}-{c.section}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </td>
-                            <td className="p-4 text-slate-500">{user.email}</td>
-                            <td className="p-4"><Badge color="blue">{user.role}</Badge></td>
-                            <td className="p-4 text-right flex justify-end gap-2">
-                                <Button variant="ghost" onClick={() => { setEditingUser(user); setFormData(user); }}>
-                                    <Edit2 size={16} />
-                                </Button>
-                                <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteUser(user.id)}>
-                                    <Trash2 size={16} />
-                                </Button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-             </table>
-          </Card>
-        </div>
-      )}
-
-      {/* STUDENTS TAB */}
-      {activeTab === 'students' && (
-        <div>
-           <Card className="mb-6">
-              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-slate-800">{t.students}</h2>
-                    <span className="text-sm text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded-lg">({students.length})</span>
-                  </div>
-                  <div className="flex gap-2">
-                      <label className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-                          {isUploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
-                          <span className="font-bold text-sm">{isUploading ? t.uploading : t.upload}</span>
-                          <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleBulkUpload} disabled={isUploading} />
-                      </label>
-                      <Button variant="secondary" onClick={handleDownloadTemplate}>
-                          <Download size={16} /> {t.downloadTemplate}
-                      </Button>
-                      <Button onClick={() => { setIsAddingStudent(true); setFormData({}); }}>
-                          <Plus size={16} /> {t.addStudent}
-                      </Button>
-                  </div>
-              </div>
-              
-              <div className="mt-4 flex flex-wrap items-center gap-4">
-                  <div className="flex-1 min-w-[250px] relative">
-                      <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-                      <Input 
-                          placeholder={t.searchPlaceholder} 
-                          className="pl-10"
-                          value={searchTerm}
-                          onChange={e => setSearchTerm(e.target.value)}
-                      />
-                  </div>
+          {/* Students Management */}
+          {activeTab === 'students' && (
+              <div className="space-y-4">
+                  {(isAddingStudent || editingStudent) && renderStudentForm()}
                   
-                  <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-2 text-slate-400">
-                          <Filter size={16} />
-                          <span className="text-xs font-bold text-slate-500 whitespace-nowrap">{t.filterBy}:</span>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                          <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="py-2 text-sm w-24 pr-8 rtl:pl-8">
-                              <option value="All">{t.allGrades}</option>
-                              {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
-                          </Select>
-                          <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="py-2 text-sm w-24 pr-8 rtl:pl-8">
-                              <option value="All">{t.allSections}</option>
-                              {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
-                          </Select>
-                          <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="py-2 text-sm w-24 pr-8 rtl:pl-8">
-                              <option value="All">{t.allGenders}</option>
-                              <option value="Male">{t.male}</option>
-                              <option value="Female">{t.female}</option>
-                          </Select>
-                      </div>
-                      
-                      <div className="h-8 w-px bg-slate-200 mx-2 hidden md:block"></div>
-
-                      <div className="flex items-center gap-2">
-                           <ArrowUpDown size={16} className="text-slate-400" />
-                           <span className="text-xs font-bold text-slate-500 whitespace-nowrap">{t.sortBy}:</span>
-                           <div className="flex items-center gap-1">
-                                <Select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="py-2 text-sm w-32 pr-8 rtl:pl-8">
-                                    <option value="name">{t.studentName}</option>
-                                    <option value="grade">{t.grade}</option>
-                                    <option value="number">{t.studentNumber}</option>
-                                </Select>
-                                <button 
-                                    onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                                    className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 border border-slate-200"
-                                >
-                                    {sortOrder === 'asc' ? <ArrowDownAZ size={16} /> : <ArrowUpDown size={16} className="rotate-180" />}
-                                </button>
+                  {/* Toolbar */}
+                  <Card className="flex flex-col md:flex-row gap-4 justify-between items-end">
+                      <div className="flex flex-wrap items-end gap-2 w-full md:w-auto">
+                           <div className="relative group w-full md:w-64">
+                               <Search className="absolute left-3 top-2.5 text-slate-400 group-focus-within:text-primary transition-colors" size={18} />
+                               <Input placeholder={t.searchPlaceholder} className="pl-10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                            </div>
+                           <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="w-28">
+                               <option value="All">{t.allGrades}</option>
+                               {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                           </Select>
+                           <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="w-28">
+                               <option value="All">{t.allSections}</option>
+                               {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
+                           </Select>
+                           <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="w-28">
+                               <option value="All">{t.allGenders}</option>
+                               <option value="Male">{t.male}</option>
+                               <option value="Female">{t.female}</option>
+                           </Select>
+                           <button 
+                               onClick={() => {
+                                   const next = sortBy === 'name' ? 'grade' : sortBy === 'grade' ? 'number' : 'name';
+                                   setSortBy(next);
+                               }}
+                               className="px-3 py-2 bg-slate-100 rounded-lg text-slate-600 hover:bg-slate-200 text-sm font-bold flex items-center gap-2"
+                           >
+                               <ArrowUpDown size={16} /> {t.sortBy}: {sortBy.toUpperCase()}
+                           </button>
                       </div>
-                  </div>
-              </div>
-           </Card>
-
-           {isAddingStudent && renderStudentForm()}
-           {editingStudent && renderStudentForm()}
-
-           <Card className="overflow-hidden p-0">
-              <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm">
-                          <tr>
-                              <th className="p-4">{t.studentNumber}</th>
-                              <th className="p-4">{t.studentName}</th>
-                              <th className="p-4">{t.gender}</th>
-                              <th className="p-4">{t.grade}</th>
-                              <th className="p-4">{t.transport}</th>
-                              <th className="p-4 text-right">{t.actions}</th>
-                          </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                          {paginatedStudents.map(student => (
-                              <tr key={student.id} className={`hover:bg-slate-50 ${student.isWatchlisted ? 'bg-red-50/30' : ''}`}>
-                                  <td className="p-4 font-mono text-slate-600">{student.studentNumber}</td>
-                                  <td className="p-4">
-                                      <div className="font-bold text-slate-800 flex items-center gap-2">
-                                          {lang === 'en' ? student.name_en : student.name_ar}
-                                          {student.name_ar && lang === 'en' && <span className="text-xs text-slate-400 font-normal">{student.name_ar}</span>}
-                                      </div>
-                                  </td>
-                                  <td className="p-4">
-                                      <Badge color={student.gender === 'Male' ? 'blue' : 'red'}>
-                                          {student.gender === 'Male' ? t.male : t.female}
-                                      </Badge>
-                                  </td>
-                                  <td className="p-4 font-bold">{student.grade} - {student.section}</td>
-                                  <td className="p-4 text-sm text-slate-600">
-                                      {student.transportMode} {student.busRoute && <span className="text-slate-400">({student.busRoute})</span>}
-                                  </td>
-                                  <td className="p-4 text-right flex justify-end gap-2">
-                                      <Button variant="secondary" className="px-2 py-1" onClick={() => setViewingCard(student)}>
-                                          <CreditCard size={16} />
-                                      </Button>
-                                      <Button variant="ghost" onClick={() => { setEditingStudent(student); setFormData(student); }}>
-                                          <Edit2 size={16} />
-                                      </Button>
-                                      <Button variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteStudent(student.id)}>
-                                          <Trash2 size={16} />
-                                      </Button>
-                                  </td>
-                              </tr>
-                          ))}
-                          {paginatedStudents.length === 0 && (
-                              <tr><td colSpan={6} className="p-6 text-center text-slate-400">No students found</td></tr>
-                          )}
-                      </tbody>
-                  </table>
-              </div>
-              
-              {/* Pagination Controls */}
-              {totalStudentPages > 1 && (
-                  <div className="flex justify-between items-center p-4 border-t border-slate-200 bg-slate-50/50">
-                      <span className="text-sm text-slate-500">
-                          Page {studentPage} of {totalStudentPages}
-                      </span>
-                      <div className="flex gap-2">
-                          <Button 
-                              variant="secondary" 
-                              disabled={studentPage === 1}
-                              onClick={() => setStudentPage(p => Math.max(1, p - 1))}
-                              className="h-8 text-xs px-3"
-                          >
-                              <ChevronLeft size={14} /> Previous
+                      
+                      <div className="flex gap-2 w-full md:w-auto">
+                          <label className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors shadow-sm">
+                              <Upload size={18} />
+                              <span className="text-sm font-bold">{isUploading ? t.uploading : t.upload}</span>
+                              <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleBulkUpload} disabled={isUploading} />
+                          </label>
+                          <Button onClick={handleDownloadTemplate} variant="secondary" className="px-3">
+                              <Download size={18} />
                           </Button>
-                          <Button 
-                              variant="secondary" 
-                              disabled={studentPage === totalStudentPages}
-                              onClick={() => setStudentPage(p => Math.min(totalStudentPages, p + 1))}
-                              className="h-8 text-xs px-3"
-                          >
-                              Next <ChevronRight size={14} />
-                          </Button>
-                      </div>
-                  </div>
-              )}
-           </Card>
-        </div>
-      )}
-
-      {/* TIMETABLE TAB */}
-      {activeTab === 'timetable' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                  <Card>
-                      <div className="flex justify-between items-center mb-6">
-                          <div>
-                              <h3 className="text-xl font-bold text-slate-800">{t.timetable}</h3>
-                              <p className="text-sm text-slate-500">{t.timetableConfig}</p>
-                          </div>
-                          <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
-                              <button 
-                                  onClick={() => setEditingScheduleType('standard')}
-                                  className={`px-3 py-1 rounded-md text-sm font-bold transition-all ${editingScheduleType === 'standard' ? 'bg-white shadow-sm' : 'text-slate-500'}`}
-                              >
-                                  {t.standard}
-                              </button>
-                              <button 
-                                  onClick={() => setEditingScheduleType('friday')}
-                                  className={`px-3 py-1 rounded-md text-sm font-bold transition-all ${editingScheduleType === 'friday' ? 'bg-white shadow-sm' : 'text-slate-500'}`}
-                              >
-                                  {t.friday}
-                              </button>
-                          </div>
-                      </div>
-
-                      <div className="space-y-3">
-                          {schedule[editingScheduleType].map((slot, idx) => (
-                              <div key={slot.id} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border border-slate-100 group">
-                                  <span className="w-6 text-center text-slate-400 font-mono text-xs">{idx + 1}</span>
-                                  <Input 
-                                      value={slot.name} 
-                                      onChange={(e) => handleSlotChange(slot.id, 'name', e.target.value)} 
-                                      className="w-32 text-sm font-bold"
-                                  />
-                                  <Select 
-                                      value={slot.type} 
-                                      onChange={(e) => handleSlotChange(slot.id, 'type', e.target.value as any)}
-                                      className="w-28 text-sm"
-                                  >
-                                      <option value="Period">Period</option>
-                                      <option value="Break">Break</option>
-                                      <option value="Lunch">Lunch</option>
-                                  </Select>
-                                  <Input 
-                                      type="time" 
-                                      value={slot.startTime} 
-                                      onChange={(e) => handleSlotChange(slot.id, 'startTime', e.target.value)} 
-                                      className="w-28 text-sm font-mono"
-                                  />
-                                  <span className="text-slate-400">-</span>
-                                  <Input 
-                                      type="time" 
-                                      value={slot.endTime} 
-                                      onChange={(e) => handleSlotChange(slot.id, 'endTime', e.target.value)} 
-                                      className="w-28 text-sm font-mono"
-                                  />
-                                  <button 
-                                      onClick={() => handleDeleteSlot(slot.id)}
-                                      className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full ml-auto"
-                                  >
-                                      <X size={16} />
-                                  </button>
-                              </div>
-                          ))}
-                          
-                          <button 
-                              onClick={handleAddSlot}
-                              className="w-full py-3 border-2 border-dashed border-slate-200 rounded-lg text-slate-400 hover:text-primary hover:border-primary hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
-                          >
-                              <Plus size={16} /> {t.addSlot}
-                          </button>
-                      </div>
-
-                      <div className="mt-6 flex justify-between border-t border-slate-100 pt-4">
-                          <Button variant="ghost" onClick={sortSchedule}>
-                              <ArrowDownAZ size={16} /> {t.sortChrono}
-                          </Button>
-                          <Button disabled={isLoading} onClick={saveSchedule}>
-                              <Check size={16} /> {t.saveSchedule}
+                          <Button onClick={() => { setIsAddingStudent(true); setFormData({}); }}>
+                              <Plus size={18} /> {t.addStudent}
                           </Button>
                       </div>
                   </Card>
-              </div>
-          </div>
-      )}
 
-      {/* DESTINATIONS & EPASS SETTINGS */}
-      {activeTab === 'epass' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                  <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-xl font-bold text-slate-800">{t.destinations}</h2>
-                      <Button onClick={() => { setIsAddingDest(true); setFormData({}); }}><Plus size={16} /> {t.addDestination}</Button>
-                  </div>
+                  {/* Table */}
+                  <Card className="p-0 overflow-hidden">
+                      <div className="overflow-x-auto">
+                          <table className="w-full text-left">
+                              <thead className="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-100">
+                                  <tr>
+                                      <th className="p-4">ID</th>
+                                      <th className="p-4">{t.studentName}</th>
+                                      <th className="p-4">{t.grade}</th>
+                                      <th className="p-4">{t.transport}</th>
+                                      <th className="p-4 text-center">{t.actions}</th>
+                                  </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-50 text-sm">
+                                  {paginatedStudents.length === 0 ? (
+                                      <tr><td colSpan={5} className="p-8 text-center text-slate-400">No students found</td></tr>
+                                  ) : (
+                                      paginatedStudents.map(student => (
+                                          <tr key={student.id} className="hover:bg-slate-50">
+                                              <td className="p-4 font-mono text-slate-500">{student.studentNumber}</td>
+                                              <td className="p-4 font-bold text-slate-700">
+                                                  {lang === 'en' ? student.name_en : student.name_ar}
+                                                  {student.isWatchlisted && <Eye className="inline ml-2 text-red-500 w-4 h-4" />}
+                                              </td>
+                                              <td className="p-4"><Badge color="blue">{student.grade} - {student.section}</Badge></td>
+                                              <td className="p-4 text-slate-600">{student.transportMode}</td>
+                                              <td className="p-4 flex justify-center gap-2">
+                                                  <button onClick={() => setViewingCard(student)} className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg" title="ID Card"><CreditCard size={16} /></button>
+                                                  <button onClick={() => { setEditingStudent(student); setFormData(student); setIsAddingStudent(false); }} className="p-2 hover:bg-yellow-50 text-yellow-600 rounded-lg"><Edit2 size={16} /></button>
+                                                  <button onClick={() => handleDeleteStudent(student.id)} className="p-2 hover:bg-red-50 text-red-600 rounded-lg"><Trash2 size={16} /></button>
+                                              </td>
+                                          </tr>
+                                      ))
+                                  )}
+                              </tbody>
+                          </table>
+                      </div>
+                      
+                      {/* Pagination */}
+                      {totalStudentPages > 1 && (
+                          <div className="p-4 border-t border-slate-100 flex justify-center gap-2">
+                              <button 
+                                  disabled={studentPage === 1}
+                                  onClick={() => setStudentPage(p => p - 1)}
+                                  className="p-2 rounded-lg border hover:bg-slate-50 disabled:opacity-50"
+                              >
+                                  <ChevronLeft size={16} />
+                              </button>
+                              <span className="py-2 px-4 text-sm text-slate-600 font-bold">Page {studentPage} of {totalStudentPages}</span>
+                              <button 
+                                  disabled={studentPage === totalStudentPages}
+                                  onClick={() => setStudentPage(p => p + 1)}
+                                  className="p-2 rounded-lg border hover:bg-slate-50 disabled:opacity-50"
+                              >
+                                  <ChevronRight size={16} />
+                              </button>
+                          </div>
+                      )}
+                  </Card>
+              </div>
+          )}
+
+          {/* User Management */}
+          {activeTab === 'users' && (
+              <div className="space-y-4">
+                  {/* ... User Add/Edit Form ... */}
+                  {(isAddingUser || editingUser) && (
+                       <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6 animate-in fade-in shadow-sm">
+                          <div className="flex justify-between items-center mb-4">
+                              <h3 className="font-bold text-lg text-slate-800">{editingUser ? t.actions : t.addUser}</h3>
+                              <Button variant="ghost" onClick={() => { setEditingUser(null); setIsAddingUser(false); setFormData({}); }}>{t.cancel}</Button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.studentName}</label><Input value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Full Name" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.email}</label><Input value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="email@school.com" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.role}</label><Select value={formData.role || UserRole.TEACHER} onChange={e => setFormData({...formData, role: e.target.value})}>{ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}</Select></div>
+                              <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.userChatId}</label><Input value={formData.telegramChatId || ''} onChange={e => setFormData({...formData, telegramChatId: e.target.value})} placeholder="Optional: For Notifications" /></div>
+                          </div>
+                          <div className="mt-4 border-t border-slate-200 pt-4">
+                              <label className="block text-xs font-bold text-slate-500 mb-2">{t.assignedClasses}</label>
+                              <div className="flex gap-2 mb-2">
+                                  <Select value={assignedClassGrade} onChange={e => setAssignedClassGrade(e.target.value)} className="w-32"><option value="">{t.grade}</option>{uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}</Select>
+                                  <Select value={assignedClassSection} onChange={e => setAssignedClassSection(e.target.value)} disabled={!assignedClassGrade} className="w-32"><option value="">{t.section}</option>{availableAssignedClassSections.map(s => <option key={s} value={s}>{s}</option>)}</Select>
+                                  <Button onClick={handleAddAssignedClass} variant="secondary"><Plus size={16} /> {t.assignClass}</Button>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                  {formData.assignedClasses?.map((c: AssignedClass, i: number) => (
+                                      <Badge key={i} color="blue" className="flex items-center gap-1 pl-2 pr-1 py-1">{c.grade} - {c.section} <button onClick={() => handleRemoveAssignedClass(i)} className="hover:bg-blue-200 rounded-full p-0.5"><X size={12} /></button></Badge>
+                                  ))}
+                              </div>
+                          </div>
+                          <div className="mt-6 flex justify-end gap-2"><Button disabled={isLoading} onClick={handleSaveUser}>{t.save}</Button></div>
+                       </div>
+                  )}
+
+                  <Card className="flex justify-between items-center">
+                      <div className="flex gap-4 items-center flex-1">
+                           <div className="relative group w-full md:w-64">
+                               <Search className="absolute left-3 top-2.5 text-slate-400 group-focus-within:text-primary transition-colors" size={18} />
+                               <Input placeholder="Search Users..." className="pl-10" value={userSearchTerm} onChange={e => setUserSearchTerm(e.target.value)} />
+                           </div>
+                           <Select value={userRoleFilter} onChange={e => setUserRoleFilter(e.target.value)} className="w-40">
+                               <option value="All">All Roles</option>
+                               {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
+                           </Select>
+                      </div>
+                      <Button onClick={() => { setIsAddingUser(true); setFormData({}); }}><Plus size={18} /> {t.addUser}</Button>
+                  </Card>
                   
-                  {isAddingDest && renderDestForm()}
-                  {editingDest && renderDestForm()}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {destinations.map(dest => {
-                          const Icon = (LucideIcons as any)[dest.iconName] || Ticket;
-                          return (
-                              <Card key={dest.id} className="relative group hover:shadow-md transition-all">
-                                  <div className="flex items-center gap-4">
-                                      <div className={`p-3 rounded-full ${COLOR_THEMES.find(c => c.name === dest.colorTheme)?.class}`}>
-                                          <Icon size={24} />
-                                      </div>
-                                      <div>
-                                          <h4 className="font-bold text-slate-800">{dest.label_en}</h4>
-                                          <p className="text-sm text-slate-500">{dest.label_ar}</p>
-                                          <div className="flex gap-2 mt-1">
-                                              <Badge color="gray">{dest.maxDuration}m</Badge>
-                                          </div>
-                                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredUsers.map(user => (
+                          <div key={user.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                              <div className="flex justify-between items-start mb-2">
+                                  <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">{user.name.charAt(0)}</div>
+                                      <div><h4 className="font-bold text-slate-800">{user.name}</h4><p className="text-xs text-slate-500">{user.email}</p></div>
                                   </div>
-                                  <div className="absolute top-4 right-4 flex gap-2">
-                                      <button onClick={(e) => { e.stopPropagation(); setEditingDest(dest); setFormData(dest); }} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors border border-slate-200"><Edit2 size={16} /></button>
-                                      <button onClick={(e) => { e.stopPropagation(); handleDeleteDest(dest.id); }} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors border border-slate-200"><Trash2 size={16} /></button>
+                                  <Badge color="blue">{user.role}</Badge>
+                              </div>
+                              {user.assignedClasses && user.assignedClasses.length > 0 && (
+                                  <div className="mt-3 flex flex-wrap gap-1">
+                                      {user.assignedClasses.map((ac, i) => <span key={i} className="text-[10px] bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-600">{ac.grade}-{ac.section}</span>)}
                                   </div>
-                              </Card>
-                          )
-                      })}
+                              )}
+                              <div className="mt-4 pt-3 border-t border-slate-50 flex justify-end gap-2">
+                                  <button onClick={() => { setEditingUser(user); setFormData(user); setIsAddingUser(false); }} className="p-2 hover:bg-yellow-50 text-yellow-600 rounded-lg"><Edit2 size={16} /></button>
+                                  <button onClick={() => handleDeleteUser(user.id)} className="p-2 hover:bg-red-50 text-red-600 rounded-lg"><Trash2 size={16} /></button>
+                              </div>
+                          </div>
+                      ))}
                   </div>
               </div>
+          )}
 
-              <div className="lg:col-span-1">
-                   <Card>
-                      <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                          <Settings size={18} /> {t.globalSettings}
-                      </h3>
-                      <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-2">{t.maxPasses}</label>
-                          <div className="flex gap-2">
-                              <Input 
-                                  type="number" 
-                                  value={maxPasses} 
-                                  onChange={(e) => setMaxPasses(parseInt(e.target.value))} 
-                              />
-                              <Button onClick={handleUpdateEPassSettings}>{t.updateLimit}</Button>
+          {/* Access Control */}
+          {activeTab === 'access' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card className="col-span-1 h-fit">
+                      <h3 className="font-bold text-lg mb-4 text-slate-800">{t.selectRole}</h3>
+                      <div className="space-y-1">
+                          {ROLES_LIST.map(role => (
+                              <button key={role} onClick={() => setSelectedRoleForAccess(role)} className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex justify-between items-center ${selectedRoleForAccess === role ? 'bg-primary text-white shadow-md' : 'hover:bg-slate-50 text-slate-600'}`}>
+                                  <span className="font-medium">{role}</span>
+                                  {selectedRoleForAccess === role && <Check size={16} />}
+                              </button>
+                          ))}
+                      </div>
+                  </Card>
+                  <Card className="col-span-1 md:col-span-2">
+                      <div className="flex justify-between items-center mb-6">
+                           <div>
+                               <h3 className="font-bold text-lg text-slate-800">{selectedRoleForAccess} Permissions</h3>
+                               <p className="text-sm text-slate-500">Select which modules this role can access.</p>
+                           </div>
+                           <Shield className="text-slate-200" size={48} />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {NAV_ITEMS.map(item => {
+                              const isAllowed = rolePermissions?.[selectedRoleForAccess]?.includes(item.id);
+                              const Icon = item.icon;
+                              return (
+                                  <div key={item.id} onClick={() => handleToggleAccess(item.id)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-4 ${isAllowed ? 'border-green-500 bg-green-50' : 'border-slate-100 hover:border-slate-200'}`}>
+                                      <div className={`p-2 rounded-lg ${isAllowed ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'}`}><Icon size={24} /></div>
+                                      <div><h4 className={`font-bold ${isAllowed ? 'text-green-800' : 'text-slate-500'}`}>{lang === 'en' ? item.label_en : item.label_ar}</h4><p className="text-xs text-slate-400 uppercase font-bold">{isAllowed ? 'Access Granted' : 'Access Denied'}</p></div>
+                                  </div>
+                              );
+                          })}
+                      </div>
+                  </Card>
+              </div>
+          )}
+          
+          {/* Notifications Tab */}
+          {activeTab === 'notifications' && (
+              <div className="space-y-6">
+                  {/* Parent Notification Section */}
+                  <Card>
+                      <div className="flex items-start gap-4 mb-6">
+                           <div className="p-3 bg-purple-100 text-purple-600 rounded-full"><MessageCircle size={24} /></div>
+                           <div><h3 className="font-bold text-lg">{t.parentNotifications}</h3><p className="text-slate-500 text-sm">{t.parentNotificationsDesc}</p></div>
+                      </div>
+                      <div className="relative max-w-xl mb-6">
+                           <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                           <Input placeholder={t.searchStudent} className="pl-10" value={parentSearch} onChange={e => setParentSearch(e.target.value)} />
+                           {parentSearch && (
+                               <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg mt-1 z-10 max-h-60 overflow-y-auto">
+                                   {filteredParentSearch.map(s => (
+                                       <button key={s.id} onClick={() => handleParentSearchSelect(s)} className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0">
+                                            <p className="font-bold text-slate-700">{lang === 'en' ? s.name_en : s.name_ar}</p>
+                                            <p className="text-xs text-slate-500">{s.studentNumber} - {s.grade}-{s.section}</p>
+                                       </button>
+                                   ))}
+                               </div>
+                           )}
+                      </div>
+                      
+                      {selectedStudentForParent && (
+                          <div className="bg-purple-50 rounded-xl p-6 border border-purple-100 animate-in fade-in">
+                              <div className="flex justify-between items-start mb-4">
+                                  <div><h4 className="font-bold text-purple-900">{lang === 'en' ? selectedStudentForParent.name_en : selectedStudentForParent.name_ar}</h4><p className="text-sm text-purple-700">Configure Parent Alerts</p></div>
+                                  <Button variant="ghost" onClick={() => setSelectedStudentForParent(null)} size="sm"><X size={16} /></Button>
+                              </div>
+                              <div className="mb-4">
+                                  <label className="block text-xs font-bold text-purple-800 mb-1">{t.parentChatId}</label>
+                                  <Input value={parentChatId} onChange={e => setParentChatId(e.target.value)} placeholder="Enter numeric Chat ID" className="bg-white" />
+                              </div>
+                              <div className="mb-4"><label className="block text-xs font-bold text-purple-800 mb-2">{t.selectEvents}</label>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      {['UNAUTHORIZED', 'EARLY_LEAVE', ...destinations.map(d => d.id)].map(key => (
+                                          <label key={key} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-purple-100 cursor-pointer hover:bg-purple-50/50">
+                                              <input type="checkbox" checked={!!parentRules[key]} onChange={() => toggleParentRule(key)} className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500" />
+                                              <span className="text-sm font-medium text-slate-700">{key === 'UNAUTHORIZED' ? 'Unauthorized Exit' : key === 'EARLY_LEAVE' ? 'Early Leave' : destinations.find(d => d.id === key)?.label_en || key}</span>
+                                          </label>
+                                      ))}
+                                  </div>
+                              </div>
+                              <div className="flex justify-end"><Button onClick={handleSaveParentSettings} disabled={isLoading}>{t.saveParentSettings}</Button></div>
+                          </div>
+                      )}
+                  </Card>
+
+                  {/* General Notification Settings */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <Card>
+                           <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><ShieldAlert size={20} className="text-blue-500" /> {t.securityAlerts}</h3>
+                           <div className="space-y-3">
+                               <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label><Input type="password" value={telegramToken} onChange={e => setTelegramToken(e.target.value)} /></div>
+                               <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.chatId} (Security Channel)</label><Input value={telegramChatId} onChange={e => setTelegramChatId(e.target.value)} /></div>
+                           </div>
+                           <h4 className="font-bold text-sm text-slate-700 mt-6 mb-3">{t.enableNotificationsFor}</h4>
+                           <div className="space-y-2">
+                               {['UNAUTHORIZED', ...destinations.map(d => d.id)].map(key => (
+                                   <label key={key} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-50 rounded">
+                                       <input type="checkbox" checked={!!notificationRules[key]} onChange={() => toggleNotificationRule(key)} className="rounded text-primary focus:ring-primary" />
+                                       <span className="text-sm font-medium text-slate-700">{key === 'UNAUTHORIZED' ? t.unauthorized : destinations.find(d => d.id === key)?.label_en || key}</span>
+                                   </label>
+                               ))}
+                           </div>
+                      </Card>
+
+                      <div className="space-y-6">
+                           <Card>
+                               <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><LogOut size={20} className="text-orange-500" /> {t.receptionAlerts}</h3>
+                               <div className="space-y-3">
+                                   <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label><Input type="password" value={elTelegramToken} onChange={e => setElTelegramToken(e.target.value)} /></div>
+                                   <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.chatId} (Reception/Admin)</label><Input value={elTelegramChatId} onChange={e => setElTelegramChatId(e.target.value)} /></div>
+                               </div>
+                           </Card>
+                           <Card>
+                               <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Users size={20} className="text-green-500" /> {t.attendanceAlerts}</h3>
+                               <div className="space-y-3">
+                                   <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label><Input type="password" value={attTelegramToken} onChange={e => setAttTelegramToken(e.target.value)} /></div>
+                                   <p className="text-xs text-slate-400 italic">Chat IDs are configured per Social Worker in User Management.</p>
+                               </div>
+                           </Card>
+                            <Card>
+                               <h3 className="font-bold text-lg mb-2 flex items-center gap-2"><Eye size={20} className="text-red-500" /> {t.watchlistAlerts}</h3>
+                               <p className="text-sm text-slate-500 mb-4">{t.watchlistDesc}</p>
+                               <div className="space-y-3">
+                                   <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label><Input type="password" value={wlTelegramToken} onChange={e => setWlTelegramToken(e.target.value)} /></div>
+                                   <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.chatId} (Private Channel)</label><Input value={wlTelegramChatId} onChange={e => setWlTelegramChatId(e.target.value)} /></div>
+                               </div>
+                           </Card>
+                      </div>
+                  </div>
+                  <div className="flex justify-end pt-4"><Button onClick={handleUpdateNotificationSettings}>{t.saveCredentials}</Button></div>
+              </div>
+          )}
+
+          {/* Attendance Rules Tab */}
+          {activeTab === 'attendance_rules' && (
+              <Card className="max-w-2xl mx-auto">
+                  <div className="flex items-center gap-4 mb-6"><div className="p-3 bg-blue-100 text-blue-600 rounded-full"><ListChecks size={24} /></div><div><h3 className="font-bold text-lg">{t.attendanceRules}</h3><p className="text-slate-500 text-sm">{t.attendanceRulesDesc}</p></div></div>
+                  
+                  <div className="space-y-6">
+                      <div className="p-4 border border-slate-200 rounded-xl">
+                          <label className="block font-bold text-slate-700 mb-2">{t.absentThreshold}</label>
+                          <p className="text-xs text-slate-500 mb-3">{t.absentThresholdDesc}</p>
+                          <div className="flex items-center gap-3">
+                              <input type="range" min="1" max="8" value={attendanceRules.absentPeriodThreshold} onChange={e => setAttendanceRules({...attendanceRules, absentPeriodThreshold: parseInt(e.target.value)})} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+                              <span className="font-bold text-lg text-blue-600 w-8 text-center">{attendanceRules.absentPeriodThreshold}</span>
                           </div>
                       </div>
-                   </Card>
+
+                      <div className="flex items-start gap-3 p-4 border border-slate-200 rounded-xl bg-slate-50">
+                          <input type="checkbox" checked={attendanceRules.countAllExcusedAsExcusedDay} onChange={e => setAttendanceRules({...attendanceRules, countAllExcusedAsExcusedDay: e.target.checked})} className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
+                          <div><label className="block font-bold text-slate-700">{t.countAllExcused}</label><p className="text-xs text-slate-500 mt-1">{t.countAllExcusedDesc}</p></div>
+                      </div>
+
+                      <div className="p-4 border border-slate-200 rounded-xl">
+                           <label className="block font-bold text-slate-700 mb-2">{t.attendanceAlertThresholds}</label>
+                           <p className="text-xs text-slate-500 mb-3">{t.attendanceAlertDesc}</p>
+                           <div className="flex flex-wrap gap-2">
+                               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20].map(num => {
+                                   const active = attendanceRules.alertThresholds?.includes(num);
+                                   return (
+                                       <button key={num} onClick={() => toggleAttendanceAlertThreshold(num)} className={`w-10 h-10 rounded-full font-bold text-sm transition-all ${active ? 'bg-red-500 text-white shadow-md scale-110' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
+                                           {num}
+                                       </button>
+                                   );
+                               })}
+                           </div>
+                      </div>
+                  </div>
+                  <div className="flex justify-end mt-8"><Button onClick={handleUpdateAttendanceRules} size="lg" className="px-8">{t.saveRules}</Button></div>
+              </Card>
+          )}
+
+          {/* E-Pass Destinations */}
+          {activeTab === 'epass' && (
+               <div className="space-y-6">
+                   {(isAddingDest || editingDest) && (
+                       <Card className="bg-slate-50 border-slate-200 animate-in fade-in">
+                          <div className="flex justify-between items-center mb-4">
+                              <h3 className="font-bold text-lg text-slate-800">{editingDest ? t.editDestination : t.addDestination}</h3>
+                              <Button variant="ghost" onClick={() => { setEditingDest(null); setIsAddingDest(false); setFormData({}); }}>{t.cancel}</Button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                              <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 mb-1">{t.labelEn}</label><Input value={formData.label_en || ''} onChange={e => setFormData({...formData, label_en: e.target.value})} placeholder="e.g. Library" /></div>
+                              <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 mb-1">{t.labelAr}</label><Input value={formData.label_ar || ''} onChange={e => setFormData({...formData, label_ar: e.target.value})} placeholder="e.g. المكتبة" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.duration}</label><Input type="number" value={formData.maxDuration || ''} onChange={e => setFormData({...formData, maxDuration: e.target.value})} placeholder="10" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.color}</label><Select value={formData.colorTheme || 'blue'} onChange={e => setFormData({...formData, colorTheme: e.target.value})}>{COLOR_THEMES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}</Select></div>
+                              <div className="md:col-span-2">
+                                  <label className="block text-xs font-bold text-slate-500 mb-1">{t.icon}</label>
+                                  <div className="flex flex-wrap gap-2 p-2 bg-white border border-slate-200 rounded-lg">
+                                      {AVAILABLE_ICONS.map(iconName => {
+                                          const IconComp = LucideIcons[iconName as keyof typeof LucideIcons] as any;
+                                          const isSelected = (formData.iconName || 'Ticket') === iconName;
+                                          return (
+                                              <button key={iconName} onClick={() => setFormData({...formData, iconName})} className={`p-2 rounded-lg transition-all ${isSelected ? 'bg-primary text-white shadow-md scale-110' : 'text-slate-400 hover:bg-slate-50'}`}>
+                                                  {IconComp && <IconComp size={20} />}
+                                              </button>
+                                          );
+                                      })}
+                                  </div>
+                              </div>
+                          </div>
+                          <div className="mt-4 flex justify-end"><Button onClick={handleSaveDest}>{t.save}</Button></div>
+                       </Card>
+                   )}
+
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                       <Card className="md:col-span-2">
+                           <div className="flex justify-between items-center mb-6">
+                               <h3 className="font-bold text-lg text-slate-800">{t.destinations}</h3>
+                               <Button onClick={() => { setIsAddingDest(true); setFormData({}); }}><Plus size={18} /> {t.addDestination}</Button>
+                           </div>
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                               {destinations.map(dest => {
+                                   const IconComp = LucideIcons[dest.iconName as keyof typeof LucideIcons] as any || Ticket;
+                                   const theme = COLOR_THEMES.find(c => c.name === dest.colorTheme);
+                                   return (
+                                       <div key={dest.id} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all">
+                                           <div className="flex items-center gap-4">
+                                               <div className={`p-3 rounded-full ${theme?.class || 'bg-slate-100 text-slate-600'}`}><IconComp size={24} /></div>
+                                               <div><h4 className="font-bold text-slate-800">{dest.label_en}</h4><p className="text-xs text-slate-500">{dest.label_ar}</p></div>
+                                           </div>
+                                           <div className="flex items-center gap-3">
+                                               <Badge color="gray">{dest.maxDuration}m</Badge>
+                                               <button onClick={() => { setEditingDest(dest); setFormData(dest); setIsAddingDest(true); }} className="text-slate-400 hover:text-yellow-600"><Edit2 size={16} /></button>
+                                               <button onClick={() => handleDeleteDest(dest.id)} className="text-slate-400 hover:text-red-600"><Trash2 size={16} /></button>
+                                           </div>
+                                       </div>
+                                   );
+                               })}
+                           </div>
+                       </Card>
+                       <Card className="h-fit">
+                           <h3 className="font-bold text-lg mb-4 text-slate-800">{t.globalSettings}</h3>
+                           <div className="mb-4">
+                               <label className="block text-xs font-bold text-slate-500 mb-2">{t.maxPasses}</label>
+                               <div className="flex gap-2">
+                                   <Input type="number" value={maxPasses} onChange={e => setMaxPasses(parseInt(e.target.value))} />
+                                   <Button onClick={handleUpdateEPassSettings}>{t.updateLimit}</Button>
+                               </div>
+                           </div>
+                           <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                               <h4 className="font-bold text-yellow-800 text-sm mb-1 flex items-center gap-2"><Megaphone size={16} /> Note</h4>
+                               <p className="text-xs text-yellow-700">Changing pass limits applies immediately to all students.</p>
+                           </div>
+                       </Card>
+                   </div>
+               </div>
+          )}
+
+          {/* Timetable Tab */}
+          {activeTab === 'timetable' && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <Card className="lg:col-span-2">
+                      <div className="flex justify-between items-center mb-6">
+                          <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
+                              <button onClick={() => setEditingScheduleType('standard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${editingScheduleType === 'standard' ? 'bg-white shadow-sm text-primary' : 'text-slate-500'}`}>{t.standard}</button>
+                              <button onClick={() => setEditingScheduleType('friday')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${editingScheduleType === 'friday' ? 'bg-white shadow-sm text-primary' : 'text-slate-500'}`}>{t.friday}</button>
+                          </div>
+                          <div className="flex gap-2">
+                              <Button variant="secondary" onClick={sortSchedule} title={t.sortChrono}><ArrowDownAZ size={18} /></Button>
+                              <Button onClick={handleAddSlot}><Plus size={18} /> {t.addSlot}</Button>
+                          </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                          {schedule[editingScheduleType].map((slot, index) => (
+                              <div key={slot.id} className="flex flex-wrap md:flex-nowrap items-center gap-2 p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-300 transition-colors group">
+                                  <div className="flex-none w-8 text-center font-bold text-slate-400 text-xs">#{index + 1}</div>
+                                  <div className="flex-1 min-w-[140px]">
+                                      <Input value={slot.name} onChange={e => handleSlotChange(slot.id, 'name', e.target.value)} placeholder="Period Name" className="h-9 text-sm font-bold" />
+                                  </div>
+                                  <div className="flex-none w-28">
+                                      <Select value={slot.type} onChange={e => handleSlotChange(slot.id, 'type', e.target.value)} className="h-9 text-xs">
+                                          <option value="Period">Period</option>
+                                          <option value="Break">Break</option>
+                                          <option value="Lunch">Lunch</option>
+                                      </Select>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                      <Input type="time" value={slot.startTime} onChange={e => handleSlotChange(slot.id, 'startTime', e.target.value)} className="h-9 w-24 text-xs font-mono" />
+                                      <span className="text-slate-400">-</span>
+                                      <Input type="time" value={slot.endTime} onChange={e => handleSlotChange(slot.id, 'endTime', e.target.value)} className="h-9 w-24 text-xs font-mono" />
+                                  </div>
+                                  <button onClick={() => handleDeleteSlot(slot.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                              </div>
+                          ))}
+                      </div>
+                      
+                      <div className="mt-6 flex justify-end">
+                          <Button onClick={saveSchedule} size="lg" className="shadow-lg">{t.saveSchedule}</Button>
+                      </div>
+                  </Card>
+                  
+                  <Card className="h-fit bg-slate-50 border-slate-200">
+                      <h3 className="font-bold text-lg mb-4 text-slate-800 flex items-center gap-2"><Clock size={20} /> Preview</h3>
+                      <div className="relative pl-4 border-l-2 border-slate-300 space-y-6">
+                          {schedule[editingScheduleType].map((slot) => (
+                              <div key={slot.id} className="relative">
+                                  <div className={`absolute -left-[21px] top-0 w-3 h-3 rounded-full border-2 border-white shadow-sm ${slot.type === 'Period' ? 'bg-blue-500' : slot.type === 'Break' ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                                  <p className="text-xs font-mono text-slate-500 mb-1">{slot.startTime} - {slot.endTime}</p>
+                                  <h4 className="font-bold text-sm text-slate-800">{slot.name}</h4>
+                                  <Badge color={slot.type === 'Period' ? 'blue' : slot.type === 'Break' ? 'green' : 'orange'} className="mt-1 text-[10px]">{slot.type}</Badge>
+                              </div>
+                          ))}
+                      </div>
+                  </Card>
               </div>
-          </div>
-      )}
+          )}
 
-      {/* NOTIFICATIONS TAB */}
-      {activeTab === 'notifications' && renderNotificationsTab()}
-
-      {/* ATTENDANCE RULES TAB */}
-      {activeTab === 'attendance_rules' && renderAttendanceRules()}
-
-      {/* ACCESS CONTROL TAB */}
-      {activeTab === 'access' && renderAccessControl()}
-
-    </div>
+      </div>
   );
 };

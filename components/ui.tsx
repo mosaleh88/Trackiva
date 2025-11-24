@@ -15,18 +15,27 @@ export const Card: React.FC<CardProps> = ({ children, className = "" }) => (
 // Button
 export interface ButtonProps extends React.ComponentProps<'button'> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
 }
 
-export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', className = "", ...props }) => {
-  const baseStyle = "px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 justify-center disabled:opacity-50";
+export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', size = 'md', className = "", ...props }) => {
+  const baseStyle = "rounded-lg font-medium transition-all duration-200 flex items-center gap-2 justify-center disabled:opacity-50";
+  
+  const sizes = {
+    sm: "px-2 py-1 text-sm",
+    md: "px-4 py-2",
+    lg: "px-6 py-3 text-lg"
+  };
+
   const variants = {
     primary: "bg-primary text-white hover:bg-blue-700",
     secondary: "bg-slate-100 text-slate-700 hover:bg-slate-200",
     danger: "bg-danger text-white hover:bg-red-600",
     ghost: "hover:bg-slate-100 text-slate-600"
   };
+
   return (
-    <button className={`${baseStyle} ${variants[variant] || variants.primary} ${className}`} {...props}>
+    <button className={`${baseStyle} ${sizes[size]} ${variants[variant] || variants.primary} ${className}`} {...props}>
       {children}
     </button>
   );

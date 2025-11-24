@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Student, AttendanceRecord, EPass, ReceptionLog, AttendanceStatus, UserRole, ScheduleConfig, TimeSlot, EPassDestination, AppSettings, ClinicVisit, User } from '../types';
 import { DEFAULT_DESTINATIONS, NAV_ITEMS, generateDefaultPermissions } from '../constants';
@@ -28,11 +29,6 @@ const DEFAULT_FRIDAY_SCHEDULE: TimeSlot[] = [
   { id: 'p3', name: 'Period 3', startTime: '09:40', endTime: '10:25', type: 'Period' },
   { id: 'p4', name: 'Period 4', startTime: '10:25', endTime: '11:10', type: 'Period' },
 ];
-
-
-
-
-
 
 interface StoreData {
     students: Student[];
@@ -89,7 +85,7 @@ class SupabaseStore {
   async init() {
     if (this.initialized) return;
     await this.refreshData();
-    // Lazily generate permissions if they are not loaded from settings
+    // Lazily generate permissions after modules are loaded
     if (!this.data.settings.rolePermissions || Object.keys(this.data.settings.rolePermissions).length === 0) {
         this.data.settings.rolePermissions = generateDefaultPermissions();
     }
@@ -123,11 +119,14 @@ class SupabaseStore {
         if (status === 'SUBSCRIBED') {
           console.log('Realtime channel connected.');
         }
-        if (status === 'CHANNEL_ERROR') {
-          console.error('Realtime channel error:', err);
-          // If there's an error, try to remove and re-add the channel
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error(`Realtime channel error (${status}):`, err);
+          // If there's an error, try to remove and re-add the channel after a delay
           await supabase.removeChannel(channel);
-          this.initRealtime(); // Re-initialize
+          setTimeout(() => {
+              console.log('Attempting to reconnect realtime...');
+              this.initRealtime(); 
+          }, 5000); // Wait 5 seconds before retrying
         }
       });
   }
@@ -146,6 +145,9 @@ class SupabaseStore {
           case 'settings':
               if (eventType === 'UPDATE' && newRecord) {
                   this.data.settings = { ...this.data.settings, ...newRecord };
+                  if (!this.data.settings.rolePermissions) {
+                      this.data.settings.rolePermissions = generateDefaultPermissions();
+                  }
                   if (newRecord.attendanceSettings?.schedule) {
                       this.data.schedule = newRecord.attendanceSettings.schedule;
                   }
@@ -174,7 +176,7 @@ class SupabaseStore {
              if (newRec.startTime < sevenDaysAgo) isRecent = false;
           }
 
-          // Always allow non-time-series data (students, users, settings)
+          // Always allow non-time-series data (students, users, destinations, settings)
           if (['students', 'users', 'destinations', 'settings'].includes(key)) isRecent = true;
 
           if (isRecent) {
@@ -257,6 +259,12 @@ class SupabaseStore {
 
           if (settingsRes.data) {
               this.data.settings = { ...this.data.settings, ...settingsRes.data };
+              
+              // Ensure rolePermissions is never null
+              if (!this.data.settings.rolePermissions) {
+                  this.data.settings.rolePermissions = generateDefaultPermissions();
+              }
+
               if (this.data.settings.attendanceSettings?.schedule) {
                   this.data.schedule = this.data.settings.attendanceSettings.schedule;
               }
