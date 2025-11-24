@@ -897,11 +897,11 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                 {/* Date Pickers - NOW FIRST */}
                 <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">{t.startDate}</label>
-                    <Input id="report-start-date" name="report-start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="py-2 text-sm w-36" />
+                    <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="py-2 text-sm w-36" />
                 </div>
                 <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">{t.endDate}</label>
-                    <Input id="report-end-date" name="report-end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="py-2 text-sm w-36" />
+                    <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="py-2 text-sm w-36" />
                 </div>
 
                 {/* Generate Button */}

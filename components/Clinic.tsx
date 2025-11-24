@@ -100,46 +100,15 @@ export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
                   <div><h3 className="text-lg font-bold flex items-center gap-2"><UserIcon size={20} /> {lang === 'en' ? student.name_en : student.name_ar}</h3><p className="text-sm text-slate-500">ID: {student.studentNumber} | {student.grade}-{student.section}</p></div>
                   <Button variant="ghost" onClick={() => setSelectedStudentId("")}>{t.cancel}</Button>
               </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-<div>
-                      <label htmlFor="symptom" className="block text-xs font-bold text-slate-500 mb-1">{t.symptom} *</label>
-                      <Select id="symptom" name="symptom" value={formData.symptom} onChange={(e) => setFormData({...formData, symptom: e.target.value})}>
-                          <option value="">Select...</option>
-                          {CLINIC_SYMPTOMS.map(s => <option key={s} value={s}>{s}</option>)}
-                      </Select>
-                  </div>
-<div>
-                      <label htmlFor="severity" className="block text-xs font-bold text-slate-500 mb-1">{t.severity} *</label>
-                      <Select id="severity" name="severity" value={formData.severity} onChange={(e) => setFormData({...formData, severity: e.target.value as any})} className={formData.severity === 'Emergency' ? 'text-red-600 font-bold' : ''}>
-                          <option value="Low">{t.low}</option>
-                          <option value="Medium">{t.medium}</option>
-                          <option value="High">{t.high}</option>
-                          <option value="Emergency">{t.emergency}</option>
-                      </Select>
-                  </div>
-                  <div className="col-span-2">
-                      <label htmlFor="diagnosis" className="block text-xs font-bold text-slate-500 mb-1">{t.diagnosis}</label>
-                      <Input id="diagnosis" name="diagnosis" value={formData.diagnosis || ''} onChange={(e) => setFormData({...formData, diagnosis: e.target.value})} placeholder="Initial observation..." />
-                  </div>
-                  <div className="col-span-2">
-                      <label htmlFor="treatment" className="block text-xs font-bold text-slate-500 mb-1">{t.treatment}</label>
-                      <Input id="treatment" name="treatment" value={formData.treatment || ''} onChange={(e) => setFormData({...formData, treatment: e.target.value})} placeholder="Medicine given, ice pack, etc." />
-                  </div>
-                  <div className="col-span-2">
-                      <label htmlFor="notes" className="block text-xs font-bold text-slate-500 mb-1">{t.notes}</label>
-                      <Input id="notes" name="notes" value={formData.notes || ''} onChange={(e) => setFormData({...formData, notes: e.target.value})} placeholder="Additional private notes..." />
-                  </div>
-                  <div>
-                      <label htmlFor="outcome" className="block text-xs font-bold text-slate-500 mb-1">{t.outcome} *</label>
-                      <Select id="outcome" name="outcome" value={formData.outcome} onChange={(e) => setFormData({...formData, outcome: e.target.value as any})}>
-                          <option value="ReturnToClass">{t.returnToClass}</option>
-                          <option value="SentHome">{t.sentHomeAction}</option>
-                      </Select>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.symptom} *</label><Select value={formData.symptom} onChange={(e) => setFormData({...formData, symptom: e.target.value})}><option value="">Select...</option>{CLINIC_SYMPTOMS.map(s => <option key={s} value={s}>{s}</option>)}</Select></div>
+                  <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.severity} *</label><Select value={formData.severity} onChange={(e) => setFormData({...formData, severity: e.target.value as any})} className={formData.severity === 'Emergency' ? 'text-red-600 font-bold' : ''}><option value="Low">{t.low}</option><option value="Medium">{t.medium}</option><option value="High">{t.high}</option><option value="Emergency">{t.emergency}</option></Select></div>
+                  <div className="col-span-2"><label className="block text-xs font-bold text-slate-500 mb-1">{t.diagnosis}</label><Input value={formData.diagnosis || ''} onChange={(e) => setFormData({...formData, diagnosis: e.target.value})} placeholder="Initial observation..." /></div>
+                  <div className="col-span-2"><label className="block text-xs font-bold text-slate-500 mb-1">{t.treatment}</label><Input value={formData.treatment || ''} onChange={(e) => setFormData({...formData, treatment: e.target.value})} placeholder="Medicine given, ice pack, etc." /></div>
+                  <div className="col-span-2"><label className="block text-xs font-bold text-slate-500 mb-1">{t.notes}</label><Input value={formData.notes || ''} onChange={(e) => setFormData({...formData, notes: e.target.value})} placeholder="Additional private notes..." /></div>
+                  <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.outcome} *</label><Select value={formData.outcome} onChange={(e) => setFormData({...formData, outcome: e.target.value as any})}><option value="ReturnToClass">{t.returnToClass}</option><option value="SentHome">{t.sentHomeAction}</option></Select></div>
               </div>
-              <div className="flex justify-end gap-2">
-                  <Button disabled={isLoading} onClick={handleSubmitVisit} className={formData.severity === 'Emergency' ? 'bg-red-600 hover:bg-red-700' : ''}>{t.logVisit}</Button>
-              </div>
+              <div className="flex justify-end gap-2"><Button disabled={isLoading} onClick={handleSubmitVisit} className={formData.severity === 'Emergency' ? 'bg-red-600 hover:bg-red-700' : ''}>{t.logVisit}</Button></div>
           </Card>
       );
   };
