@@ -115,13 +115,29 @@ class SupabaseStore {
   }
 
   initRealtime() {
-    const channel = supabase.channel('db-changes')
+    const channel = supabase.channel('db-changes', {
+      config: {
+        broadcast: {
+          ack: true,
+        },
+      },
+    })
       .on(
         'postgres_changes',
         { event: '*', schema: 'public' },
         (payload: any) => this.handleRealtimeEvent(payload)
       )
-      .subscribe();
+      .subscribe(async (status: 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR', err?: Error) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Realtime channel connected.');
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.error('Realtime channel error:', err);
+          // If there's an error, try to remove and re-add the channel
+          await supabase.removeChannel(channel);
+          this.initRealtime(); // Re-initialize
+        }
+      });
   }
 
   private handleRealtimeEvent(payload: any) {
