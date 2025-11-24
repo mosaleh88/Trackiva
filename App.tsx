@@ -153,7 +153,7 @@ const App = () => {
   const visibleNavItems = NAV_ITEMS.filter(item => permissions.includes(item.id));
 
   return (
-    <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`h-screen bg-slate-50 dark:bg-slate-950 flex overflow-hidden ${isRTL ? 'flex-row-reverse' : 'flex-row'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       
       {/* Mobile Overlay */}
       {sidebarOpen && (
@@ -165,15 +165,15 @@ const App = () => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:static inset-y-0 z-30 
+        fixed lg:static inset-y-0 z-30 h-full
         ${isCollapsed ? 'w-20' : 'w-64'} 
         bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-all duration-300
         ${sidebarOpen ? 'translate-x-0' : (isRTL ? 'translate-x-full' : '-translate-x-full')}
         lg:translate-x-0
         ${isRTL ? 'border-l border-r-0 left-auto right-0' : 'left-0'}
+        flex flex-col shrink-0
       `}>
-        <div className="h-full flex flex-col">
-            <div className={`h-16 flex items-center ${isCollapsed ? 'justify-center' : 'px-6 justify-between'} border-b border-slate-100 dark:border-slate-800`}>
+            <div className={`h-16 flex items-center shrink-0 ${isCollapsed ? 'justify-center' : 'px-6 justify-between'} border-b border-slate-100 dark:border-slate-800`}>
                 {!isCollapsed && <h1 className="text-2xl font-bold text-primary truncate">Trackiva</h1>}
                 <button 
                     onClick={() => setIsCollapsed(!isCollapsed)} 
@@ -217,7 +217,7 @@ const App = () => {
                 })}
             </div>
 
-            <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2 shrink-0">
                 <button 
                     onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
                     className={`w-full flex items-center justify-center gap-2 p-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg`}
@@ -244,11 +244,10 @@ const App = () => {
                     <LogOut size={16} className="shrink-0" /> {!isCollapsed && t.logout}
                 </button>
             </div>
-        </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden transition-all duration-300">
+      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden transition-all duration-300 relative">
         {/* Header */}
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 lg:px-8 shrink-0">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-2 text-slate-600 dark:text-slate-300">

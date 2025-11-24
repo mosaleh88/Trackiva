@@ -62,6 +62,7 @@ class SupabaseStore {
 
   private initialized = false;
   private subscribers: Set<() => void> = new Set();
+  private realtimeChannel: any = null;
   
 
   // --- Date Standardization Helpers ---
@@ -103,13 +104,12 @@ class SupabaseStore {
   }
 
   initRealtime() {
-    const channel = supabase.channel('db-changes', {
-      config: {
-        broadcast: {
-          ack: true,
-        },
-      },
-    })
+    // Cleanup existing channel if it exists
+    if (this.realtimeChannel) {
+        supabase.removeChannel(this.realtimeChannel);
+    }
+
+    this.realtimeChannel = supabase.channel('db-changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public' },
@@ -121,12 +121,21 @@ class SupabaseStore {
         }
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.error(`Realtime channel error (${status}):`, err);
-          // If there's an error, try to remove and re-add the channel after a delay
-          await supabase.removeChannel(channel);
+          
+          // Capture the faulty channel reference
+          const faultyChannel = this.realtimeChannel;
+          this.realtimeChannel = null;
+
+          // Attempt to clean up the faulty channel
+          if (faultyChannel) {
+             await supabase.removeChannel(faultyChannel);
+          }
+
+          // Retry connection after delay
           setTimeout(() => {
               console.log('Attempting to reconnect realtime...');
               this.initRealtime(); 
-          }, 5000); // Wait 5 seconds before retrying
+          }, 5000); 
         }
       });
   }
