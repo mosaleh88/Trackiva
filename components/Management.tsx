@@ -420,19 +420,16 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
     const win = window.open('', '', 'height=600,width=800');
     if (win) {
-        win.document.write(`
-            <html>
-                <head><title>Print ID Card</title></head>
-                <body class="flex items-center justify-center h-screen bg-white">
-                    ${printContent.innerHTML}
-                </body>
-            </html>
-        `);
-        const script = win.document.createElement('script');
-        script.src = "https://cdn.tailwindcss.com";
-        win.document.head.appendChild(script);
+        win.document.write('<html><head><title>Print ID Card</title>');
+        win.document.write('<script src="https://cdn.tailwindcss.com"></script>');
+        win.document.write('</head><body class="flex items-center justify-center h-screen bg-white">');
+        win.document.write(printContent.innerHTML);
+        win.document.write('</body></html>');
         win.document.close();
-        script.onload = () => { win.print(); win.close(); };
+        setTimeout(() => {
+            win.print();
+            win.close();
+        }, 1000);
     }
   };
 
@@ -740,18 +737,16 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="col-span-1">
-             <label htmlFor="studentNumber" className="block text-xs font-bold text-slate-500 mb-1">{t.studentNumber} *</label>
+             <label className="block text-xs font-bold text-slate-500 mb-1">{t.studentNumber} *</label>
              <Input 
-                id="studentNumber"
                 placeholder="2024XXX" 
                 value={formData.studentNumber || ''} 
                 onChange={e => setFormData({...formData, studentNumber: e.target.value})} 
             />
         </div>
         <div className="col-span-1">
-            <label htmlFor="gender" className="block text-xs font-bold text-slate-500 mb-1">{t.gender} *</label>
+            <label className="block text-xs font-bold text-slate-500 mb-1">{t.gender} *</label>
             <Select 
-                id="gender"
                 value={formData.gender || 'Male'} 
                 onChange={e => setFormData({...formData, gender: e.target.value})}
             >
@@ -760,9 +755,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             </Select>
         </div>
         <div className="col-span-1 md:col-span-2 lg:col-span-1">
-             <label htmlFor="transportMode" className="block text-xs font-bold text-slate-500 mb-1">{t.transport}</label>
+             <label className="block text-xs font-bold text-slate-500 mb-1">{t.transport}</label>
              <Select 
-                id="transportMode"
                 value={formData.transportMode || 'Bus'} 
                 onChange={e => setFormData({...formData, transportMode: e.target.value})}
             >
@@ -773,18 +767,16 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         </div>
 
         <div className="col-span-1">
-            <label htmlFor="name_en" className="block text-xs font-bold text-slate-500 mb-1">{t.labelEn} *</label>
+            <label className="block text-xs font-bold text-slate-500 mb-1">{t.labelEn} *</label>
             <Input 
-                id="name_en"
                 placeholder="John Doe" 
                 value={formData.name_en || ''} 
                 onChange={e => setFormData({...formData, name_en: e.target.value})} 
             />
         </div>
         <div className="col-span-1">
-            <label htmlFor="name_ar" className="block text-xs font-bold text-slate-500 mb-1">{t.labelAr}</label>
+            <label className="block text-xs font-bold text-slate-500 mb-1">{t.labelAr}</label>
             <Input 
-                id="name_ar"
                 placeholder="الاسم" 
                 value={formData.name_ar || ''} 
                 onChange={e => setFormData({...formData, name_ar: e.target.value})} 
@@ -792,18 +784,16 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         </div>
         <div className="flex gap-2 col-span-1">
             <div className="w-1/2">
-                <label htmlFor="grade" className="block text-xs font-bold text-slate-500 mb-1">{t.grade} *</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1">{t.grade} *</label>
                 <Input 
-                    id="grade"
                     placeholder="10" 
                     value={formData.grade || ''} 
                     onChange={e => setFormData({...formData, grade: e.target.value})} 
                 />
             </div>
             <div className="w-1/2">
-                <label htmlFor="section" className="block text-xs font-bold text-slate-500 mb-1">{t.section} *</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1">{t.section} *</label>
                 <Input 
-                    id="section"
                     placeholder="A" 
                     value={formData.section || ''} 
                     onChange={e => setFormData({...formData, section: e.target.value})} 
@@ -813,9 +803,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         
         {/* Family ID Input */}
         <div className="col-span-1">
-            <label htmlFor="familyId" className="block text-xs font-bold text-slate-500 mb-1">{t.familyId}</label>
+            <label className="block text-xs font-bold text-slate-500 mb-1">{t.familyId}</label>
             <Input 
-                id="familyId"
                 placeholder="FAM-001" 
                 value={formData.familyId || ''} 
                 onChange={e => setFormData({...formData, familyId: e.target.value})} 
@@ -824,9 +813,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         </div>
 
         <div className="col-span-1 md:col-span-2 bg-red-50 p-4 rounded-lg border border-red-100">
-            <label htmlFor="isWatchlisted" className="flex items-center gap-3 cursor-pointer">
+            <label className="flex items-center gap-3 cursor-pointer">
                 <input 
-                    id="isWatchlisted"
                     type="checkbox" 
                     className="w-5 h-5 rounded text-red-600 focus:ring-red-500"
                     checked={formData.isWatchlisted || false}
@@ -841,9 +829,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     </div>
     {formData.transportMode === 'Bus' && (
          <div className="mt-4">
-            <label htmlFor="busRoute" className="block text-xs font-bold text-slate-500 mb-1">Bus Route Number</label>
+            <label className="block text-xs font-bold text-slate-500 mb-1">Bus Route Number</label>
             <Input 
-                id="busRoute"
                 placeholder="R-101" 
                 value={formData.busRoute || ''} 
                 onChange={e => setFormData({...formData, busRoute: e.target.value})} 
@@ -865,28 +852,24 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-            <label htmlFor="userName" className="block text-xs font-bold text-slate-500 mb-1">{t.studentName}</label>
+            <label className="block text-xs font-bold text-slate-500 mb-1">{t.studentName}</label>
             <Input 
-                id="userName"
                 placeholder="Name" 
                 value={formData.name || ''} 
                 onChange={e => setFormData({...formData, name: e.target.value})} 
             />
         </div>
         <div>
-            <label htmlFor="userEmail" className="block text-xs font-bold text-slate-500 mb-1">{t.email}</label>
+            <label className="block text-xs font-bold text-slate-500 mb-1">{t.email}</label>
             <Input 
-                id="userEmail"
-                autoComplete="email"
                 placeholder="Email" 
                 value={formData.email || ''} 
                 onChange={e => setFormData({...formData, email: e.target.value})} 
             />
         </div>
         <div>
-            <label htmlFor="userRole" className="block text-xs font-bold text-slate-500 mb-1">{t.role}</label>
+            <label className="block text-xs font-bold text-slate-500 mb-1">{t.role}</label>
             <Select 
-                id="userRole"
                 value={formData.role || UserRole.TEACHER} 
                 onChange={e => setFormData({...formData, role: e.target.value})}
             >
@@ -899,9 +882,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         {/* Social Worker Chat ID Input */}
         {formData.role === UserRole.SOCIAL_WORKER && (
             <div>
-                <label htmlFor="userChatId" className="block text-xs font-bold text-slate-500 mb-1">{t.userChatId}</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1">{t.userChatId}</label>
                 <Input 
-                    id="userChatId"
                     placeholder="e.g. 123456789" 
                     value={formData.telegramChatId || ''} 
                     onChange={e => setFormData({...formData, telegramChatId: e.target.value})} 
@@ -914,14 +896,12 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
              <h4 className="font-bold text-sm text-slate-700 mb-2">{t.assignedClasses}</h4>
              <div className="flex gap-2 mb-3">
                   <div className="flex-1">
-                      <label htmlFor="assignedClassGrade" className="sr-only">{t.grade}</label>
-                      <Select id="assignedClassGrade" value={assignedClassGrade} onChange={e => setAssignedClassGrade(e.target.value)}>
+                      <Select value={assignedClassGrade} onChange={e => setAssignedClassGrade(e.target.value)}>
                           <option value="">{t.grade}</option>
                           {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
                       </Select>
                   </div>
                   <div className="flex-1">
-                       <label htmlFor="assignedClassSection" className="sr-only">{t.section}</label>
                        <Select 
                           value={assignedClassSection} 
                           onChange={e => setAssignedClassSection(e.target.value)}
@@ -965,23 +945,22 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                  <label htmlFor="destLabelEn" className="block text-xs font-bold text-slate-500 mb-1">{t.labelEn}</label>
-                  <Input id="destLabelEn" value={formData.label_en || ''} onChange={e => setFormData({...formData, label_en: e.target.value})} />
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{t.labelEn}</label>
+                  <Input value={formData.label_en || ''} onChange={e => setFormData({...formData, label_en: e.target.value})} />
               </div>
               <div>
-                  <label htmlFor="destLabelAr" className="block text-xs font-bold text-slate-500 mb-1">{t.labelAr}</label>
-                  <Input id="destLabelAr" value={formData.label_ar || ''} onChange={e => setFormData({...formData, label_ar: e.target.value})} />
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{t.labelAr}</label>
+                  <Input value={formData.label_ar || ''} onChange={e => setFormData({...formData, label_ar: e.target.value})} />
               </div>
               <div>
-                  <label htmlFor="destDuration" className="block text-xs font-bold text-slate-500 mb-1">{t.duration}</label>
-                  <Input id="destDuration" type="number" value={formData.maxDuration || ''} onChange={e => setFormData({...formData, maxDuration: e.target.value})} />
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{t.duration}</label>
+                  <Input type="number" value={formData.maxDuration || ''} onChange={e => setFormData({...formData, maxDuration: e.target.value})} />
               </div>
               <div>
-                  <label id="destColorLabel" className="block text-xs font-bold text-slate-500 mb-1">{t.color}</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{t.color}</label>
                   <div className="flex flex-wrap gap-2 mt-1">
                       {COLOR_THEMES.map(c => (
                           <button
-                              aria-labelledby="destColorLabel"
                               key={c.name}
                               onClick={() => setFormData({...formData, colorTheme: c.name})}
                               className={`w-6 h-6 rounded-full border-2 ${formData.colorTheme === c.name ? 'border-slate-800 scale-110' : 'border-transparent'} ${c.class.split(' ')[0]}`}
@@ -990,14 +969,13 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   </div>
               </div>
               <div className="col-span-2">
-                  <label id="destIconLabel" className="block text-xs font-bold text-slate-500 mb-1">{t.icon}</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{t.icon}</label>
                   <div className="flex flex-wrap gap-2 p-2 bg-white border border-slate-200 rounded-lg h-32 overflow-y-auto">
                       {AVAILABLE_ICONS.map(iconName => {
                           // Dynamic icon rendering
                           const Icon = (LucideIcons as any)[iconName] || Ticket;
                           return (
                               <button 
-                                  aria-labelledby="destIconLabel"
                                   key={iconName}
                                   onClick={() => setFormData({...formData, iconName: iconName})}
                                   className={`p-2 rounded-lg hover:bg-slate-100 transition-colors ${formData.iconName === iconName ? 'bg-blue-100 text-blue-600 ring-1 ring-blue-500' : 'text-slate-500'}`}
@@ -1035,12 +1013,12 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       <p className="text-xs text-slate-500 mb-4">Used for unauthorized exits and security breaches.</p>
                       <div className="space-y-3">
                           <div>
-                              <label htmlFor="securityBotToken" className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
-                              <Input id="securityBotToken" value={telegramToken} onChange={e => setTelegramToken(e.target.value)} type="password" />
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
+                              <Input value={telegramToken} onChange={e => setTelegramToken(e.target.value)} type="password" />
                           </div>
                           <div>
-                              <label htmlFor="securityChatId" className="block text-xs font-bold text-slate-500 mb-1">{t.chatId}</label>
-                              <Input id="securityChatId" value={telegramChatId} onChange={e => setTelegramChatId(e.target.value)} />
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.chatId}</label>
+                              <Input value={telegramChatId} onChange={e => setTelegramChatId(e.target.value)} />
                           </div>
                       </div>
                   </div>
@@ -1053,12 +1031,12 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       <p className="text-xs text-slate-500 mb-4">Used for notifying parents/admins about Early Leave.</p>
                       <div className="space-y-3">
                           <div>
-                              <label htmlFor="receptionBotToken" className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
-                              <Input id="receptionBotToken" value={elTelegramToken} onChange={e => setElTelegramToken(e.target.value)} type="password" />
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
+                              <Input value={elTelegramToken} onChange={e => setElTelegramToken(e.target.value)} type="password" />
                           </div>
                           <div>
-                              <label htmlFor="receptionChatId" className="block text-xs font-bold text-slate-500 mb-1">{t.chatId}</label>
-                              <Input id="receptionChatId" value={elTelegramChatId} onChange={e => setElTelegramChatId(e.target.value)} />
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.chatId}</label>
+                              <Input value={elTelegramChatId} onChange={e => setElTelegramChatId(e.target.value)} />
                           </div>
                       </div>
                   </div>
@@ -1071,8 +1049,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       <p className="text-xs text-slate-500 mb-4">Used for notifying Social Workers about absence thresholds.</p>
                       <div className="space-y-3">
                           <div>
-                              <label htmlFor="attendanceBotToken" className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
-                              <Input id="attendanceBotToken" value={attTelegramToken} onChange={e => setAttTelegramToken(e.target.value)} type="password" />
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
+                              <Input value={attTelegramToken} onChange={e => setAttTelegramToken(e.target.value)} type="password" />
                           </div>
                       </div>
                   </div>
@@ -1085,12 +1063,12 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       <p className="text-xs text-slate-500 mb-4">{t.watchlistDesc}</p>
                       <div className="grid grid-cols-1 gap-4">
                           <div>
-                              <label htmlFor="watchlistBotToken" className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
-                              <Input id="watchlistBotToken" value={wlTelegramToken} onChange={e => setWlTelegramToken(e.target.value)} type="password" />
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label>
+                              <Input value={wlTelegramToken} onChange={e => setWlTelegramToken(e.target.value)} type="password" />
                           </div>
                           <div>
-                              <label htmlFor="watchlistChatId" className="block text-xs font-bold text-slate-500 mb-1">{t.chatId}</label>
-                              <Input id="watchlistChatId" value={wlTelegramChatId} onChange={e => setWlTelegramChatId(e.target.value)} />
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.chatId}</label>
+                              <Input value={wlTelegramChatId} onChange={e => setWlTelegramChatId(e.target.value)} />
                           </div>
                       </div>
                   </div>
@@ -1103,9 +1081,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   <p className="text-xs text-slate-500 mb-4">{t.enableNotificationsFor}</p>
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                       <label htmlFor="notif-UNAUTHORIZED" className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
+                       <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
                           <input 
-                              id="notif-UNAUTHORIZED"
                               type="checkbox" 
                               checked={notificationRules['UNAUTHORIZED'] !== false} // Default true
                               onChange={() => toggleNotificationRule('UNAUTHORIZED')}
@@ -1115,9 +1092,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                        </label>
                        
                        {destinations.map(d => (
-                           <label htmlFor={`notif-${d.id}`} key={d.id} className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
+                           <label key={d.id} className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
                               <input 
-                                  id={`notif-${d.id}`}
                                   type="checkbox" 
                                   checked={notificationRules[d.id] === true}
                                   onChange={() => toggleNotificationRule(d.id)}
@@ -1147,7 +1123,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
               <div className="max-w-lg relative mb-6">
                   <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
                   <Input 
-                      aria-label={t.searchStudent}
                       placeholder={t.searchStudent} 
                       className="pl-10"
                       value={parentSearch}
@@ -1180,16 +1155,15 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       
                       <div className="space-y-4">
                           <div>
-                              <label htmlFor="parentChatId" className="block text-xs font-bold text-slate-500 mb-1">{t.parentChatId}</label>
-                              <Input id="parentChatId" value={parentChatId} onChange={e => setParentChatId(e.target.value)} placeholder="e.g. 123456789" />
+                              <label className="block text-xs font-bold text-slate-500 mb-1">{t.parentChatId}</label>
+                              <Input value={parentChatId} onChange={e => setParentChatId(e.target.value)} placeholder="e.g. 123456789" />
                           </div>
 
                           <div>
                               <label className="block text-xs font-bold text-slate-500 mb-2">{t.selectEvents}</label>
                               <div className="grid grid-cols-2 gap-3">
-                                   <label htmlFor="parent-notif-UNAUTHORIZED" className="flex items-center gap-2">
+                                   <label className="flex items-center gap-2">
                                       <input 
-                                          id="parent-notif-UNAUTHORIZED"
                                           type="checkbox" 
                                           checked={parentRules['UNAUTHORIZED'] || false}
                                           onChange={() => toggleParentRule('UNAUTHORIZED')}
@@ -1197,9 +1171,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                       />
                                       <span className="text-sm">{t.unauthorized}</span>
                                   </label>
-                                  <label htmlFor="parent-notif-EARLY_LEAVE" className="flex items-center gap-2">
+                                  <label className="flex items-center gap-2">
                                       <input 
-                                          id="parent-notif-EARLY_LEAVE"
                                           type="checkbox" 
                                           checked={parentRules['EARLY_LEAVE'] || false}
                                           onChange={() => toggleParentRule('EARLY_LEAVE')}
@@ -1208,9 +1181,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                       <span className="text-sm">{t.earlyLeave}</span>
                                   </label>
                                   {destinations.map(d => (
-                                      <label htmlFor={`parent-notif-${d.id}`} key={d.id} className="flex items-center gap-2">
+                                      <label key={d.id} className="flex items-center gap-2">
                                           <input 
-                                              id={`parent-notif-${d.id}`}
                                               type="checkbox" 
                                               checked={parentRules[d.id] || false}
                                               onChange={() => toggleParentRule(d.id)}
@@ -1244,10 +1216,9 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           <div className="space-y-6 max-w-xl">
               {/* Threshold for calculating daily absent status */}
               <div>
-                  <label htmlFor="absentThreshold" className="block text-sm font-bold text-slate-700 mb-1">{t.absentThreshold}</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">{t.absentThreshold}</label>
                   <p className="text-xs text-slate-500 mb-2">{t.absentThresholdDesc}</p>
                   <Input 
-                      id="absentThreshold"
                       type="number" 
                       min={1}
                       max={10}
@@ -1258,9 +1229,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
               {/* Excused Logic Toggle */}
               <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                  <label htmlFor="countAllExcused" className="flex items-start gap-3 cursor-pointer">
+                  <label className="flex items-start gap-3 cursor-pointer">
                       <input 
-                          id="countAllExcused"
                           type="checkbox" 
                           className="mt-1 w-5 h-5 rounded text-blue-600 focus:ring-blue-500"
                           checked={attendanceRules.countAllExcusedAsExcusedDay}
@@ -1275,7 +1245,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
               {/* Notification Thresholds */}
               <div>
-                  <label id="attendanceAlertLabel" className="block text-sm font-bold text-slate-700 mb-1">{t.attendanceAlertThresholds}</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">{t.attendanceAlertThresholds}</label>
                   <p className="text-xs text-slate-500 mb-3">{t.attendanceAlertDesc}</p>
                   
                   <div className="flex flex-wrap gap-3">
@@ -1283,7 +1253,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                           const isSelected = attendanceRules.alertThresholds?.includes(days);
                           return (
                               <button 
-                                  aria-labelledby="attendanceAlertLabel"
                                   key={days}
                                   onClick={() => toggleAttendanceAlertThreshold(days)}
                                   className={`px-4 py-2 rounded-lg border text-sm font-bold transition-all ${isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
@@ -1313,9 +1282,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           </div>
 
           <div className="mb-6">
-              <label htmlFor="accessControlRole" className="block text-xs font-bold text-slate-500 mb-1">{t.selectRole}</label>
+              <label className="block text-xs font-bold text-slate-500 mb-1">{t.selectRole}</label>
               <Select 
-                  id="accessControlRole"
                   value={selectedRoleForAccess} 
                   onChange={e => setSelectedRoleForAccess(e.target.value)}
                   className="max-w-xs"
@@ -1345,9 +1313,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                       <span className="font-medium text-slate-700">{lang === 'en' ? item.label_en : item.label_ar}</span>
                                   </td>
                                   <td className="p-4 text-center">
-                                      <label htmlFor={`access-toggle-${item.id}`} className="relative inline-flex items-center cursor-pointer">
+                                      <label className="relative inline-flex items-center cursor-pointer">
                                           <input 
-                                              id={`access-toggle-${item.id}`}
                                               type="checkbox" 
                                               className="sr-only peer"
                                               checked={hasAccess}
