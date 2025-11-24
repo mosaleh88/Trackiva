@@ -37,6 +37,11 @@ const generateDefaultPermissions = () => {
     return permissions;
 };
 
+
+
+
+
+
 interface StoreData {
     students: Student[];
     attendance: AttendanceRecord[];
@@ -69,6 +74,7 @@ class SupabaseStore {
 
   private initialized = false;
   private subscribers: Set<() => void> = new Set();
+  
 
   // --- Date Standardization Helpers ---
   getTodayStr() {
@@ -85,6 +91,7 @@ class SupabaseStore {
   getEndOfDay(dateStr: string) {
       return new Date(`${dateStr}T23:59:59.999`).getTime();
   }
+
 
   // --- Initialization ---
   async init() {
@@ -203,64 +210,91 @@ class SupabaseStore {
   }
 
   async refreshData() {
-    try {
-        const todayStr = this.getTodayStr();
-        const sevenDaysAgo = new Date(todayStr);
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const dateStr = sevenDaysAgo.toISOString().split('T')[0];
-        const timestamp = sevenDaysAgo.getTime();
+      try {
+          const todayStr = this.getTodayStr();
+          const sevenDaysAgo = new Date(todayStr);
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          const dateStr = sevenDaysAgo.toISOString().split('T')[0];
+          const timestamp = sevenDaysAgo.getTime();
 
-        const [students, users, settings, destinations] = await Promise.all([
-            supabase.from('students').select('*').range(0, 9999),
-            supabase.from('users').select('*').range(0, 9999),
-            supabase.from('settings').select('*').single(),
-            supabase.from('destinations').select('*')
-        ]);
+          // Paginate large/static tables
+          const [students, users] = await Promise.all([
+              fetchAllFromTable<Student>('students'),
+              fetchAllFromTable<User>('users'),
+          ]);
 
-        const [attendance, epasses, logs, visits] = await Promise.all([
-            supabase.from('attendance').select('*').gte('date', dateStr).range(0, 9999),
-            supabase.from('epasses').select('*').gte('startTime', timestamp).range(0, 9999),
-            supabase.from('reception_logs').select('*').gte('timestamp', timestamp).range(0, 9999),
-            supabase.from('clinic_visits').select('*').gte('timestamp', timestamp).range(0, 9999),
-        ]);
+          // Small tables: no pagination needed
+          const [settingsRes, destinationsRes] = await Promise.all([
+              supabase.from('settings').select('*').single(),
+              supabase.from('destinations').select('*'),
+          ]);
 
-        if (students.data) this.data.students = students.data;
-        if (users.data) this.data.users = users.data;
-        if (attendance.data) this.data.attendance = attendance.data;
-        if (epasses.data) this.data.ePasses = epasses.data;
-        if (logs.data) this.data.receptionLogs = logs.data;
-        if (visits.data) this.data.clinicVisits = visits.data;
-        if (destinations.data) this.data.destinations = destinations.data;
-        if (settings.data) { // Ensure settings.data is not null
-            this.data.settings = { ...this.data.settings, ...settings.data };
-            if (this.data.settings.attendanceSettings?.schedule) {
-                this.data.schedule = this.data.settings.attendanceSettings.schedule;
-            }
-        }
-        this.notify();
-    } catch (error) {
-        console.error("Error initializing store:", error);
-    }
+          // Time-bound data (7 days): likely <1k, but if you're paranoid, paginate
+          // For now, keep as single query (faster)
+          const [attendanceRes, epassesRes, logsRes, visitsRes] = await Promise.all([
+              supabase.from('attendance').select('*').gte('date', dateStr),
+              supabase.from('epasses').select('*').gte('startTime', timestamp),
+              supabase.from('reception_logs').select('*').gte('timestamp', timestamp),
+              supabase.from('clinic_visits').select('*').gte('timestamp', timestamp),
+          ]);
+
+          // Assign data
+          this.data.students = students;
+          this.data.users = users;
+          this.data.destinations = destinationsRes.data || [];
+          this.data.attendance = attendanceRes.data || [];
+          this.data.ePasses = epassesRes.data || [];
+          this.data.receptionLogs = logsRes.data || [];
+          this.data.clinicVisits = visitsRes.data || [];
+
+          if (settingsRes.data) {
+              this.data.settings = { ...this.data.settings, ...settingsRes.data };
+              if (this.data.settings.attendanceSettings?.schedule) {
+                  this.data.schedule = this.data.settings.attendanceSettings.schedule;
+              }
+          }
+
+          this.notify();
+      } catch (error) {
+          console.error("Error initializing store:", error);
+      }
   }
 
   // FETCH ONLY (No Cache Merge by default)
   async fetchDataForRange(startDate: string, endDate: string, options: { cache: boolean } = { cache: false }) {
       try {
-          const startTs = this.getStartOfDay(startDate);
-          const endTs = this.getEndOfDay(endDate);
+        const startTs = this.getStartOfDay(startDate);
+        const endTs = this.getEndOfDay(endDate);
 
-          const [attendance, epasses, logs, visits] = await Promise.all([
-              supabase.from('attendance').select('*').gte('date', startDate).lte('date', endDate).range(0, 9999),
-              supabase.from('epasses').select('*').gte('startTime', startTs).lte('startTime', endTs).range(0, 9999),
-              supabase.from('reception_logs').select('*').gte('timestamp', startTs).lte('timestamp', endTs).range(0, 9999),
-              supabase.from('clinic_visits').select('*').gte('timestamp', startTs).lte('timestamp', endTs).range(0, 9999),
-          ]);
+        // Helper: fetch table with date/time filter + pagination
+        const fetchTimeSeries = async <T>(
+          table: string,
+          timeField: string,
+          isDateField = false // true for 'date' (string), false for timestamp (number)
+        ): Promise<T[]> => {
+          return fetchAllFromTable<T>(table, {
+            filter: (query) => {
+              let q = query.gte(timeField, isDateField ? startDate : startTs);
+              if (endDate && endTs) {
+                q = q.lte(timeField, isDateField ? endDate : endTs);
+              }
+              return q;
+            }
+          });
+        };
+
+        const [attendance, epasses, logs, visits] = await Promise.all([
+          fetchTimeSeries<AttendanceRecord>('attendance', 'date', true),
+          fetchTimeSeries<EPass>('epasses', 'startTime', false),
+          fetchTimeSeries<ReceptionLog>('reception_logs', 'timestamp', false),
+          fetchTimeSeries<ClinicVisit>('clinic_visits', 'timestamp', false),
+        ]);
 
           const result = {
-              attendance: attendance.data || [],
-              ePasses: epasses.data || [],
-              receptionLogs: logs.data || [],
-              clinicVisits: visits.data || []
+              attendance,
+              ePasses: epasses,
+              receptionLogs: logs,
+              clinicVisits: visits
           };
 
           if (options.cache) {
@@ -273,7 +307,7 @@ class SupabaseStore {
 
           return result;
       } catch (error) {
-          console.error("Error fetching historical data:", error);
+        console.error("Error fetching historical data:", error);
           return { attendance: [], ePasses: [], receptionLogs: [], clinicVisits: [] };
       }
   }
@@ -722,6 +756,62 @@ class SupabaseStore {
       });
       return { history, stats: attendanceStats };
   }
+}
+
+
+export async function fetchAllFromTable<T>(
+  table: string,
+  options: {
+    select?: string;
+    filter?: (query: any) => any; // optional chaining for filters
+    pageSize?: number;
+  } = {}
+): Promise<T[]> {
+  const {
+    select = '*',
+    filter = (q: any) => q,
+    pageSize = 1000
+  } = options;
+
+  if (pageSize > 1000) {
+    console.warn('Supabase enforces a max of 1000 rows per request. pageSize clamped to 1000.');
+  }
+
+  const effectivePageSize = Math.min(pageSize, 1000);
+  let all: T[] = [];
+  let start = 0;
+
+  while (true) {
+    let query = supabase
+      .from(table)
+      .select(select)
+      .range(start, start + effectivePageSize - 1);
+
+    // Apply optional filter (e.g., .eq('grade', '5'))
+    query = filter(query);
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(`Error fetching from table "${table}":`, error);
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      break;
+    }
+
+    all.push(...data);
+
+    // If we got fewer than requested, we're at the end
+    if (data.length < effectivePageSize) {
+      break;
+    }
+
+    start += effectivePageSize;
+  }
+
+  return all;
 }
 
 export const store = new SupabaseStore();
