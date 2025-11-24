@@ -821,7 +821,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                     onChange={e => setFormData({...formData, isWatchlisted: e.target.checked})}
                 />
                 <div>
-                    <span className="font-bold text-red-800 text-sm block">{t.watchlist}</label>
+                    <span className="font-bold text-red-800 text-sm block">{t.watchlist}</span>
                     <span className="text-xs text-red-600">Flag this student for strict monitoring and targeted alerts.</span>
                 </div>
             </label>
