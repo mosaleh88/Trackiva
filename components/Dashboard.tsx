@@ -5,7 +5,7 @@ import { useStore } from '../services/store';
 import { TRANSLATIONS } from '../constants';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend
-} from 'recharts';
+} from 'recharts/lib';
 import { AlertTriangle, Activity, Users, Clock, Stethoscope, LogOut, Ticket } from 'lucide-react';
 
 interface DashboardProps {
@@ -227,4 +227,3 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
   );
 };
 
-// Components EPass, Clinic, Reception, Reports are updated similarly to use useStore()
