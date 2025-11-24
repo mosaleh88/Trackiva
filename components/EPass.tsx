@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Select, Badge, Input } from './ui';
 import { useStore } from '../services/store';
@@ -133,13 +134,13 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
 
   const getThemeClasses = (theme: string) => {
       const themes: any = {
-        blue: "bg-blue-50 text-blue-600 hover:bg-blue-100",
-        red: "bg-red-50 text-red-600 hover:bg-red-100",
-        yellow: "bg-yellow-50 text-yellow-600 hover:bg-yellow-100",
-        green: "bg-green-50 text-green-600 hover:bg-green-100",
-        purple: "bg-purple-50 text-purple-600 hover:bg-purple-100",
-        orange: "bg-orange-50 text-orange-600 hover:bg-orange-100",
-        slate: "bg-slate-50 text-slate-600 hover:bg-slate-100"
+        blue: "bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50",
+        red: "bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50",
+        yellow: "bg-yellow-50 text-yellow-600 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50",
+        green: "bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50",
+        purple: "bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-900/50",
+        orange: "bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-300 dark:hover:bg-orange-900/50",
+        slate: "bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
       };
       return themes[theme] || themes.blue;
   };
@@ -150,7 +151,7 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
         <div className="flex-1 flex gap-6 min-h-0 overflow-hidden">
             <div className="flex-1 overflow-y-auto pr-2 rtl:pr-0 rtl:pl-2">
                 {!isSelectionActive ? (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl">
+                    <div className="h-full flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
                         <Filter size={48} className="opacity-20 mb-4" />
                         <p>{t.selectClassMsg}</p>
                     </div>
@@ -175,53 +176,53 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
                             }
                             const cardBorderClass = activePass 
                                 ? (isUnauthorized 
-                                    ? 'border-red-500 shadow-red-100 ring-2 ring-red-500 bg-red-50'
+                                    ? 'border-red-500 shadow-red-100 ring-2 ring-red-500 bg-red-50 dark:bg-red-900/10 dark:shadow-none'
                                     : isOverdue 
-                                        ? 'border-red-200 shadow-red-100 ring-1 ring-red-100' 
-                                        : 'border-green-200 shadow-green-100 ring-1 ring-green-100')
-                                : 'border-slate-200 shadow-sm hover:shadow-md';
+                                        ? 'border-red-200 shadow-red-100 ring-1 ring-red-100 dark:border-red-800 dark:ring-red-900 dark:bg-red-900/10' 
+                                        : 'border-green-200 shadow-green-100 ring-1 ring-green-100 dark:border-green-800 dark:ring-green-900 dark:bg-green-900/10')
+                                : 'border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 bg-white dark:bg-slate-800';
 
                             return (
-                                <div key={student.id} className={`bg-white border rounded-xl p-4 transition-all ${cardBorderClass} relative overflow-hidden`}>
+                                <div key={student.id} className={`border rounded-xl p-4 transition-all ${cardBorderClass} relative overflow-hidden`}>
                                     <div className="flex justify-between items-start mb-3 gap-2">
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="font-bold text-slate-800 truncate" title={lang === 'en' ? student.name_en : student.name_ar}>
+                                            <h4 className="font-bold text-slate-800 dark:text-white truncate" title={lang === 'en' ? student.name_en : student.name_ar}>
                                                 {lang === 'en' ? student.name_en : student.name_ar}
                                             </h4>
-                                            <p className="text-xs text-slate-500 font-mono">#{student.studentNumber}</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">#{student.studentNumber}</p>
                                         </div>
                                         <div className="shrink-0">
                                             {activePass ? (
                                                 isUnauthorized ? <Badge color='red' className="animate-pulse font-bold">{t.unauthorized}</Badge> : 
                                                 <Badge color={isOverdue ? 'red' : 'green'} className="animate-pulse">{isOverdue ? t.passOverdue : t.passActive}</Badge>
                                             ) : (
-                                                <div className={`text-[10px] font-bold px-2 py-1 rounded-full ${limitReached ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                <div className={`text-[10px] font-bold px-2 py-1 rounded-full ${limitReached ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300'}`}>
                                                     {t.passes}: {dailyCount}/{maxPasses}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                     {isUnauthorized && activePass ? (
-                                        <div className="bg-red-100 border-2 border-red-200 rounded-lg p-4 text-center animate-in zoom-in">
-                                            <div className="flex justify-center mb-2"><AlertOctagon size={32} className="text-red-600" /></div>
-                                            <h5 className="font-bold text-red-800 text-sm mb-1">{t.outOfClass}</h5>
-                                            <p className="text-xs text-red-700 mb-3">{t.studentOutOfClass}</p>
-                                            <p className="text-xl font-mono text-red-900 font-bold mb-3">{getElapsed(activePass.startTime)}</p>
+                                        <div className="bg-red-100 dark:bg-red-900/30 border-2 border-red-200 dark:border-red-800 rounded-lg p-4 text-center animate-in zoom-in">
+                                            <div className="flex justify-center mb-2"><AlertOctagon size={32} className="text-red-600 dark:text-red-400" /></div>
+                                            <h5 className="font-bold text-red-800 dark:text-red-200 text-sm mb-1">{t.outOfClass}</h5>
+                                            <p className="text-xs text-red-700 dark:text-red-300 mb-3">{t.studentOutOfClass}</p>
+                                            <p className="text-xl font-mono text-red-900 dark:text-red-100 font-bold mb-3">{getElapsed(activePass.startTime)}</p>
                                             <Button onClick={() => handleComplete(activePass.id)} className="w-full bg-red-600 hover:bg-red-700 text-white text-xs h-9 shadow-lg">{t.studentReturned}</Button>
                                         </div>
                                     ) : activePass && activeDestDetails ? (
-                                        <div className={`rounded-lg p-3 text-center border ${isOverdue ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'}`}>
-                                            <p className={`text-xs font-bold mb-1 ${isOverdue ? 'text-red-800' : 'text-green-800'}`}>
+                                        <div className={`rounded-lg p-3 text-center border ${isOverdue ? 'bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-800' : 'bg-green-50 border-green-100 dark:bg-green-900/20 dark:border-green-800'}`}>
+                                            <p className={`text-xs font-bold mb-1 ${isOverdue ? 'text-red-800 dark:text-red-300' : 'text-green-800 dark:text-green-300'}`}>
                                                 {isOverdue ? t.passOverdue : t.passActive}: {lang === 'en' ? activeDestDetails.label_en : activeDestDetails.label_ar}
                                             </p>
-                                            <p className={`text-2xl font-mono mb-2 ${isOverdue ? 'text-red-600' : 'text-green-600'}`}>{getElapsed(activePass.startTime)}</p>
+                                            <p className={`text-2xl font-mono mb-2 ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{getElapsed(activePass.startTime)}</p>
                                             <Button onClick={() => handleComplete(activePass.id)} className={`w-full text-white text-xs h-8 ${isOverdue ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}>{t.endPass}</Button>
                                         </div>
                                     ) : limitReached && !isOverridden ? (
-                                        <div className="bg-red-50 border border-red-100 rounded-lg p-4 text-center">
+                                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg p-4 text-center">
                                             <div className="flex justify-center mb-2"><Ban size={24} className="text-red-400" /></div>
-                                            <p className="text-xs font-bold text-red-800 mb-2">{t.dailyLimit} ({maxPasses})</p>
-                                            <Button variant="ghost" onClick={() => handleAllowOverride(student.id)} className="w-full bg-white border border-red-200 text-red-600 hover:bg-red-100 h-8 text-xs mb-2">{t.allowAnyway}</Button>
+                                            <p className="text-xs font-bold text-red-800 dark:text-red-300 mb-2">{t.dailyLimit} ({maxPasses})</p>
+                                            <Button variant="ghost" onClick={() => handleAllowOverride(student.id)} className="w-full bg-white dark:bg-slate-800 border border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 h-8 text-xs mb-2">{t.allowAnyway}</Button>
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
@@ -236,7 +237,7 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
                                                     );
                                                 })}
                                             </div>
-                                            <button disabled={isLoading} onClick={() => handleCreatePass(student.id, UNAUTHORIZED_TYPE)} className="w-full flex items-center justify-center gap-2 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-bold transition-colors disabled:opacity-50">
+                                            <button disabled={isLoading} onClick={() => handleCreatePass(student.id, UNAUTHORIZED_TYPE)} className="w-full flex items-center justify-center gap-2 py-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg text-xs font-bold transition-colors disabled:opacity-50">
                                                 <AlertTriangle size={14} /> {t.outOfClass}
                                             </button>
                                         </div>
@@ -254,29 +255,29 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
   const renderDashboard = () => (
       <div className="flex-1 overflow-y-auto space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                  <div><p className="text-sm text-slate-500 mb-1">{t.totalActive}</p><h3 className="text-3xl font-bold text-blue-600">{passes.length}</h3></div>
-                  <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600"><Ticket size={24} /></div>
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                  <div><p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.totalActive}</p><h3 className="text-3xl font-bold text-blue-600 dark:text-blue-400">{passes.length}</h3></div>
+                  <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400"><Ticket size={24} /></div>
               </div>
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                  <div><p className="text-sm text-slate-500 mb-1">{t.totalOverdue}</p><h3 className="text-3xl font-bold text-red-600">{totalOverdue}</h3></div>
-                  <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600"><Clock size={24} /></div>
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                  <div><p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.totalOverdue}</p><h3 className="text-3xl font-bold text-red-600 dark:text-red-400">{totalOverdue}</h3></div>
+                  <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400"><Clock size={24} /></div>
               </div>
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                  <div><p className="text-sm text-slate-500 mb-1">{t.outOfClass}</p><h3 className="text-3xl font-bold text-orange-600">{destinationStats['UNAUTHORIZED'] || 0}</h3></div>
-                  <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-orange-600"><AlertOctagon size={24} /></div>
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                  <div><p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.outOfClass}</p><h3 className="text-3xl font-bold text-orange-600 dark:text-orange-400">{destinationStats['UNAUTHORIZED'] || 0}</h3></div>
+                  <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400"><AlertOctagon size={24} /></div>
               </div>
           </div>
           <div>
-              <h3 className="font-bold text-slate-800 mb-3 text-lg">{t.destinationBreakdown}</h3>
+              <h3 className="font-bold text-slate-800 dark:text-white mb-3 text-lg">{t.destinationBreakdown}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {destinations.map(dest => {
                       const count = destinationStats[dest.id] || 0;
                       const IconComp = ICON_MAP[dest.iconName] || Ticket;
                       return (
-                          <div key={dest.id} className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-shadow">
+                          <div key={dest.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-shadow">
                               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getThemeClasses(dest.colorTheme)}`}><IconComp size={20} /></div>
-                              <span className="text-sm font-bold text-slate-700 text-center leading-tight">{lang === 'en' ? dest.label_en : dest.label_ar}</span>
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200 text-center leading-tight">{lang === 'en' ? dest.label_en : dest.label_ar}</span>
                               <Badge color={count > 0 ? 'blue' : 'gray'} className="text-xs">{count}</Badge>
                           </div>
                       )
@@ -284,11 +285,11 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
               </div>
           </div>
           <Card>
-              <h3 className="font-bold text-slate-800 mb-4 text-lg">{t.activeStudentList}</h3>
+              <h3 className="font-bold text-slate-800 dark:text-white mb-4 text-lg">{t.activeStudentList}</h3>
               <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                       <thead>
-                          <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
+                          <tr className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 text-sm border-b border-slate-200 dark:border-slate-700">
                               <th className="p-3 rounded-tl-lg text-start">{t.studentName}</th>
                               <th className="p-3 text-start">{t.grade}</th>
                               <th className="p-3 text-start">{t.issuedBy}</th>
@@ -298,7 +299,7 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
                               <th className="p-3 text-center rounded-tr-lg">{t.actions}</th>
                           </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                           {passes.length === 0 ? (
                               <tr><td colSpan={7} className="p-8 text-center text-slate-400 italic">No active passes</td></tr>
                           ) : (
@@ -316,16 +317,16 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
                                   const elapsed = getElapsed(pass.startTime);
                                   const isOverdue = !isUnauthorized && parseInt(elapsed) > (getDestinationDetails(pass.type).maxDuration);
                                   return (
-                                      <tr key={pass.id} className="hover:bg-slate-50 transition-colors">
+                                      <tr key={pass.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                           <td className="p-3">
-                                              <div className="font-bold text-slate-800">{lang === 'en' ? student?.name_en : student?.name_ar}</div>
+                                              <div className="font-bold text-slate-800 dark:text-white">{lang === 'en' ? student?.name_en : student?.name_ar}</div>
                                               <div className="text-xs text-slate-400 font-mono">{student?.studentNumber}</div>
                                           </td>
                                           <td className="p-3"><Badge color="gray">{student?.grade} - {student?.section}</Badge></td>
-                                          <td className="p-3 text-sm text-slate-600">{issuer ? issuer.name : <span className="text-slate-300">-</span>}</td>
+                                          <td className="p-3 text-sm text-slate-600 dark:text-slate-300">{issuer ? issuer.name : <span className="text-slate-300">-</span>}</td>
                                           <td className="p-3"><Badge color={isUnauthorized ? 'red' : (destColor as any)}>{destLabel}</Badge></td>
-                                          <td className="p-3 text-sm text-slate-600 font-mono">{new Date(pass.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                                          <td className="p-3"><span className={`font-mono font-bold ${isOverdue || isUnauthorized ? 'text-red-600' : 'text-green-600'}`}>{elapsed}</span></td>
+                                          <td className="p-3 text-sm text-slate-600 dark:text-slate-300 font-mono">{new Date(pass.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                          <td className="p-3"><span className={`font-mono font-bold ${isOverdue || isUnauthorized ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{elapsed}</span></td>
                                           <td className="p-3 text-center"><Button variant="secondary" onClick={() => handleComplete(pass.id)} className="text-xs h-8 px-3">{t.endPass}</Button></td>
                                       </tr>
                                   )
@@ -341,12 +342,12 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
   return (
     <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
       <Card className="shrink-0 pb-2">
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center border-b border-slate-100 pb-4 mb-4">
-             <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
-                <button onClick={() => setActiveTab('issue')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${activeTab === 'issue' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center border-b border-slate-100 dark:border-slate-700 pb-4 mb-4">
+             <div className="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                <button onClick={() => setActiveTab('issue')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${activeTab === 'issue' ? 'bg-white dark:bg-slate-600 text-primary dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
                     <div className="flex items-center gap-2"><Ticket size={16} /> {t.issuePass}</div>
                 </button>
-                <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${activeTab === 'dashboard' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${activeTab === 'dashboard' ? 'bg-white dark:bg-slate-600 text-primary dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
                     <div className="flex items-center gap-2"><LayoutDashboard size={16} /> {t.activityMonitor}</div>
                 </button>
              </div>

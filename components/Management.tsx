@@ -668,15 +668,15 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 no-print">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh]">
-                <div className="p-4 border-b border-slate-100 flex justify-between items-center">
-                    <h3 className="font-bold text-lg">{t.generateId}</h3>
-                    <button onClick={() => setViewingCard(null)} className="p-2 hover:bg-slate-100 rounded-full">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-800">
+                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">{t.generateId}</h3>
+                    <button onClick={() => setViewingCard(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400">
                         <X size={20} />
                     </button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-8 bg-slate-100 flex justify-center">
+                <div className="flex-1 overflow-y-auto p-8 bg-slate-100 dark:bg-slate-950 flex justify-center">
                     <div id="id-card-container">
                         <div className="w-[480px] bg-white rounded-xl overflow-hidden shadow-xl border border-slate-200 relative flex flex-col print:shadow-none print:border" 
                              style={{ borderTop: '12px solid #458489' }}>
@@ -722,7 +722,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-white rounded-b-2xl">
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2 bg-white dark:bg-slate-900 rounded-b-2xl">
                     <Button variant="secondary" onClick={() => setViewingCard(null)}>{t.cancel}</Button>
                     <Button onClick={handlePrintCard}>
                         <Printer size={16} /> {t.printCard}
@@ -734,15 +734,15 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   }
 
   const renderStudentForm = () => (
-    <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6 animate-in fade-in shadow-sm">
+    <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700 mb-6 animate-in fade-in shadow-sm">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg text-slate-800">{editingStudent ? t.actions : t.addStudent}</h3>
+        <h3 className="font-bold text-lg text-slate-800 dark:text-white">{editingStudent ? t.actions : t.addStudent}</h3>
         <Button variant="ghost" onClick={() => { setEditingStudent(null); setIsAddingStudent(false); setFormData({}); }}>{t.cancel}</Button>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="col-span-1">
-             <label htmlFor="studentNumber" className="block text-xs font-bold text-slate-500 mb-1">{t.studentNumber} *</label>
+             <label htmlFor="studentNumber" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.studentNumber} *</label>
              <Input 
                 id="studentNumber"
                 placeholder="2024XXX" 
@@ -751,7 +751,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             />
         </div>
         <div className="col-span-1">
-            <label htmlFor="gender" className="block text-xs font-bold text-slate-500 mb-1">{t.gender} *</label>
+            <label htmlFor="gender" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.gender} *</label>
             <Select 
                 id="gender"
                 value={formData.gender || 'Male'} 
@@ -762,7 +762,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             </Select>
         </div>
         <div className="col-span-1 md:col-span-2 lg:col-span-1">
-             <label htmlFor="transportMode" className="block text-xs font-bold text-slate-500 mb-1">{t.transport}</label>
+             <label htmlFor="transportMode" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.transport}</label>
              <Select 
                 id="transportMode"
                 value={formData.transportMode || 'Bus'} 
@@ -775,7 +775,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         </div>
 
         <div className="col-span-1">
-            <label htmlFor="name_en" className="block text-xs font-bold text-slate-500 mb-1">{t.labelEn} *</label>
+            <label htmlFor="name_en" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.labelEn} *</label>
             <Input 
                 id="name_en"
                 placeholder="John Doe" 
@@ -784,7 +784,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             />
         </div>
         <div className="col-span-1">
-            <label htmlFor="name_ar" className="block text-xs font-bold text-slate-500 mb-1">{t.labelAr}</label>
+            <label htmlFor="name_ar" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.labelAr}</label>
             <Input 
                 id="name_ar"
                 placeholder="جون دو" 
@@ -793,7 +793,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             />
         </div>
         <div className="col-span-1">
-             <label htmlFor="watchlist" className="block text-xs font-bold text-slate-500 mb-1">{t.watchlist}</label>
+             <label htmlFor="watchlist" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.watchlist}</label>
              <Select 
                 id="watchlist"
                 value={formData.isWatchlisted ? 'true' : 'false'}
@@ -805,7 +805,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         </div>
 
         <div className="col-span-1">
-            <label htmlFor="grade" className="block text-xs font-bold text-slate-500 mb-1">{t.grade} *</label>
+            <label htmlFor="grade" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.grade} *</label>
             <Select 
                 id="grade"
                 value={formData.grade || ''} 
@@ -818,7 +818,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             </Select>
         </div>
         <div className="col-span-1">
-            <label htmlFor="section" className="block text-xs font-bold text-slate-500 mb-1">{t.section} *</label>
+            <label htmlFor="section" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.section} *</label>
             <Input 
                 id="section"
                 placeholder="A, B, C..." 
@@ -827,7 +827,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             />
         </div>
         <div className="col-span-1">
-            <label htmlFor="busRoute" className="block text-xs font-bold text-slate-500 mb-1">Bus Route</label>
+            <label htmlFor="busRoute" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Bus Route</label>
             <Input 
                 id="busRoute"
                 placeholder="e.g. R-101" 
@@ -836,7 +836,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             />
         </div>
         <div className="col-span-1">
-            <label htmlFor="familyId" className="block text-xs font-bold text-slate-500 mb-1">{t.familyId}</label>
+            <label htmlFor="familyId" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.familyId}</label>
             <Input 
                 id="familyId"
                 placeholder="Shared ID for siblings" 
@@ -856,26 +856,26 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           {renderIdCardModal()}
           
           {/* Top Tabs */}
-          <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex flex-wrap gap-1">
-              <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+          <div className="bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 inline-flex flex-wrap gap-1">
+              <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                   {t.users}
               </button>
-              <button onClick={() => setActiveTab('students')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'students' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+              <button onClick={() => setActiveTab('students')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'students' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                   {t.students}
               </button>
-              <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'timetable' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+              <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'timetable' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                   {t.timetable}
               </button>
-              <button onClick={() => setActiveTab('epass')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'epass' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+              <button onClick={() => setActiveTab('epass')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'epass' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                   {t.destinations}
               </button>
-              <button onClick={() => setActiveTab('access')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'access' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+              <button onClick={() => setActiveTab('access')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'access' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                   {t.accessControl}
               </button>
-              <button onClick={() => setActiveTab('notifications')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'notifications' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+              <button onClick={() => setActiveTab('notifications')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'notifications' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                   {t.notifications}
               </button>
-              <button onClick={() => setActiveTab('attendance_rules')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'attendance_rules' ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+              <button onClick={() => setActiveTab('attendance_rules')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'attendance_rules' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                   {t.attendanceRules}
               </button>
           </div>
@@ -910,14 +910,14 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                    const next = sortBy === 'name' ? 'grade' : sortBy === 'grade' ? 'number' : 'name';
                                    setSortBy(next);
                                }}
-                               className="px-3 py-2 bg-slate-100 rounded-lg text-slate-600 hover:bg-slate-200 text-sm font-bold flex items-center gap-2"
+                               className="px-3 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 text-sm font-bold flex items-center gap-2 transition-colors"
                            >
                                <ArrowUpDown size={16} /> {t.sortBy}: {sortBy.toUpperCase()}
                            </button>
                       </div>
                       
                       <div className="flex gap-2 w-full md:w-auto">
-                          <label className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors shadow-sm">
+                          <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors shadow-sm">
                               <Upload size={18} />
                               <span className="text-sm font-bold">{isUploading ? t.uploading : t.upload}</span>
                               <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleBulkUpload} disabled={isUploading} />
@@ -935,7 +935,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   <Card className="p-0 overflow-hidden">
                       <div className="overflow-x-auto">
                           <table className="w-full text-left">
-                              <thead className="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-100">
+                              <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-xs uppercase border-b border-slate-100 dark:border-slate-800">
                                   <tr>
                                       <th className="p-4">ID</th>
                                       <th className="p-4">{t.studentName}</th>
@@ -944,23 +944,23 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                       <th className="p-4 text-center">{t.actions}</th>
                                   </tr>
                               </thead>
-                              <tbody className="divide-y divide-slate-50 text-sm">
+                              <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
                                   {paginatedStudents.length === 0 ? (
                                       <tr><td colSpan={5} className="p-8 text-center text-slate-400">No students found</td></tr>
                                   ) : (
                                       paginatedStudents.map(student => (
-                                          <tr key={student.id} className="hover:bg-slate-50">
-                                              <td className="p-4 font-mono text-slate-500">{student.studentNumber}</td>
-                                              <td className="p-4 font-bold text-slate-700">
+                                          <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                              <td className="p-4 font-mono text-slate-500 dark:text-slate-400">{student.studentNumber}</td>
+                                              <td className="p-4 font-bold text-slate-700 dark:text-slate-200">
                                                   {lang === 'en' ? student.name_en : student.name_ar}
                                                   {student.isWatchlisted && <Eye className="inline ml-2 text-red-500 w-4 h-4" />}
                                               </td>
                                               <td className="p-4"><Badge color="blue">{student.grade} - {student.section}</Badge></td>
-                                              <td className="p-4 text-slate-600">{student.transportMode}</td>
+                                              <td className="p-4 text-slate-600 dark:text-slate-300">{student.transportMode}</td>
                                               <td className="p-4 flex justify-center gap-2">
-                                                  <button onClick={() => setViewingCard(student)} className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg" title="ID Card"><CreditCard size={16} /></button>
-                                                  <button onClick={() => { setEditingStudent(student); setFormData(student); setIsAddingStudent(false); }} className="p-2 hover:bg-yellow-50 text-yellow-600 rounded-lg"><Edit2 size={16} /></button>
-                                                  <button onClick={() => handleDeleteStudent(student.id)} className="p-2 hover:bg-red-50 text-red-600 rounded-lg"><Trash2 size={16} /></button>
+                                                  <button onClick={() => setViewingCard(student)} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg" title="ID Card"><CreditCard size={16} /></button>
+                                                  <button onClick={() => { setEditingStudent(student); setFormData(student); setIsAddingStudent(false); }} className="p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-lg"><Edit2 size={16} /></button>
+                                                  <button onClick={() => handleDeleteStudent(student.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg"><Trash2 size={16} /></button>
                                               </td>
                                           </tr>
                                       ))
@@ -971,19 +971,19 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       
                       {/* Pagination */}
                       {totalStudentPages > 1 && (
-                          <div className="p-4 border-t border-slate-100 flex justify-center gap-2">
+                          <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex justify-center gap-2">
                               <button 
                                   disabled={studentPage === 1}
                                   onClick={() => setStudentPage(p => p - 1)}
-                                  className="p-2 rounded-lg border hover:bg-slate-50 disabled:opacity-50"
+                                  className="p-2 rounded-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-50"
                               >
                                   <ChevronLeft size={16} />
                               </button>
-                              <span className="py-2 px-4 text-sm text-slate-600 font-bold">Page {studentPage} of {totalStudentPages}</span>
+                              <span className="py-2 px-4 text-sm text-slate-600 dark:text-slate-400 font-bold">Page {studentPage} of {totalStudentPages}</span>
                               <button 
                                   disabled={studentPage === totalStudentPages}
                                   onClick={() => setStudentPage(p => p + 1)}
-                                  className="p-2 rounded-lg border hover:bg-slate-50 disabled:opacity-50"
+                                  className="p-2 rounded-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-50"
                               >
                                   <ChevronRight size={16} />
                               </button>
@@ -998,19 +998,19 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
               <div className="space-y-4">
                   {/* ... User Add/Edit Form ... */}
                   {(isAddingUser || editingUser) && (
-                       <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6 animate-in fade-in shadow-sm">
+                       <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700 mb-6 animate-in fade-in shadow-sm">
                           <div className="flex justify-between items-center mb-4">
-                              <h3 className="font-bold text-lg text-slate-800">{editingUser ? t.actions : t.addUser}</h3>
+                              <h3 className="font-bold text-lg text-slate-800 dark:text-white">{editingUser ? t.actions : t.addUser}</h3>
                               <Button variant="ghost" onClick={() => { setEditingUser(null); setIsAddingUser(false); setFormData({}); }}>{t.cancel}</Button>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.studentName}</label><Input value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Full Name" /></div>
-                              <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.email}</label><Input value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="email@school.com" /></div>
-                              <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.role}</label><Select value={formData.role || UserRole.TEACHER} onChange={e => setFormData({...formData, role: e.target.value})}>{ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}</Select></div>
-                              <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.userChatId}</label><Input value={formData.telegramChatId || ''} onChange={e => setFormData({...formData, telegramChatId: e.target.value})} placeholder="Optional: For Notifications" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.studentName}</label><Input value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Full Name" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.email}</label><Input value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="email@school.com" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.role}</label><Select value={formData.role || UserRole.TEACHER} onChange={e => setFormData({...formData, role: e.target.value})}>{ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}</Select></div>
+                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.userChatId}</label><Input value={formData.telegramChatId || ''} onChange={e => setFormData({...formData, telegramChatId: e.target.value})} placeholder="Optional: For Notifications" /></div>
                           </div>
-                          <div className="mt-4 border-t border-slate-200 pt-4">
-                              <label className="block text-xs font-bold text-slate-500 mb-2">{t.assignedClasses}</label>
+                          <div className="mt-4 border-t border-slate-200 dark:border-slate-700 pt-4">
+                              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.assignedClasses}</label>
                               <div className="flex gap-2 mb-2">
                                   <Select value={assignedClassGrade} onChange={e => setAssignedClassGrade(e.target.value)} className="w-32"><option value="">{t.grade}</option>{uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}</Select>
                                   <Select value={assignedClassSection} onChange={e => setAssignedClassSection(e.target.value)} disabled={!assignedClassGrade} className="w-32"><option value="">{t.section}</option>{availableAssignedClassSections.map(s => <option key={s} value={s}>{s}</option>)}</Select>
@@ -1018,7 +1018,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                               </div>
                               <div className="flex flex-wrap gap-2">
                                   {formData.assignedClasses?.map((c: AssignedClass, i: number) => (
-                                      <Badge key={i} color="blue" className="flex items-center gap-1 pl-2 pr-1 py-1">{c.grade} - {c.section} <button onClick={() => handleRemoveAssignedClass(i)} className="hover:bg-blue-200 rounded-full p-0.5"><X size={12} /></button></Badge>
+                                      <Badge key={i} color="blue" className="flex items-center gap-1 pl-2 pr-1 py-1">{c.grade} - {c.section} <button onClick={() => handleRemoveAssignedClass(i)} className="hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5"><X size={12} /></button></Badge>
                                   ))}
                               </div>
                           </div>
@@ -1042,22 +1042,22 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {filteredUsers.map(user => (
-                          <div key={user.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                          <div key={user.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
                               <div className="flex justify-between items-start mb-2">
                                   <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">{user.name.charAt(0)}</div>
-                                      <div><h4 className="font-bold text-slate-800">{user.name}</h4><p className="text-xs text-slate-500">{user.email}</p></div>
+                                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-300">{user.name.charAt(0)}</div>
+                                      <div><h4 className="font-bold text-slate-800 dark:text-white">{user.name}</h4><p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p></div>
                                   </div>
                                   <Badge color="blue">{user.role}</Badge>
                               </div>
                               {user.assignedClasses && user.assignedClasses.length > 0 && (
                                   <div className="mt-3 flex flex-wrap gap-1">
-                                      {user.assignedClasses.map((ac, i) => <span key={i} className="text-[10px] bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded text-slate-600">{ac.grade}-{ac.section}</span>)}
+                                      {user.assignedClasses.map((ac, i) => <span key={i} className="text-[10px] bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">{ac.grade}-{ac.section}</span>)}
                                   </div>
                               )}
-                              <div className="mt-4 pt-3 border-t border-slate-50 flex justify-end gap-2">
-                                  <button onClick={() => { setEditingUser(user); setFormData(user); setIsAddingUser(false); }} className="p-2 hover:bg-yellow-50 text-yellow-600 rounded-lg"><Edit2 size={16} /></button>
-                                  <button onClick={() => handleDeleteUser(user.id)} className="p-2 hover:bg-red-50 text-red-600 rounded-lg"><Trash2 size={16} /></button>
+                              <div className="mt-4 pt-3 border-t border-slate-50 dark:border-slate-700 flex justify-end gap-2">
+                                  <button onClick={() => { setEditingUser(user); setFormData(user); setIsAddingUser(false); }} className="p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-lg"><Edit2 size={16} /></button>
+                                  <button onClick={() => handleDeleteUser(user.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg"><Trash2 size={16} /></button>
                               </div>
                           </div>
                       ))}
@@ -1069,10 +1069,10 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           {activeTab === 'access' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <Card className="col-span-1 h-fit">
-                      <h3 className="font-bold text-lg mb-4 text-slate-800">{t.selectRole}</h3>
+                      <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">{t.selectRole}</h3>
                       <div className="space-y-1">
                           {ROLES_LIST.map(role => (
-                              <button key={role} onClick={() => setSelectedRoleForAccess(role)} className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex justify-between items-center ${selectedRoleForAccess === role ? 'bg-primary text-white shadow-md' : 'hover:bg-slate-50 text-slate-600'}`}>
+                              <button key={role} onClick={() => setSelectedRoleForAccess(role)} className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex justify-between items-center ${selectedRoleForAccess === role ? 'bg-primary text-white shadow-md' : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                                   <span className="font-medium">{role}</span>
                                   {selectedRoleForAccess === role && <Check size={16} />}
                               </button>
@@ -1082,19 +1082,19 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   <Card className="col-span-1 md:col-span-2">
                       <div className="flex justify-between items-center mb-6">
                            <div>
-                               <h3 className="font-bold text-lg text-slate-800">{selectedRoleForAccess} Permissions</h3>
-                               <p className="text-sm text-slate-500">Select which modules this role can access.</p>
+                               <h3 className="font-bold text-lg text-slate-800 dark:text-white">{selectedRoleForAccess} Permissions</h3>
+                               <p className="text-sm text-slate-500 dark:text-slate-400">Select which modules this role can access.</p>
                            </div>
-                           <Shield className="text-slate-200" size={48} />
+                           <Shield className="text-slate-200 dark:text-slate-700" size={48} />
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {NAV_ITEMS.map(item => {
                               const isAllowed = rolePermissions?.[selectedRoleForAccess]?.includes(item.id);
                               const Icon = item.icon;
                               return (
-                                  <div key={item.id} onClick={() => handleToggleAccess(item.id)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-4 ${isAllowed ? 'border-green-500 bg-green-50' : 'border-slate-100 hover:border-slate-200'}`}>
-                                      <div className={`p-2 rounded-lg ${isAllowed ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'}`}><Icon size={24} /></div>
-                                      <div><h4 className={`font-bold ${isAllowed ? 'text-green-800' : 'text-slate-500'}`}>{lang === 'en' ? item.label_en : item.label_ar}</h4><p className="text-xs text-slate-400 uppercase font-bold">{isAllowed ? 'Access Granted' : 'Access Denied'}</p></div>
+                                  <div key={item.id} onClick={() => handleToggleAccess(item.id)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-4 ${isAllowed ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600'}`}>
+                                      <div className={`p-2 rounded-lg ${isAllowed ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`}><Icon size={24} /></div>
+                                      <div><h4 className={`font-bold ${isAllowed ? 'text-green-800 dark:text-green-300' : 'text-slate-500 dark:text-slate-400'}`}>{lang === 'en' ? item.label_en : item.label_ar}</h4><p className="text-xs text-slate-400 dark:text-slate-500 uppercase font-bold">{isAllowed ? 'Access Granted' : 'Access Denied'}</p></div>
                                   </div>
                               );
                           })}
@@ -1110,17 +1110,17 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   <Card>
                       <div className="flex items-start gap-4 mb-6">
                            <div className="p-3 bg-purple-100 text-purple-600 rounded-full"><MessageCircle size={24} /></div>
-                           <div><h3 className="font-bold text-lg">{t.parentNotifications}</h3><p className="text-slate-500 text-sm">{t.parentNotificationsDesc}</p></div>
+                           <div><h3 className="font-bold text-lg text-slate-800 dark:text-white">{t.parentNotifications}</h3><p className="text-slate-500 dark:text-slate-400 text-sm">{t.parentNotificationsDesc}</p></div>
                       </div>
                       <div className="relative max-w-xl mb-6">
                            <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
                            <Input placeholder={t.searchStudent} className="pl-10" value={parentSearch} onChange={e => setParentSearch(e.target.value)} />
                            {parentSearch && (
-                               <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg mt-1 z-10 max-h-60 overflow-y-auto">
+                               <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg mt-1 z-10 max-h-60 overflow-y-auto">
                                    {filteredParentSearch.map(s => (
-                                       <button key={s.id} onClick={() => handleParentSearchSelect(s)} className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0">
-                                            <p className="font-bold text-slate-700">{lang === 'en' ? s.name_en : s.name_ar}</p>
-                                            <p className="text-xs text-slate-500">{s.studentNumber} - {s.grade}-{s.section}</p>
+                                       <button key={s.id} onClick={() => handleParentSearchSelect(s)} className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-50 dark:border-slate-700 last:border-0">
+                                            <p className="font-bold text-slate-700 dark:text-slate-200">{lang === 'en' ? s.name_en : s.name_ar}</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">{s.studentNumber} - {s.grade}-{s.section}</p>
                                        </button>
                                    ))}
                                </div>
@@ -1128,21 +1128,21 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       </div>
                       
                       {selectedStudentForParent && (
-                          <div className="bg-purple-50 rounded-xl p-6 border border-purple-100 animate-in fade-in">
+                          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-6 border border-purple-100 dark:border-purple-800 animate-in fade-in">
                               <div className="flex justify-between items-start mb-4">
-                                  <div><h4 className="font-bold text-purple-900">{lang === 'en' ? selectedStudentForParent.name_en : selectedStudentForParent.name_ar}</h4><p className="text-sm text-purple-700">Configure Parent Alerts</p></div>
+                                  <div><h4 className="font-bold text-purple-900 dark:text-purple-100">{lang === 'en' ? selectedStudentForParent.name_en : selectedStudentForParent.name_ar}</h4><p className="text-sm text-purple-700 dark:text-purple-300">Configure Parent Alerts</p></div>
                                   <Button variant="ghost" onClick={() => setSelectedStudentForParent(null)} size="sm"><X size={16} /></Button>
                               </div>
                               <div className="mb-4">
-                                  <label className="block text-xs font-bold text-purple-800 mb-1">{t.parentChatId}</label>
-                                  <Input value={parentChatId} onChange={e => setParentChatId(e.target.value)} placeholder="Enter numeric Chat ID" className="bg-white" />
+                                  <label className="block text-xs font-bold text-purple-800 dark:text-purple-200 mb-1">{t.parentChatId}</label>
+                                  <Input value={parentChatId} onChange={e => setParentChatId(e.target.value)} placeholder="Enter numeric Chat ID" className="bg-white dark:bg-slate-900" />
                               </div>
-                              <div className="mb-4"><label className="block text-xs font-bold text-purple-800 mb-2">{t.selectEvents}</label>
+                              <div className="mb-4"><label className="block text-xs font-bold text-purple-800 dark:text-purple-200 mb-2">{t.selectEvents}</label>
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                       {['UNAUTHORIZED', 'EARLY_LEAVE', ...destinations.map(d => d.id)].map(key => (
-                                          <label key={key} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-purple-100 cursor-pointer hover:bg-purple-50/50">
+                                          <label key={key} className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-purple-100 dark:border-slate-700 cursor-pointer hover:bg-purple-50/50 dark:hover:bg-slate-700">
                                               <input type="checkbox" checked={!!parentRules[key]} onChange={() => toggleParentRule(key)} className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500" />
-                                              <span className="text-sm font-medium text-slate-700">{key === 'UNAUTHORIZED' ? 'Unauthorized Exit' : key === 'EARLY_LEAVE' ? 'Early Leave' : destinations.find(d => d.id === key)?.label_en || key}</span>
+                                              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{key === 'UNAUTHORIZED' ? 'Unauthorized Exit' : key === 'EARLY_LEAVE' ? 'Early Leave' : destinations.find(d => d.id === key)?.label_en || key}</span>
                                           </label>
                                       ))}
                                   </div>
@@ -1155,17 +1155,17 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   {/* General Notification Settings */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <Card>
-                           <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><ShieldAlert size={20} className="text-blue-500" /> {t.securityAlerts}</h3>
+                           <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><ShieldAlert size={20} className="text-blue-500" /> {t.securityAlerts}</h3>
                            <div className="space-y-3">
-                               <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label><Input type="password" value={telegramToken} onChange={e => setTelegramToken(e.target.value)} /></div>
-                               <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.chatId} (Security Channel)</label><Input value={telegramChatId} onChange={e => setTelegramChatId(e.target.value)} /></div>
+                               <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.botToken}</label><Input type="password" value={telegramToken} onChange={e => setTelegramToken(e.target.value)} /></div>
+                               <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.chatId} (Security Channel)</label><Input value={telegramChatId} onChange={e => setTelegramChatId(e.target.value)} /></div>
                            </div>
-                           <h4 className="font-bold text-sm text-slate-700 mt-6 mb-3">{t.enableNotificationsFor}</h4>
+                           <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300 mt-6 mb-3">{t.enableNotificationsFor}</h4>
                            <div className="space-y-2">
                                {['UNAUTHORIZED', ...destinations.map(d => d.id)].map(key => (
-                                   <label key={key} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-50 rounded">
+                                   <label key={key} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded transition-colors">
                                        <input type="checkbox" checked={!!notificationRules[key]} onChange={() => toggleNotificationRule(key)} className="rounded text-primary focus:ring-primary" />
-                                       <span className="text-sm font-medium text-slate-700">{key === 'UNAUTHORIZED' ? t.unauthorized : destinations.find(d => d.id === key)?.label_en || key}</span>
+                                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{key === 'UNAUTHORIZED' ? t.unauthorized : destinations.find(d => d.id === key)?.label_en || key}</span>
                                    </label>
                                ))}
                            </div>
@@ -1173,25 +1173,25 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
                       <div className="space-y-6">
                            <Card>
-                               <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><LogOut size={20} className="text-orange-500" /> {t.receptionAlerts}</h3>
+                               <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><LogOut size={20} className="text-orange-500" /> {t.receptionAlerts}</h3>
                                <div className="space-y-3">
-                                   <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label><Input type="password" value={elTelegramToken} onChange={e => setElTelegramToken(e.target.value)} /></div>
-                                   <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.chatId} (Reception/Admin)</label><Input value={elTelegramChatId} onChange={e => setElTelegramChatId(e.target.value)} /></div>
+                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.botToken}</label><Input type="password" value={elTelegramToken} onChange={e => setElTelegramToken(e.target.value)} /></div>
+                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.chatId} (Reception/Admin)</label><Input value={elTelegramChatId} onChange={e => setElTelegramChatId(e.target.value)} /></div>
                                </div>
                            </Card>
                            <Card>
-                               <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Users size={20} className="text-green-500" /> {t.attendanceAlerts}</h3>
+                               <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><Users size={20} className="text-green-500" /> {t.attendanceAlerts}</h3>
                                <div className="space-y-3">
-                                   <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label><Input type="password" value={attTelegramToken} onChange={e => setAttTelegramToken(e.target.value)} /></div>
+                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.botToken}</label><Input type="password" value={attTelegramToken} onChange={e => setAttTelegramToken(e.target.value)} /></div>
                                    <p className="text-xs text-slate-400 italic">Chat IDs are configured per Social Worker in User Management.</p>
                                </div>
                            </Card>
                             <Card>
-                               <h3 className="font-bold text-lg mb-2 flex items-center gap-2"><Eye size={20} className="text-red-500" /> {t.watchlistAlerts}</h3>
-                               <p className="text-sm text-slate-500 mb-4">{t.watchlistDesc}</p>
+                               <h3 className="font-bold text-lg mb-2 flex items-center gap-2 text-slate-800 dark:text-white"><Eye size={20} className="text-red-500" /> {t.watchlistAlerts}</h3>
+                               <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t.watchlistDesc}</p>
                                <div className="space-y-3">
-                                   <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.botToken}</label><Input type="password" value={wlTelegramToken} onChange={e => setWlTelegramToken(e.target.value)} /></div>
-                                   <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.chatId} (Private Channel)</label><Input value={wlTelegramChatId} onChange={e => setWlTelegramChatId(e.target.value)} /></div>
+                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.botToken}</label><Input type="password" value={wlTelegramToken} onChange={e => setWlTelegramToken(e.target.value)} /></div>
+                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.chatId} (Private Channel)</label><Input value={wlTelegramChatId} onChange={e => setWlTelegramChatId(e.target.value)} /></div>
                                </div>
                            </Card>
                       </div>
@@ -1203,31 +1203,31 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           {/* Attendance Rules Tab */}
           {activeTab === 'attendance_rules' && (
               <Card className="max-w-2xl mx-auto">
-                  <div className="flex items-center gap-4 mb-6"><div className="p-3 bg-blue-100 text-blue-600 rounded-full"><ListChecks size={24} /></div><div><h3 className="font-bold text-lg">{t.attendanceRules}</h3><p className="text-slate-500 text-sm">{t.attendanceRulesDesc}</p></div></div>
+                  <div className="flex items-center gap-4 mb-6"><div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full"><ListChecks size={24} /></div><div><h3 className="font-bold text-lg text-slate-800 dark:text-white">{t.attendanceRules}</h3><p className="text-slate-500 dark:text-slate-400 text-sm">{t.attendanceRulesDesc}</p></div></div>
                   
                   <div className="space-y-6">
-                      <div className="p-4 border border-slate-200 rounded-xl">
-                          <label className="block font-bold text-slate-700 mb-2">{t.absentThreshold}</label>
-                          <p className="text-xs text-slate-500 mb-3">{t.absentThresholdDesc}</p>
+                      <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl">
+                          <label className="block font-bold text-slate-700 dark:text-slate-200 mb-2">{t.absentThreshold}</label>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t.absentThresholdDesc}</p>
                           <div className="flex items-center gap-3">
-                              <input type="range" min="1" max="8" value={attendanceRules.absentPeriodThreshold} onChange={e => setAttendanceRules({...attendanceRules, absentPeriodThreshold: parseInt(e.target.value)})} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
-                              <span className="font-bold text-lg text-blue-600 w-8 text-center">{attendanceRules.absentPeriodThreshold}</span>
+                              <input type="range" min="1" max="8" value={attendanceRules.absentPeriodThreshold} onChange={e => setAttendanceRules({...attendanceRules, absentPeriodThreshold: parseInt(e.target.value)})} className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+                              <span className="font-bold text-lg text-blue-600 dark:text-blue-400 w-8 text-center">{attendanceRules.absentPeriodThreshold}</span>
                           </div>
                       </div>
 
-                      <div className="flex items-start gap-3 p-4 border border-slate-200 rounded-xl bg-slate-50">
+                      <div className="flex items-start gap-3 p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800">
                           <input type="checkbox" checked={attendanceRules.countAllExcusedAsExcusedDay} onChange={e => setAttendanceRules({...attendanceRules, countAllExcusedAsExcusedDay: e.target.checked})} className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
-                          <div><label className="block font-bold text-slate-700">{t.countAllExcused}</label><p className="text-xs text-slate-500 mt-1">{t.countAllExcusedDesc}</p></div>
+                          <div><label className="block font-bold text-slate-700 dark:text-slate-200">{t.countAllExcused}</label><p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t.countAllExcusedDesc}</p></div>
                       </div>
 
-                      <div className="p-4 border border-slate-200 rounded-xl">
-                           <label className="block font-bold text-slate-700 mb-2">{t.attendanceAlertThresholds}</label>
-                           <p className="text-xs text-slate-500 mb-3">{t.attendanceAlertDesc}</p>
+                      <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl">
+                           <label className="block font-bold text-slate-700 dark:text-slate-200 mb-2">{t.attendanceAlertThresholds}</label>
+                           <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t.attendanceAlertDesc}</p>
                            <div className="flex flex-wrap gap-2">
                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20].map(num => {
                                    const active = attendanceRules.alertThresholds?.includes(num);
                                    return (
-                                       <button key={num} onClick={() => toggleAttendanceAlertThreshold(num)} className={`w-10 h-10 rounded-full font-bold text-sm transition-all ${active ? 'bg-red-500 text-white shadow-md scale-110' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
+                                       <button key={num} onClick={() => toggleAttendanceAlertThreshold(num)} className={`w-10 h-10 rounded-full font-bold text-sm transition-all ${active ? 'bg-red-500 text-white shadow-md scale-110' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
                                            {num}
                                        </button>
                                    );
@@ -1243,24 +1243,24 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           {activeTab === 'epass' && (
                <div className="space-y-6">
                    {(isAddingDest || editingDest) && (
-                       <Card className="bg-slate-50 border-slate-200 animate-in fade-in">
+                       <Card className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 animate-in fade-in">
                           <div className="flex justify-between items-center mb-4">
-                              <h3 className="font-bold text-lg text-slate-800">{editingDest ? t.editDestination : t.addDestination}</h3>
+                              <h3 className="font-bold text-lg text-slate-800 dark:text-white">{editingDest ? t.editDestination : t.addDestination}</h3>
                               <Button variant="ghost" onClick={() => { setEditingDest(null); setIsAddingDest(false); setFormData({}); }}>{t.cancel}</Button>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                              <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 mb-1">{t.labelEn}</label><Input value={formData.label_en || ''} onChange={e => setFormData({...formData, label_en: e.target.value})} placeholder="e.g. Library" /></div>
-                              <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 mb-1">{t.labelAr}</label><Input value={formData.label_ar || ''} onChange={e => setFormData({...formData, label_ar: e.target.value})} placeholder="e.g. المكتبة" /></div>
-                              <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.duration}</label><Input type="number" value={formData.maxDuration || ''} onChange={e => setFormData({...formData, maxDuration: e.target.value})} placeholder="10" /></div>
-                              <div><label className="block text-xs font-bold text-slate-500 mb-1">{t.color}</label><Select value={formData.colorTheme || 'blue'} onChange={e => setFormData({...formData, colorTheme: e.target.value})}>{COLOR_THEMES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}</Select></div>
+                              <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.labelEn}</label><Input value={formData.label_en || ''} onChange={e => setFormData({...formData, label_en: e.target.value})} placeholder="e.g. Library" /></div>
+                              <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.labelAr}</label><Input value={formData.label_ar || ''} onChange={e => setFormData({...formData, label_ar: e.target.value})} placeholder="e.g. المكتبة" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.duration}</label><Input type="number" value={formData.maxDuration || ''} onChange={e => setFormData({...formData, maxDuration: e.target.value})} placeholder="10" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.color}</label><Select value={formData.colorTheme || 'blue'} onChange={e => setFormData({...formData, colorTheme: e.target.value})}>{COLOR_THEMES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}</Select></div>
                               <div className="md:col-span-2">
-                                  <label className="block text-xs font-bold text-slate-500 mb-1">{t.icon}</label>
-                                  <div className="flex flex-wrap gap-2 p-2 bg-white border border-slate-200 rounded-lg">
+                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.icon}</label>
+                                  <div className="flex flex-wrap gap-2 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
                                       {AVAILABLE_ICONS.map(iconName => {
                                           const IconComp = LucideIcons[iconName as keyof typeof LucideIcons] as any;
                                           const isSelected = (formData.iconName || 'Ticket') === iconName;
                                           return (
-                                              <button key={iconName} onClick={() => setFormData({...formData, iconName})} className={`p-2 rounded-lg transition-all ${isSelected ? 'bg-primary text-white shadow-md scale-110' : 'text-slate-400 hover:bg-slate-50'}`}>
+                                              <button key={iconName} onClick={() => setFormData({...formData, iconName})} className={`p-2 rounded-lg transition-all ${isSelected ? 'bg-primary text-white shadow-md scale-110' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
                                                   {IconComp && <IconComp size={20} />}
                                               </button>
                                           );
@@ -1275,7 +1275,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                        <Card className="md:col-span-2">
                            <div className="flex justify-between items-center mb-6">
-                               <h3 className="font-bold text-lg text-slate-800">{t.destinations}</h3>
+                               <h3 className="font-bold text-lg text-slate-800 dark:text-white">{t.destinations}</h3>
                                <Button onClick={() => { setIsAddingDest(true); setFormData({}); }}><Plus size={18} /> {t.addDestination}</Button>
                            </div>
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1283,15 +1283,15 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                    const IconComp = LucideIcons[dest.iconName as keyof typeof LucideIcons] as any || Ticket;
                                    const theme = COLOR_THEMES.find(c => c.name === dest.colorTheme);
                                    return (
-                                       <div key={dest.id} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all">
+                                       <div key={dest.id} className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-all">
                                            <div className="flex items-center gap-4">
-                                               <div className={`p-3 rounded-full ${theme?.class || 'bg-slate-100 text-slate-600'}`}><IconComp size={24} /></div>
-                                               <div><h4 className="font-bold text-slate-800">{dest.label_en}</h4><p className="text-xs text-slate-500">{dest.label_ar}</p></div>
+                                               <div className={`p-3 rounded-full ${theme?.class || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}><IconComp size={24} /></div>
+                                               <div><h4 className="font-bold text-slate-800 dark:text-white">{dest.label_en}</h4><p className="text-xs text-slate-500 dark:text-slate-400">{dest.label_ar}</p></div>
                                            </div>
                                            <div className="flex items-center gap-3">
                                                <Badge color="gray">{dest.maxDuration}m</Badge>
-                                               <button onClick={() => { setEditingDest(dest); setFormData(dest); setIsAddingDest(true); }} className="text-slate-400 hover:text-yellow-600"><Edit2 size={16} /></button>
-                                               <button onClick={() => handleDeleteDest(dest.id)} className="text-slate-400 hover:text-red-600"><Trash2 size={16} /></button>
+                                               <button onClick={() => { setEditingDest(dest); setFormData(dest); setIsAddingDest(true); }} className="text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-400"><Edit2 size={16} /></button>
+                                               <button onClick={() => handleDeleteDest(dest.id)} className="text-slate-400 hover:text-red-600 dark:hover:text-red-400"><Trash2 size={16} /></button>
                                            </div>
                                        </div>
                                    );
@@ -1299,17 +1299,17 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                            </div>
                        </Card>
                        <Card className="h-fit">
-                           <h3 className="font-bold text-lg mb-4 text-slate-800">{t.globalSettings}</h3>
+                           <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">{t.globalSettings}</h3>
                            <div className="mb-4">
-                               <label className="block text-xs font-bold text-slate-500 mb-2">{t.maxPasses}</label>
+                               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.maxPasses}</label>
                                <div className="flex gap-2">
                                    <Input type="number" value={maxPasses} onChange={e => setMaxPasses(parseInt(e.target.value))} />
                                    <Button onClick={handleUpdateEPassSettings}>{t.updateLimit}</Button>
                                </div>
                            </div>
-                           <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
-                               <h4 className="font-bold text-yellow-800 text-sm mb-1 flex items-center gap-2"><Megaphone size={16} /> Note</h4>
-                               <p className="text-xs text-yellow-700">Changing pass limits applies immediately to all students.</p>
+                           <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-100 dark:border-yellow-800">
+                               <h4 className="font-bold text-yellow-800 dark:text-yellow-200 text-sm mb-1 flex items-center gap-2"><Megaphone size={16} /> Note</h4>
+                               <p className="text-xs text-yellow-700 dark:text-yellow-300">Changing pass limits applies immediately to all students.</p>
                            </div>
                        </Card>
                    </div>
@@ -1321,9 +1321,9 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <Card className="lg:col-span-2">
                       <div className="flex justify-between items-center mb-6">
-                          <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
-                              <button onClick={() => setEditingScheduleType('standard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${editingScheduleType === 'standard' ? 'bg-white shadow-sm text-primary' : 'text-slate-500'}`}>{t.standard}</button>
-                              <button onClick={() => setEditingScheduleType('friday')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${editingScheduleType === 'friday' ? 'bg-white shadow-sm text-primary' : 'text-slate-500'}`}>{t.friday}</button>
+                          <div className="flex gap-2 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+                              <button onClick={() => setEditingScheduleType('standard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${editingScheduleType === 'standard' ? 'bg-white dark:bg-slate-600 shadow-sm text-primary dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>{t.standard}</button>
+                              <button onClick={() => setEditingScheduleType('friday')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${editingScheduleType === 'friday' ? 'bg-white dark:bg-slate-600 shadow-sm text-primary dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>{t.friday}</button>
                           </div>
                           <div className="flex gap-2">
                               <Button variant="secondary" onClick={sortSchedule} title={t.sortChrono}><ArrowDownAZ size={18} /></Button>
@@ -1333,8 +1333,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       
                       <div className="space-y-2">
                           {schedule[editingScheduleType].map((slot, index) => (
-                              <div key={slot.id} className="flex flex-wrap md:flex-nowrap items-center gap-2 p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-300 transition-colors group">
-                                  <div className="flex-none w-8 text-center font-bold text-slate-400 text-xs">#{index + 1}</div>
+                              <div key={slot.id} className="flex flex-wrap md:flex-nowrap items-center gap-2 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-500 transition-colors group">
+                                  <div className="flex-none w-8 text-center font-bold text-slate-400 dark:text-slate-500 text-xs">#{index + 1}</div>
                                   <div className="flex-1 min-w-[140px]">
                                       <Input value={slot.name} onChange={e => handleSlotChange(slot.id, 'name', e.target.value)} placeholder="Period Name" className="h-9 text-sm font-bold" />
                                   </div>
@@ -1350,7 +1350,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                       <span className="text-slate-400">-</span>
                                       <Input type="time" value={slot.endTime} onChange={e => handleSlotChange(slot.id, 'endTime', e.target.value)} className="h-9 w-24 text-xs font-mono" />
                                   </div>
-                                  <button onClick={() => handleDeleteSlot(slot.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
+                                  <button onClick={() => handleDeleteSlot(slot.id)} className="p-2 text-slate-300 dark:text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"><Trash2 size={16} /></button>
                               </div>
                           ))}
                       </div>
@@ -1360,14 +1360,14 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       </div>
                   </Card>
                   
-                  <Card className="h-fit bg-slate-50 border-slate-200">
-                      <h3 className="font-bold text-lg mb-4 text-slate-800 flex items-center gap-2"><Clock size={20} /> Preview</h3>
-                      <div className="relative pl-4 border-l-2 border-slate-300 space-y-6">
+                  <Card className="h-fit bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
+                      <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white flex items-center gap-2"><Clock size={20} /> Preview</h3>
+                      <div className="relative pl-4 border-l-2 border-slate-300 dark:border-slate-600 space-y-6">
                           {schedule[editingScheduleType].map((slot) => (
                               <div key={slot.id} className="relative">
-                                  <div className={`absolute -left-[21px] top-0 w-3 h-3 rounded-full border-2 border-white shadow-sm ${slot.type === 'Period' ? 'bg-blue-500' : slot.type === 'Break' ? 'bg-green-500' : 'bg-orange-500'}`}></div>
-                                  <p className="text-xs font-mono text-slate-500 mb-1">{slot.startTime} - {slot.endTime}</p>
-                                  <h4 className="font-bold text-sm text-slate-800">{slot.name}</h4>
+                                  <div className={`absolute -left-[21px] top-0 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 shadow-sm ${slot.type === 'Period' ? 'bg-blue-500' : slot.type === 'Break' ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                                  <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mb-1">{slot.startTime} - {slot.endTime}</p>
+                                  <h4 className="font-bold text-sm text-slate-800 dark:text-white">{slot.name}</h4>
                                   <Badge color={slot.type === 'Period' ? 'blue' : slot.type === 'Break' ? 'green' : 'orange'} className="mt-1 text-[10px]">{slot.type}</Badge>
                               </div>
                           ))}

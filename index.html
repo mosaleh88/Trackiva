@@ -39,6 +39,14 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #94a3b8;
       }
+      /* Dark mode scrollbar */
+      .dark ::-webkit-scrollbar-thumb {
+        background: #475569;
+      }
+      .dark ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+      }
+      
       @media print {
         .no-print { display: none !important; }
         .print-only { display: block !important; }
@@ -64,7 +72,7 @@
 }
 </script>
 </head>
-  <body class="bg-slate-50 text-slate-900 overflow-hidden">
+  <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden transition-colors duration-200">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
   </body>

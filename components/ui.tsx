@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 // Card
@@ -7,7 +8,7 @@ export interface CardProps {
 }
 
 export const Card: React.FC<CardProps> = ({ children, className = "" }) => (
-  <div className={`bg-white shadow-sm border border-slate-200 rounded-xl p-6 ${className}`}>
+  <div className={`bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 rounded-xl p-6 ${className}`}>
     {children}
   </div>
 );
@@ -28,10 +29,10 @@ export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', s
   };
 
   const variants = {
-    primary: "bg-primary text-white hover:bg-blue-700",
-    secondary: "bg-slate-100 text-slate-700 hover:bg-slate-200",
+    primary: "bg-primary text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700",
+    secondary: "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600",
     danger: "bg-danger text-white hover:bg-red-600",
-    ghost: "hover:bg-slate-100 text-slate-600"
+    ghost: "hover:bg-slate-100 text-slate-600 dark:hover:bg-slate-800 dark:text-slate-400"
   };
 
   return (
@@ -50,13 +51,13 @@ export interface BadgeProps {
 
 export const Badge: React.FC<BadgeProps> = ({ children, color = 'blue', className = "" }) => {
   const colors = {
-    blue: "bg-blue-100 text-blue-800",
-    green: "bg-green-100 text-green-800",
-    red: "bg-red-100 text-red-800",
-    yellow: "bg-yellow-100 text-yellow-800",
-    gray: "bg-slate-100 text-slate-800",
-    orange: "bg-orange-100 text-orange-800",
-    purple: "bg-purple-100 text-purple-800"
+    blue: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+    green: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+    red: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+    yellow: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+    gray: "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300",
+    orange: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
+    purple: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
   };
   return (
     <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${colors[color] || colors.blue} ${className}`}>
@@ -68,7 +69,7 @@ export const Badge: React.FC<BadgeProps> = ({ children, color = 'blue', classNam
 // Input
 export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ className = "", ...props }) => (
   <input 
-    className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-start ${className}`}
+    className={`w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-start placeholder:text-slate-400 dark:placeholder:text-slate-500 ${className}`}
     {...props}
   />
 );
@@ -77,7 +78,7 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ c
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = ({ className = "", ...props }) => (
   <div className="relative">
     <select 
-      className={`w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none text-start ${className}`}
+      className={`w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none text-start ${className}`}
       {...props}
     />
     <div className="absolute inset-y-0 right-0 rtl:right-auto rtl:left-0 flex items-center px-2 pointer-events-none text-slate-500">

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
@@ -289,21 +290,21 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
           <div className="space-y-6 animate-in fade-in">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <Card className="border-l-4 border-l-green-500 min-w-0">
-                      <p className="text-sm text-slate-500">{t.onCampus}</p>
-                      <h3 className="text-2xl font-bold">{summary.presentToday + summary.lateToday + summary.earlyLeaveToday}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{t.onCampus}</p>
+                      <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{summary.presentToday + summary.lateToday + summary.earlyLeaveToday}</h3>
                       <p className="text-xs text-slate-400">{((summary.presentToday + summary.lateToday + summary.earlyLeaveToday) / (summary.totalStudents || 1) * 100).toFixed(1)}%</p>
                   </Card>
                   <Card className="border-l-4 border-l-red-500 min-w-0">
-                      <p className="text-sm text-slate-500">{t.absent}</p>
-                      <h3 className="text-2xl font-bold">{summary.totalStudents - (summary.presentToday + summary.lateToday + summary.earlyLeaveToday + summary.excusedAbsentToday)}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{t.absent}</p>
+                      <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{summary.totalStudents - (summary.presentToday + summary.lateToday + summary.earlyLeaveToday + summary.excusedAbsentToday)}</h3>
                   </Card>
                   <Card className="border-l-4 border-l-yellow-500 min-w-0">
-                      <p className="text-sm text-slate-500">{t.late}</p>
-                      <h3 className="text-2xl font-bold">{summary.lateToday}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{t.late}</p>
+                      <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{summary.lateToday}</h3>
                   </Card>
                   <Card className="border-l-4 border-l-blue-500 min-w-0">
-                      <p className="text-sm text-slate-500">{t.clinic} / {t.passes}</p>
-                      <h3 className="text-2xl font-bold">{summary.clinicVisitsToday} / {summary.activePasses}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{t.clinic} / {t.passes}</p>
+                      <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{summary.clinicVisitsToday} / {summary.activePasses}</h3>
                   </Card>
               </div>
               <div className="flex justify-end">
@@ -330,7 +331,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
           <div className="space-y-6 animate-in fade-in">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card className="min-w-0">
-                      <h3 className="font-bold mb-4 text-slate-700">{t.absentBuckets}</h3>
+                      <h3 className="font-bold mb-4 text-slate-700 dark:text-slate-200">{t.absentBuckets}</h3>
                       <div className="h-64 w-full">
                           <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                               <BarChart data={bucketData}>
@@ -348,24 +349,24 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   
                   <Card className="min-w-0">
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold text-slate-700">{t.absenteeList}</h3>
+                        <h3 className="font-bold text-slate-700 dark:text-slate-200">{t.absenteeList}</h3>
                         <Button variant="secondary" className="text-xs h-8" onClick={handleExport}><Download size={14} /></Button>
                       </div>
                       <div className="overflow-y-auto h-64">
                           <table className="w-full text-sm text-left">
-                              <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0">
+                              <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-800 sticky top-0">
                                   <tr>
                                       <th className="px-3 py-2">{t.studentName}</th>
                                       <th className="px-3 py-2">{t.grade}</th>
                                       <th className="px-3 py-2 text-center">Days</th>
                                   </tr>
                               </thead>
-                              <tbody>
+                              <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
                                   {data.attendance.list.map((s: any) => (
-                                      <tr key={s.id} className="border-b">
-                                          <td className="px-3 py-2 font-medium">{lang === 'en' ? s.name_en : s.name_ar}</td>
-                                          <td className="px-3 py-2">{s.grade}-{s.section}</td>
-                                          <td className={`px-3 py-2 text-center font-bold ${s.daysAbsent >= 15 ? 'text-red-600' : 'text-slate-700'}`}>
+                                      <tr key={s.id} className="border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                          <td className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">{lang === 'en' ? s.name_en : s.name_ar}</td>
+                                          <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{s.grade}-{s.section}</td>
+                                          <td className={`px-3 py-2 text-center font-bold ${s.daysAbsent >= 15 ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'}`}>
                                               {s.daysAbsent}
                                           </td>
                                       </tr>
@@ -403,7 +404,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
           <div className="space-y-6 animate-in fade-in">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card className="min-w-0">
-                      <h3 className="font-bold mb-4 text-slate-700">{t.topComplaints}</h3>
+                      <h3 className="font-bold mb-4 text-slate-700 dark:text-slate-200">{t.topComplaints}</h3>
                       <div className="h-80 w-full">
                           <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                               <BarChart data={chartData} layout="vertical">
@@ -418,7 +419,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   </Card>
 
                   <Card className="min-w-0">
-                      <h3 className="font-bold mb-4 text-slate-700">{t.visitsByGrade}</h3>
+                      <h3 className="font-bold mb-4 text-slate-700 dark:text-slate-200">{t.visitsByGrade}</h3>
                       <div className="h-80 w-full">
                           <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                               <BarChart data={gradeData}>
@@ -441,21 +442,21 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="min-w-0">
-                  <h3 className="font-bold mb-4 text-slate-700">{t.topEPassUsers}</h3>
+                  <h3 className="font-bold mb-4 text-slate-700 dark:text-slate-200">{t.topEPassUsers}</h3>
                   <ul className="space-y-2">
                       {data.epass.topUsers.map((item: any, i: number) => (
-                          <li key={i} className="flex justify-between p-2 bg-slate-50 rounded">
-                              <span>{lang === 'en' ? item.student.name_en : item.student.name_ar}</span>
+                          <li key={i} className="flex justify-between p-2 bg-slate-50 dark:bg-slate-800 rounded">
+                              <span className="text-slate-700 dark:text-slate-200">{lang === 'en' ? item.student.name_en : item.student.name_ar}</span>
                               <Badge color="blue">{item.count}</Badge>
                           </li>
                       ))}
                   </ul>
               </Card>
               <Card className="min-w-0">
-                   <h3 className="font-bold mb-4 text-slate-700">{t.topUnauthorized}</h3>
+                   <h3 className="font-bold mb-4 text-slate-700 dark:text-slate-200">{t.topUnauthorized}</h3>
                    <ul className="space-y-2">
                       {data.epass.topUnauthorized.map((item: any, i: number) => (
-                          <li key={i} className="flex justify-between p-2 bg-red-50 rounded text-red-700">
+                          <li key={i} className="flex justify-between p-2 bg-red-50 dark:bg-red-900/20 rounded text-red-700 dark:text-red-300">
                               <span>{lang === 'en' ? item.student.name_en : item.student.name_ar}</span>
                               <Badge color="red">{item.count}</Badge>
                           </li>
@@ -470,10 +471,10 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       if (!data) return null;
       return (
           <Card className="min-w-0">
-              <h3 className="font-bold mb-4 text-slate-700">{t.receptionReport}</h3>
+              <h3 className="font-bold mb-4 text-slate-700 dark:text-slate-200">{t.receptionReport}</h3>
                <div className="overflow-y-auto h-96">
                    <table className="w-full text-sm text-left">
-                       <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0">
+                       <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-800 sticky top-0">
                            <tr>
                                <th className="px-4 py-3">{t.date}</th>
                                <th className="px-4 py-3">{t.studentName}</th>
@@ -481,19 +482,19 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                <th className="px-4 py-3">{t.reason}</th>
                            </tr>
                        </thead>
-                       <tbody className="divide-y divide-slate-100">
+                       <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                            {data.reception.map((log: any) => {
                                const s = students.find(st => st.id === log.studentId);
                                return (
-                                   <tr key={log.id}>
-                                       <td className="px-4 py-3">{new Date(log.timestamp).toLocaleString()}</td>
-                                       <td className="px-4 py-3 font-medium">{s ? (lang === 'en' ? s.name_en : s.name_ar) : 'Unknown'}</td>
+                                   <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                       <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{new Date(log.timestamp).toLocaleString()}</td>
+                                       <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{s ? (lang === 'en' ? s.name_en : s.name_ar) : 'Unknown'}</td>
                                        <td className="px-4 py-3">
                                            <Badge color={log.type === 'LateArrival' ? 'blue' : 'orange'}>
                                                {log.type === 'LateArrival' ? t.lateArrival : t.earlyLeave}
                                            </Badge>
                                        </td>
-                                       <td className="px-4 py-3 text-slate-500">{log.reason || '-'}</td>
+                                       <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{log.reason || '-'}</td>
                                    </tr>
                                );
                            })}
@@ -517,7 +518,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                           onChange={e => { setSearch360(e.target.value); setStudent360(null); }}
                       />
                       {search360 && !student360 && (
-                          <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg mt-1 z-20 max-h-60 overflow-y-auto">
+                          <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg mt-1 z-20 max-h-60 overflow-y-auto">
                               {students.filter(s => s.name_en.toLowerCase().includes(search360.toLowerCase()) || s.studentNumber.includes(search360)).map(s => (
                                   <button 
                                       key={s.id}
@@ -532,7 +533,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                           };
                                           load360();
                                       }}
-                                      className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm"
+                                      className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-200 border-b border-slate-50 dark:border-slate-700 last:border-0"
                                   >
                                       {lang === 'en' ? s.name_en : s.name_ar} ({s.studentNumber})
                                   </button>
@@ -542,33 +543,33 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   </div>
                   
                   {/* Date Range in Student 360 View */}
-                  <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200">
-                      <span className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap px-2">{t.dateRange}</span>
+                  <div className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase whitespace-nowrap px-2">{t.dateRange}</span>
                       <input 
                           type="date" 
                           value={startDate} 
                           onChange={e => setStartDate(e.target.value)}
-                          className="text-xs border-none focus:ring-0 p-0 text-slate-700 w-full"
+                          className="text-xs border-none focus:ring-0 p-0 text-slate-700 dark:text-slate-200 bg-transparent w-full"
                       />
                       <span className="text-slate-400">-</span>
                       <input 
                           type="date" 
                           value={endDate} 
                           onChange={e => setEndDate(e.target.value)}
-                          className="text-xs border-none focus:ring-0 p-0 text-slate-700 w-full"
+                          className="text-xs border-none focus:ring-0 p-0 text-slate-700 dark:text-slate-200 bg-transparent w-full"
                       />
                   </div>
               </div>
 
               {student360 && student360Data && (
                   <div className="space-y-6 animate-in fade-in">
-                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                            <div className="flex items-center gap-6">
-                               <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                               <div className="w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-300">
                                    <UserIcon size={40} />
                                </div>
                                <div>
-                                   <h2 className="text-2xl font-bold text-slate-800">{lang === 'en' ? student360.name_en : student360.name_ar}</h2>
+                                   <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{lang === 'en' ? student360.name_en : student360.name_ar}</h2>
                                    <div className="flex flex-wrap gap-2 mt-2">
                                        <Badge color="blue" className="text-sm">{student360.grade}-{student360.section}</Badge>
                                        <Badge color="gray" className="text-sm font-mono">#{student360.studentNumber}</Badge>
@@ -584,7 +585,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                            {/* Attendance Pie Chart */}
                            <Card className="lg:col-span-1 flex flex-col min-w-0">
                                <div className="mb-2">
-                                   <h3 className="font-bold text-slate-700 uppercase text-sm tracking-wider">Attendance Report</h3>
+                                   <h3 className="font-bold text-slate-700 dark:text-slate-200 uppercase text-sm tracking-wider">Attendance Report</h3>
                                </div>
                                <div className="h-[260px] w-full">
                                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
@@ -611,56 +612,56 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                            {/* Quick Stats Cards */}
                            <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4">
                                <Card className="flex flex-col justify-center items-center p-4 min-w-0">
-                                   <p className="text-xs text-slate-500 uppercase font-bold mb-1">Clinic</p>
-                                   <span className="text-3xl font-bold text-blue-600">{student360Data.history.clinic.length}</span>
+                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold mb-1">Clinic</p>
+                                   <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">{student360Data.history.clinic.length}</span>
                                </Card>
                                <Card className="flex flex-col justify-center items-center p-4 min-w-0">
-                                   <p className="text-xs text-slate-500 uppercase font-bold mb-1">E-Pass Report</p>
-                                   <span className="text-3xl font-bold text-purple-600">{student360Data.history.epasses.length}</span>
+                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold mb-1">E-Pass Report</p>
+                                   <span className="text-3xl font-bold text-purple-600 dark:text-purple-400">{student360Data.history.epasses.length}</span>
                                </Card>
                                <Card className="flex flex-col justify-center items-center p-4 min-w-0">
-                                   <p className="text-xs text-slate-500 uppercase font-bold mb-1">{t.late}</p>
-                                   <span className="text-3xl font-bold text-yellow-600">{dailyAttendance.filter((d:any) => d.status === 'Late').length}</span>
+                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold mb-1">{t.late}</p>
+                                   <span className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{dailyAttendance.filter((d:any) => d.status === 'Late').length}</span>
                                </Card>
                                <Card className="flex flex-col justify-center items-center p-4 min-w-0">
-                                   <p className="text-xs text-slate-500 uppercase font-bold mb-1">{t.earlyLeave}</p>
-                                   <span className="text-3xl font-bold text-orange-600">{dailyAttendance.filter((d:any) => d.status === 'Early Leave').length}</span>
+                                   <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold mb-1">{t.earlyLeave}</p>
+                                   <span className="text-3xl font-bold text-orange-600 dark:text-orange-400">{dailyAttendance.filter((d:any) => d.status === 'Early Leave').length}</span>
                                </Card>
                            </div>
                        </div>
 
                        {/* Attendance Log (Daily) - Paginated */}
-                       <div className="border border-slate-200 rounded-xl bg-white overflow-hidden">
+                       <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 overflow-hidden">
                            <button 
                                onClick={() => setShowAttendanceHistory(!showAttendanceHistory)}
-                               className="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
+                               className="w-full flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
                            >
-                               <div className="flex items-center gap-2 font-bold text-slate-700">
+                               <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200">
                                    <Calendar size={20} />
                                    <span>Attendance Log (Daily)</span>
                                </div>
-                               {showAttendanceHistory ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                               {showAttendanceHistory ? <ChevronDown size={20} className="text-slate-500" /> : <ChevronRight size={20} className="text-slate-500" />}
                            </button>
                            
                            {showAttendanceHistory && (
                                <div>
                                    <table className="w-full text-left text-sm">
-                                       <thead className="bg-white border-b border-slate-100 text-slate-500">
+                                       <thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400">
                                            <tr>
                                                <th className="px-6 py-3">{t.date}</th>
                                                <th className="px-6 py-3">{t.status}</th>
                                                <th className="px-6 py-3">Note</th>
                                            </tr>
                                        </thead>
-                                       <tbody className="divide-y divide-slate-50">
+                                       <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
                                            {paginatedAttendance.length === 0 ? (
                                                <tr><td colSpan={3} className="px-6 py-4 text-center text-slate-400">No attendance records found</td></tr>
                                            ) : (
                                                paginatedAttendance.map((day: any) => (
                                                    <tr key={day.date}>
-                                                       <td className="px-6 py-3">{new Date(day.date).toLocaleDateString()}</td>
+                                                       <td className="px-6 py-3 text-slate-700 dark:text-slate-300">{new Date(day.date).toLocaleDateString()}</td>
                                                        <td className="px-6 py-3"><Badge color={day.color as any}>{day.status}</Badge></td>
-                                                       <td className="px-6 py-3 text-slate-500">{day.note || '-'}</td>
+                                                       <td className="px-6 py-3 text-slate-500 dark:text-slate-400">{day.note || '-'}</td>
                                                    </tr>
                                                ))
                                            )}
@@ -668,19 +669,19 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                    </table>
                                    {/* Pagination Controls */}
                                    {totalPages > 1 && (
-                                       <div className="flex justify-end items-center gap-2 p-3 border-t border-slate-100">
+                                       <div className="flex justify-end items-center gap-2 p-3 border-t border-slate-100 dark:border-slate-700">
                                            <button 
                                                onClick={() => setAttendancePage(p => Math.max(1, p - 1))}
                                                disabled={attendancePage === 1}
-                                               className="px-3 py-1 text-xs border rounded hover:bg-slate-50 disabled:opacity-50"
+                                               className="px-3 py-1 text-xs border border-slate-200 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-50"
                                            >
                                                Previous
                                            </button>
-                                           <span className="text-xs text-slate-500">Page {attendancePage} of {totalPages}</span>
+                                           <span className="text-xs text-slate-500 dark:text-slate-400">Page {attendancePage} of {totalPages}</span>
                                            <button 
                                                onClick={() => setAttendancePage(p => Math.min(totalPages, p + 1))}
                                                disabled={attendancePage === totalPages}
-                                               className="px-3 py-1 text-xs border rounded hover:bg-slate-50 disabled:opacity-50"
+                                               className="px-3 py-1 text-xs border border-slate-200 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-50"
                                            >
                                                Next
                                            </button>
@@ -691,22 +692,22 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                        </div>
 
                        {/* Clinic History */}
-                       <div className="border border-slate-200 rounded-xl bg-white overflow-hidden">
+                       <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 overflow-hidden">
                            <button 
                                onClick={() => setShowClinicHistory(!showClinicHistory)}
-                               className="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
+                               className="w-full flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
                            >
-                               <div className="flex items-center gap-2 font-bold text-slate-700">
+                               <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200">
                                    <Stethoscope size={20} />
                                    <span>Clinic History</span>
                                </div>
-                               {showClinicHistory ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                               {showClinicHistory ? <ChevronDown size={20} className="text-slate-500" /> : <ChevronRight size={20} className="text-slate-500" />}
                            </button>
                            
                            {showClinicHistory && (
                                <div className="max-h-60 overflow-y-auto">
                                    <table className="w-full text-left text-sm">
-                                       <thead className="bg-white border-b border-slate-100 text-slate-500">
+                                       <thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400">
                                            <tr>
                                                <th className="px-6 py-3">{t.date}</th>
                                                <th className="px-6 py-3">{t.symptom}</th>
@@ -714,13 +715,13 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                                <th className="px-6 py-3">{t.outcome}</th>
                                            </tr>
                                        </thead>
-                                       <tbody className="divide-y divide-slate-50">
+                                       <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
                                            {student360Data.history.clinic.map((v: any) => (
                                                <tr key={v.id}>
-                                                   <td className="px-6 py-3">{new Date(v.timestamp).toLocaleDateString()}</td>
-                                                   <td className="px-6 py-3">{v.symptom}</td>
-                                                   <td className="px-6 py-3 text-slate-500">{v.treatment || '-'}</td>
-                                                   <td className="px-6 py-3">{v.outcome}</td>
+                                                   <td className="px-6 py-3 text-slate-700 dark:text-slate-300">{new Date(v.timestamp).toLocaleDateString()}</td>
+                                                   <td className="px-6 py-3 text-slate-700 dark:text-slate-300">{v.symptom}</td>
+                                                   <td className="px-6 py-3 text-slate-500 dark:text-slate-400">{v.treatment || '-'}</td>
+                                                   <td className="px-6 py-3 text-slate-700 dark:text-slate-300">{v.outcome}</td>
                                                </tr>
                                            ))}
                                            {student360Data.history.clinic.length === 0 && (
@@ -733,32 +734,32 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                        </div>
 
                         {/* E-Pass Log - ENHANCED */}
-                       <div className="border border-slate-200 rounded-xl bg-white overflow-hidden">
+                       <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 overflow-hidden">
                            <button 
                                onClick={() => setShowEPassHistory(!showEPassHistory)}
-                               className="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
+                               className="w-full flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
                            >
-                               <div className="flex items-center gap-2 font-bold text-slate-700">
+                               <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200">
                                    <Ticket size={20} />
                                    <span>E-Pass Log</span>
                                </div>
-                               {showEPassHistory ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                               {showEPassHistory ? <ChevronDown size={20} className="text-slate-500" /> : <ChevronRight size={20} className="text-slate-500" />}
                            </button>
                            
                            {showEPassHistory && (
                                <div>
                                    {/* Pass Stats */}
-                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-4 bg-slate-50 border-b border-slate-100">
+                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-4 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700">
                                        {Object.entries(epassStats).map(([type, count]: any) => (
-                                           <div key={type} className="bg-white p-2 rounded border border-slate-200 text-center shadow-sm">
-                                               <div className="text-[10px] uppercase text-slate-500 font-bold">{type}</div>
-                                               <div className="text-lg font-bold text-slate-800">{count}</div>
+                                           <div key={type} className="bg-white dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 text-center shadow-sm">
+                                               <div className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold">{type}</div>
+                                               <div className="text-lg font-bold text-slate-800 dark:text-slate-200">{count}</div>
                                            </div>
                                        ))}
                                    </div>
 
                                    <table className="w-full text-left text-sm">
-                                       <thead className="bg-white border-b border-slate-100 text-slate-500">
+                                       <thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400">
                                            <tr>
                                                <th className="px-6 py-3">{t.date}</th>
                                                <th className="px-6 py-3">Time</th>
@@ -767,7 +768,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                                <th className="px-6 py-3">Duration</th>
                                            </tr>
                                        </thead>
-                                       <tbody className="divide-y divide-slate-50">
+                                       <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
                                            {paginatedEPasses.length === 0 ? (
                                                <tr><td colSpan={5} className="px-6 py-4 text-center text-slate-400">No e-pass records found</td></tr>
                                            ) : (
@@ -783,16 +784,16 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
 
                                                    return (
                                                        <tr key={p.id}>
-                                                           <td className="px-6 py-3">{new Date(p.startTime).toLocaleDateString()}</td>
-                                                           <td className="px-6 py-3 font-mono text-xs text-slate-500">
+                                                           <td className="px-6 py-3 text-slate-700 dark:text-slate-300">{new Date(p.startTime).toLocaleDateString()}</td>
+                                                           <td className="px-6 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">
                                                                {new Date(p.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                                            </td>
                                                            <td className="px-6 py-3">
-                                                               {p.type === 'UNAUTHORIZED' ? <span className="text-red-600 font-bold text-xs bg-red-50 px-2 py-1 rounded">Unauthorized</span> : <Badge color="blue">{destName}</Badge>}
+                                                               {p.type === 'UNAUTHORIZED' ? <span className="text-red-600 font-bold text-xs bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">Unauthorized</span> : <Badge color="blue">{destName}</Badge>}
                                                            </td>
-                                                           <td className="px-6 py-3 text-slate-600 text-xs">{issuer}</td>
-                                                           <td className="px-6 py-3 text-slate-500 font-mono text-xs">
-                                                               {p.endTime ? Math.floor((p.endTime - p.startTime) / 60000) + ' mins' : <span className="text-green-600 font-bold animate-pulse">Active</span>}
+                                                           <td className="px-6 py-3 text-slate-600 dark:text-slate-300 text-xs">{issuer}</td>
+                                                           <td className="px-6 py-3 text-slate-500 dark:text-slate-400 font-mono text-xs">
+                                                               {p.endTime ? Math.floor((p.endTime - p.startTime) / 60000) + ' mins' : <span className="text-green-600 dark:text-green-400 font-bold animate-pulse">Active</span>}
                                                            </td>
                                                        </tr>
                                                    );
@@ -802,19 +803,19 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                    </table>
                                    {/* E-Pass Pagination Controls */}
                                    {totalEpassPages > 1 && (
-                                       <div className="flex justify-end items-center gap-2 p-3 border-t border-slate-100">
+                                       <div className="flex justify-end items-center gap-2 p-3 border-t border-slate-100 dark:border-slate-700">
                                            <button 
                                                onClick={() => setEpassPage(p => Math.max(1, p - 1))}
                                                disabled={epassPage === 1}
-                                               className="px-3 py-1 text-xs border rounded hover:bg-slate-50 disabled:opacity-50"
+                                               className="px-3 py-1 text-xs border border-slate-200 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-50"
                                            >
                                                Previous
                                            </button>
-                                           <span className="text-xs text-slate-500">Page {epassPage} of {totalEpassPages}</span>
+                                           <span className="text-xs text-slate-500 dark:text-slate-400">Page {epassPage} of {totalEpassPages}</span>
                                            <button 
                                                onClick={() => setEpassPage(p => Math.min(totalEpassPages, p + 1))}
                                                disabled={epassPage === totalEpassPages}
-                                               className="px-3 py-1 text-xs border rounded hover:bg-slate-50 disabled:opacity-50"
+                                               className="px-3 py-1 text-xs border border-slate-200 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-50"
                                            >
                                                Next
                                            </button>
@@ -825,38 +826,38 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                        </div>
 
                        {/* Reception Log */}
-                       <div className="border border-slate-200 rounded-xl bg-white overflow-hidden">
+                       <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 overflow-hidden">
                            <button 
                                onClick={() => setShowReceptionHistory(!showReceptionHistory)}
-                               className="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
+                               className="w-full flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
                            >
-                               <div className="flex items-center gap-2 font-bold text-slate-700">
+                               <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200">
                                    <DoorOpen size={20} />
                                    <span>Reception Log</span>
                                </div>
-                               {showReceptionHistory ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                               {showReceptionHistory ? <ChevronDown size={20} className="text-slate-500" /> : <ChevronRight size={20} className="text-slate-500" />}
                            </button>
                            
                            {showReceptionHistory && (
                                <div className="max-h-60 overflow-y-auto">
                                    <table className="w-full text-left text-sm">
-                                       <thead className="bg-white border-b border-slate-100 text-slate-500">
+                                       <thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400">
                                            <tr>
                                                <th className="px-6 py-3">{t.date}</th>
                                                <th className="px-6 py-3">{t.type}</th>
                                                <th className="px-6 py-3">{t.reason}</th>
                                            </tr>
                                        </thead>
-                                       <tbody className="divide-y divide-slate-50">
+                                       <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
                                            {student360Data.history.reception.map((l: any) => (
                                                <tr key={l.id}>
-                                                   <td className="px-6 py-3">{new Date(l.timestamp).toLocaleDateString()}</td>
+                                                   <td className="px-6 py-3 text-slate-700 dark:text-slate-300">{new Date(l.timestamp).toLocaleDateString()}</td>
                                                    <td className="px-6 py-3">
                                                        <Badge color={l.type === 'LateArrival' ? 'blue' : 'orange'}>
                                                            {l.type === 'LateArrival' ? t.lateArrival : t.earlyLeave}
                                                        </Badge>
                                                    </td>
-                                                   <td className="px-6 py-3 text-slate-500">{l.reason || '-'}</td>
+                                                   <td className="px-6 py-3 text-slate-500 dark:text-slate-400">{l.reason || '-'}</td>
                                                </tr>
                                            ))}
                                            {student360Data.history.reception.length === 0 && (
@@ -878,12 +879,12 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       {/* Header Controls */}
       <Card>
         {/* Tabs */}
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg inline-flex mb-6 overflow-x-auto max-w-full">
+        <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg inline-flex mb-6 overflow-x-auto max-w-full">
             {TABS.map(tab => (
                 <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab.id ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab.id ? 'bg-white dark:bg-slate-700 text-primary dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
                 >
                     <tab.icon size={16} />
                     {(t as any)[tab.labelKey]}
@@ -893,14 +894,14 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
 
         {/* Unified Toolbar - Only show for non-daily, non-360 tabs, OR allow dates for all if applicable */}
         {activeTab !== 'student360' && activeTab !== 'daily' && (
-            <div className="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4">
+            <div className="flex flex-wrap items-end gap-3 border-t border-slate-100 dark:border-slate-700 pt-4">
                 {/* Date Pickers - NOW FIRST */}
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">{t.startDate}</label>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.startDate}</label>
                     <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="py-2 text-sm w-36" />
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">{t.endDate}</label>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.endDate}</label>
                     <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="py-2 text-sm w-36" />
                 </div>
 
@@ -911,30 +912,30 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                 </Button>
 
                 {/* Divider */}
-                <div className="w-px h-8 bg-slate-200 mx-2 self-center"></div>
+                <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 mx-2 self-center"></div>
 
                 {/* Filters */}
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 text-slate-400">
+                    <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
                         <Filter size={16} />
-                        <span className="text-xs font-bold text-slate-500 hidden md:inline">{t.filterBy}:</span>
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 hidden md:inline">{t.filterBy}:</span>
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">{t.grade}</label>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.grade}</label>
                         <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="py-2 text-sm w-24">
                             <option value="All">{t.allGrades}</option>
                             {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
                         </Select>
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">{t.section}</label>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.section}</label>
                         <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="py-2 text-sm w-24">
                             <option value="All">{t.allSections}</option>
                             {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
                         </Select>
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">{t.gender}</label>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.gender}</label>
                         <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="py-2 text-sm w-24">
                             <option value="All">{t.allGenders}</option>
                             <option value="Male">{t.male}</option>

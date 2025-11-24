@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Badge, Input, Select } from './ui';
 import { store } from '../services/store';
@@ -308,15 +309,15 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
       {/* Reason Modal */}
       {showReasonModal && currentStudent && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in zoom-in">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6 animate-in zoom-in">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold text-slate-800">{t.excused}: {lang === 'en' ? currentStudent.name_en : currentStudent.name_ar}</h3>
-                    <button onClick={() => setShowReasonModal(false)} className="p-1 hover:bg-slate-100 rounded-full">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white">{t.excused}: {lang === 'en' ? currentStudent.name_en : currentStudent.name_ar}</h3>
+                    <button onClick={() => setShowReasonModal(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400">
                         <X size={20} />
                     </button>
                 </div>
                 
-                <label className="block text-sm font-bold text-slate-500 mb-2">{t.enterReason}</label>
+                <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">{t.enterReason}</label>
                 <Input 
                     value={tempReason}
                     onChange={(e) => setTempReason(e.target.value)}
@@ -338,7 +339,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {/* Date Picker */}
             <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">{t.date}</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.date}</label>
                 <div className="relative">
                     <Input 
                         type="date" 
@@ -352,7 +353,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
 
              {/* Period Selector */}
              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
                     {t.period} {currentPeriodInfo && !isWeekend && <span className="text-primary font-normal">({currentPeriodInfo.startTime})</span>}
                 </label>
                 <Select 
@@ -372,7 +373,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
 
             {/* Gender Selector */}
             <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">{t.gender}</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.gender}</label>
                 <Select 
                     value={selectedGender} 
                     onChange={(e) => handleGenderChange(e.target.value)}
@@ -385,7 +386,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
 
             {/* Grade Selector */}
             <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">{t.grade}</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.grade}</label>
                 <Select 
                     value={selectedGrade} 
                     onChange={(e) => handleGradeChange(e.target.value)}
@@ -400,7 +401,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
 
             {/* Section Selector */}
             <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">{t.section}</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.section}</label>
                 <Select 
                     value={selectedSection} 
                     onChange={(e) => setSelectedSection(e.target.value)}
@@ -417,35 +418,35 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
 
       {/* Attendance Area */}
       {isWeekend ? (
-        <div className="text-center py-12 bg-slate-100 rounded-xl border border-slate-200">
-            <div className="inline-block p-3 bg-white rounded-full shadow-sm mb-3">
-                <Clock size={32} className="text-slate-400" />
+        <div className="text-center py-12 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="inline-block p-3 bg-white dark:bg-slate-700 rounded-full shadow-sm mb-3">
+                <Clock size={32} className="text-slate-400 dark:text-slate-300" />
             </div>
-            <h3 className="text-xl font-bold text-slate-700">{t.weekend}</h3>
-            <p className="text-slate-500">{t.noAttendance}</p>
+            <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200">{t.weekend}</h3>
+            <p className="text-slate-500 dark:text-slate-400">{t.noAttendance}</p>
         </div>
       ) : !selectedSection ? (
-        <div className="text-center py-12 border-2 border-dashed border-slate-300 rounded-xl bg-slate-50">
-            <div className="inline-block p-3 bg-white rounded-full shadow-sm mb-3 text-slate-400">
+        <div className="text-center py-12 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50">
+            <div className="inline-block p-3 bg-white dark:bg-slate-800 rounded-full shadow-sm mb-3 text-slate-400">
                 <Filter size={32} />
             </div>
-            <h3 className="text-lg font-bold text-slate-700">{t.selectClass}</h3>
-            <p className="text-slate-500">{t.selectClassMsg}</p>
+            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">{t.selectClass}</h3>
+            <p className="text-slate-500 dark:text-slate-400">{t.selectClassMsg}</p>
         </div>
       ) : filteredStudents.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed border-slate-300 rounded-xl">
-            <p className="text-slate-500 font-medium">{t.noStudentsFound}</p>
+        <div className="text-center py-12 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl">
+            <p className="text-slate-500 dark:text-slate-400 font-medium">{t.noStudentsFound}</p>
         </div>
       ) : (
         <div className="space-y-4 animate-in fade-in">
           
           {/* Bulk Actions Toolbar */}
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center sticky top-0 z-10">
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row gap-4 justify-between items-center">
             <div className="flex items-center gap-3 w-full md:w-auto">
-                <div className="flex items-center gap-2 text-slate-600 text-sm font-bold whitespace-nowrap">
+                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 text-sm font-bold whitespace-nowrap">
                     <Users size={16} /> {t.totalStudents}: {filteredStudents.length}
                 </div>
-                <div className="h-8 w-px bg-slate-200 mx-2 hidden md:block"></div>
+                <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2 hidden md:block"></div>
                 <Badge color="blue" className="text-sm px-3 py-1">
                     {selectedGender === 'Male' ? t.male : t.female} - {selectedGrade} {selectedSection}
                 </Badge>
@@ -455,12 +456,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
                 <Button 
                     variant="ghost" 
                     onClick={handleClearAll}
-                    className="text-red-500 hover:bg-red-50 hover:text-red-700 text-sm"
+                    className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400 text-sm"
                     title={t.clearAll}
                 >
                     <Trash2 size={16} /> {t.clearAll}
                 </Button>
-                <div className="h-8 w-px bg-slate-200 mx-1 hidden md:block"></div>
+                <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>
                 <div className="relative w-full md:w-48">
                     <Select 
                         value={bulkActionValue}
@@ -481,10 +482,10 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
           </div>
 
           <Card className="overflow-hidden p-0">
-            <div className="overflow-x-auto max-h-[600px]">
+            <div className="overflow-auto max-h-[600px]">
                 <table className="w-full text-left border-collapse relative">
-                    <thead className="sticky top-0 z-0 shadow-sm">
-                        <tr className="bg-slate-50 text-slate-500 text-sm">
+                    <thead className="sticky top-0 z-10 shadow-sm">
+                        <tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm">
                             <th className="p-3 text-nowrap w-20 text-start">{t.studentNumber}</th>
                             <th className="p-3 text-start">{t.studentName}</th>
                             <th className="p-3 w-24 text-start">{t.section}</th>
@@ -492,11 +493,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
                             <th className="p-3 text-center w-auto">{t.actions}</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                         {filteredStudents.map(student => (
-                            <tr key={student.id} className="hover:bg-slate-50 transition-colors bg-white">
-                                <td className="p-3 font-mono text-slate-500 text-sm text-start align-top">{student.studentNumber}</td>
-                                <td className="p-3 font-medium text-start align-top">
+                            <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors bg-white dark:bg-slate-900">
+                                <td className="p-3 font-mono text-slate-500 dark:text-slate-400 text-sm text-start align-top">{student.studentNumber}</td>
+                                <td className="p-3 font-medium text-slate-800 dark:text-slate-100 text-start align-top">
                                     <div>{lang === 'en' ? student.name_en : student.name_ar}</div>
                                 </td>
                                 <td className="p-3 text-start align-top">
@@ -518,7 +519,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
                                             <span className="text-xs text-slate-400 italic">--</span>
                                         )}
                                         {marked[student.id] === AttendanceStatus.ABSENT_EXCUSED && reasons[student.id] && (
-                                            <span className="text-[10px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 max-w-[150px] truncate" title={reasons[student.id]}>
+                                            <span className="text-[10px] text-slate-500 bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-700 max-w-[150px] truncate" title={reasons[student.id]}>
                                                 {reasons[student.id]}
                                             </span>
                                         )}
@@ -527,35 +528,35 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
                                 <td className="p-3 align-top">
                                     <div className="flex justify-center gap-1 flex-wrap">
                                         <button 
-                                            className={`w-8 h-8 rounded-md transition-all flex items-center justify-center font-bold text-xs ${marked[student.id] === AttendanceStatus.PRESENT ? 'bg-green-600 text-white shadow-md scale-105' : 'bg-slate-100 text-slate-500 hover:bg-green-100 hover:text-green-600'}`}
+                                            className={`w-8 h-8 rounded-md transition-all flex items-center justify-center font-bold text-xs ${marked[student.id] === AttendanceStatus.PRESENT ? 'bg-green-600 text-white shadow-md scale-105' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 dark:hover:text-green-400'}`}
                                             onClick={() => handleMark(student.id, AttendanceStatus.PRESENT)}
                                             title={t.present}
                                         >
                                             P
                                         </button>
                                         <button 
-                                            className={`w-8 h-8 rounded-md transition-all flex items-center justify-center font-bold text-xs ${marked[student.id] === AttendanceStatus.LATE ? 'bg-yellow-500 text-white shadow-md scale-105' : 'bg-slate-100 text-slate-500 hover:bg-yellow-100 hover:text-yellow-600'}`}
+                                            className={`w-8 h-8 rounded-md transition-all flex items-center justify-center font-bold text-xs ${marked[student.id] === AttendanceStatus.LATE ? 'bg-yellow-500 text-white shadow-md scale-105' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 hover:text-yellow-600 dark:hover:text-yellow-400'}`}
                                             onClick={() => handleMark(student.id, AttendanceStatus.LATE)}
                                             title={t.late}
                                         >
                                             L
                                         </button>
                                         <button 
-                                            className={`w-8 h-8 rounded-md transition-all flex items-center justify-center font-bold text-xs ${marked[student.id] === AttendanceStatus.EARLY_LEAVE ? 'bg-orange-500 text-white shadow-md scale-105' : 'bg-slate-100 text-slate-500 hover:bg-orange-100 hover:text-orange-600'}`}
+                                            className={`w-8 h-8 rounded-md transition-all flex items-center justify-center font-bold text-xs ${marked[student.id] === AttendanceStatus.EARLY_LEAVE ? 'bg-orange-500 text-white shadow-md scale-105' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:text-orange-600 dark:hover:text-orange-400'}`}
                                             onClick={() => handleMark(student.id, AttendanceStatus.EARLY_LEAVE)}
                                             title={t.earlyLeave}
                                         >
                                             EL
                                         </button>
                                         <button 
-                                            className={`w-8 h-8 rounded-md transition-all flex items-center justify-center font-bold text-xs ${marked[student.id] === AttendanceStatus.ABSENT_EXCUSED ? 'bg-blue-500 text-white shadow-md scale-105' : 'bg-slate-100 text-slate-500 hover:bg-blue-100 hover:text-blue-600'}`}
+                                            className={`w-8 h-8 rounded-md transition-all flex items-center justify-center font-bold text-xs ${marked[student.id] === AttendanceStatus.ABSENT_EXCUSED ? 'bg-blue-500 text-white shadow-md scale-105' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400'}`}
                                             onClick={() => handleMark(student.id, AttendanceStatus.ABSENT_EXCUSED)}
                                             title={t.excused}
                                         >
                                             EA
                                         </button>
                                         <button 
-                                            className={`w-8 h-8 rounded-md transition-all flex items-center justify-center font-bold text-xs ${marked[student.id] === AttendanceStatus.ABSENT_UNEXCUSED ? 'bg-red-600 text-white shadow-md scale-105' : 'bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600'}`}
+                                            className={`w-8 h-8 rounded-md transition-all flex items-center justify-center font-bold text-xs ${marked[student.id] === AttendanceStatus.ABSENT_UNEXCUSED ? 'bg-red-600 text-white shadow-md scale-105' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400'}`}
                                             onClick={() => handleMark(student.id, AttendanceStatus.ABSENT_UNEXCUSED)}
                                             title={t.absent}
                                         >
@@ -571,9 +572,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
           </Card>
 
           {/* Submit Button - Static at bottom */}
-          <div className="flex flex-col items-end gap-2 pt-6 border-t border-slate-200 mt-6">
+          <div className="flex flex-col items-end gap-2 pt-6 border-t border-slate-200 dark:border-slate-700 mt-6">
             {!allStudentsMarked && (
-                <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg text-sm">
+                <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400 px-3 py-2 rounded-lg text-sm">
                     <AlertCircle size={16} />
                     <span>Please mark attendance for all students before submitting.</span>
                 </div>
@@ -582,7 +583,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
                 onClick={handleSubmitAttendance} 
                 disabled={isSubmitting || !allStudentsMarked}
                 className={`shadow-lg text-lg px-8 py-3 transition-all rounded-xl ${
-                    !allStudentsMarked ? 'bg-slate-300 cursor-not-allowed opacity-70' :
+                    !allStudentsMarked ? 'bg-slate-300 dark:bg-slate-600 cursor-not-allowed opacity-70' :
                     unsavedChanges ? 'bg-primary hover:bg-blue-700 animate-pulse' : 
                     'bg-slate-400 hover:bg-slate-50 opacity-90'
                 }`}
