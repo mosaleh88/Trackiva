@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Student, AttendanceRecord, EPass, ReceptionLog, AttendanceStatus, UserRole, ScheduleConfig, TimeSlot, EPassDestination, AppSettings, ClinicVisit, User } from '../types';
-import { DEFAULT_DESTINATIONS, NAV_ITEMS } from '../constants';
+import { DEFAULT_DESTINATIONS, NAV_ITEMS, generateDefaultPermissions } from '../constants';
 import { sendAttendanceAlert } from './telegramService';
 import { supabase } from './supabase';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
@@ -28,14 +28,6 @@ const DEFAULT_FRIDAY_SCHEDULE: TimeSlot[] = [
   { id: 'p3', name: 'Period 3', startTime: '09:40', endTime: '10:25', type: 'Period' },
   { id: 'p4', name: 'Period 4', startTime: '10:25', endTime: '11:10', type: 'Period' },
 ];
-
-const generateDefaultPermissions = () => {
-    const permissions: Record<string, string[]> = {};
-    Object.values(UserRole).forEach(role => {
-        permissions[role] = NAV_ITEMS.filter(item => item.allowedRoles.includes(role)).map(item => item.id);
-    });
-    return permissions;
-};
 
 
 
@@ -97,7 +89,7 @@ class SupabaseStore {
   async init() {
     if (this.initialized) return;
     await this.refreshData();
-    // Lazily generate permissions after modules are loaded
+    // Lazily generate permissions if they are not loaded from settings
     if (!this.data.settings.rolePermissions || Object.keys(this.data.settings.rolePermissions).length === 0) {
         this.data.settings.rolePermissions = generateDefaultPermissions();
     }

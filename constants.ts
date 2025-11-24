@@ -122,6 +122,14 @@ export const COLOR_THEMES = [
     { name: 'slate', class: 'bg-slate-50 text-slate-600 hover:bg-slate-100' },
 ];
 
+export const generateDefaultPermissions = () => {
+    const permissions: Record<string, string[]> = {};
+    Object.values(UserRole).forEach(role => {
+        permissions[role] = NAV_ITEMS.filter(item => item.allowedRoles.includes(role)).map(item => item.id);
+    });
+    return permissions;
+};
+
 
 export const TRANSLATIONS = {
   en: {
