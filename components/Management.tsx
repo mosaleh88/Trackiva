@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
@@ -37,6 +38,17 @@ const gradeSort = (a: string, b: string) => {
     }
     return valA.localeCompare(valB);
 };
+
+// UUID Generator Polyfill
+function generateUUID() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
 
 
 export const Management: React.FC<ManagementProps> = ({ lang }) => {
@@ -541,7 +553,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const handleSaveDest = async () => {
       setIsLoading(true);
       try {
-          const destData = {
+          const destData: any = {
               label_en: formData.label_en || 'New Destination',
               label_ar: formData.label_ar || 'وجهة جديدة',
               iconName: formData.iconName || 'Ticket', // Default icon
@@ -552,14 +564,18 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           if (editingDest) {
               await store.updateDestination(editingDest.id, destData);
           } else {
+              // Generate ID manually to fix "null value in column id" error if backend doesn't support auto-generation for this table
+              destData.id = generateUUID();
               await store.addDestination(destData);
           }
           setEditingDest(null);
           setIsAddingDest(false);
           setFormData({});
           await refreshData();
-      } catch(e) {
-          alert("Error saving destination");
+      } catch(e: any) {
+          console.error("Save Destination Error:", e);
+          const errorMessage = e.message || (typeof e === 'string' ? e : 'Unknown error');
+          alert(`Error saving destination: ${errorMessage}`);
       } finally {
           setIsLoading(false);
       }
@@ -567,8 +583,13 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
   const handleDeleteDest = async (id: string) => {
       if (confirm("Are you sure you want to delete this destination?")) {
-          await store.deleteDestination(id);
-          await refreshData();
+          try {
+              await store.deleteDestination(id);
+              await refreshData();
+          } catch (e: any) {
+              console.error("Delete destination failed:", e);
+              alert("Failed to delete destination. " + (e.message || "Unknown error"));
+          }
       }
   };
 
@@ -711,7 +732,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6 animate-in fade-in shadow-sm">
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-bold text-lg text-slate-800">{editingStudent ? t.actions : t.addStudent}</h3>
-        <Button variant="ghost" onClick={() => { setEditingStudent(null); setIsAddingStudent(false); }}>{t.cancel}</Button>
+        <Button variant="ghost" onClick={() => { setEditingStudent(null); setIsAddingStudent(false); setFormData({}); }}>{t.cancel}</Button>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -800,7 +821,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                     onChange={e => setFormData({...formData, isWatchlisted: e.target.checked})}
                 />
                 <div>
-                    <span className="font-bold text-red-800 text-sm block">{t.watchlist}</span>
+                    <span className="font-bold text-red-800 text-sm block">{t.watchlist}</label>
                     <span className="text-xs text-red-600">Flag this student for strict monitoring and targeted alerts.</span>
                 </div>
             </label>
@@ -826,7 +847,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6 animate-in fade-in shadow-sm">
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-bold text-lg text-slate-800">{editingUser ? t.actions : t.addUser}</h3>
-        <Button variant="ghost" onClick={() => { setEditingUser(null); setIsAddingUser(false); }}>{t.cancel}</Button>
+        <Button variant="ghost" onClick={() => { setEditingUser(null); setIsAddingUser(false); setFormData({}); }}>{t.cancel}</Button>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -919,7 +940,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6 animate-in fade-in shadow-sm">
           <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-lg text-slate-800">{editingDest ? t.editDestination : t.addDestination}</h3>
-              <Button variant="ghost" onClick={() => { setEditingDest(null); setIsAddingDest(false); }}>{t.cancel}</Button>
+              <Button variant="ghost" onClick={() => { setEditingDest(null); setIsAddingDest(false); setFormData({}); }}>{t.cancel}</Button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1165,7 +1186,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                               type="checkbox" 
                                               checked={parentRules[d.id] || false}
                                               onChange={() => toggleParentRule(d.id)}
-                                              className="rounded text-purple-600 focus:ring-purple-500"
                                           />
                                           <span className="text-sm">{lang === 'en' ? d.label_en : d.label_ar}</span>
                                       </label>
@@ -1366,7 +1386,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
                   </Select>
               </div>
-              <Button onClick={() => setIsAddingUser(true)}><Plus size={18} /> {t.addUser}</Button>
+              <Button onClick={() => { setIsAddingUser(true); setFormData({}); }}><Plus size={18} /> {t.addUser}</Button>
           </div>
 
           {isAddingUser && renderUserForm()}
@@ -1433,7 +1453,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       <Button variant="secondary" onClick={handleDownloadTemplate}>
                           <Download size={16} /> {t.downloadTemplate}
                       </Button>
-                      <Button onClick={() => setIsAddingStudent(true)}>
+                      <Button onClick={() => { setIsAddingStudent(true); setFormData({}); }}>
                           <Plus size={16} /> {t.addStudent}
                       </Button>
                   </div>
@@ -1673,7 +1693,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
               <div className="lg:col-span-2">
                   <div className="flex justify-between items-center mb-6">
                       <h2 className="text-xl font-bold text-slate-800">{t.destinations}</h2>
-                      <Button onClick={() => setIsAddingDest(true)}><Plus size={16} /> {t.addDestination}</Button>
+                      <Button onClick={() => { setIsAddingDest(true); setFormData({}); }}><Plus size={16} /> {t.addDestination}</Button>
                   </div>
                   
                   {isAddingDest && renderDestForm()}
@@ -1696,9 +1716,9 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                           </div>
                                       </div>
                                   </div>
-                                  <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <button onClick={() => { setEditingDest(dest); setFormData(dest); }} className="p-1 text-slate-400 hover:text-blue-600"><Edit2 size={16} /></button>
-                                      <button onClick={() => handleDeleteDest(dest.id)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={16} /></button>
+                                  <div className="absolute top-4 right-4 flex gap-2">
+                                      <button onClick={(e) => { e.stopPropagation(); setEditingDest(dest); setFormData(dest); }} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors border border-slate-200"><Edit2 size={16} /></button>
+                                      <button onClick={(e) => { e.stopPropagation(); handleDeleteDest(dest.id); }} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors border border-slate-200"><Trash2 size={16} /></button>
                                   </div>
                               </Card>
                           )

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { store } from '../services/store';
@@ -287,20 +288,20 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       return (
           <div className="space-y-6 animate-in fade-in">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Card className="border-l-4 border-l-green-500">
+                  <Card className="border-l-4 border-l-green-500 min-w-0">
                       <p className="text-sm text-slate-500">{t.onCampus}</p>
                       <h3 className="text-2xl font-bold">{summary.presentToday + summary.lateToday + summary.earlyLeaveToday}</h3>
                       <p className="text-xs text-slate-400">{((summary.presentToday + summary.lateToday + summary.earlyLeaveToday) / (summary.totalStudents || 1) * 100).toFixed(1)}%</p>
                   </Card>
-                  <Card className="border-l-4 border-l-red-500">
+                  <Card className="border-l-4 border-l-red-500 min-w-0">
                       <p className="text-sm text-slate-500">{t.absent}</p>
                       <h3 className="text-2xl font-bold">{summary.totalStudents - (summary.presentToday + summary.lateToday + summary.earlyLeaveToday + summary.excusedAbsentToday)}</h3>
                   </Card>
-                  <Card className="border-l-4 border-l-yellow-500">
+                  <Card className="border-l-4 border-l-yellow-500 min-w-0">
                       <p className="text-sm text-slate-500">{t.late}</p>
                       <h3 className="text-2xl font-bold">{summary.lateToday}</h3>
                   </Card>
-                  <Card className="border-l-4 border-l-blue-500">
+                  <Card className="border-l-4 border-l-blue-500 min-w-0">
                       <p className="text-sm text-slate-500">{t.clinic} / {t.passes}</p>
                       <h3 className="text-2xl font-bold">{summary.clinicVisitsToday} / {summary.activePasses}</h3>
                   </Card>
@@ -328,10 +329,10 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       return (
           <div className="space-y-6 animate-in fade-in">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card>
+                  <Card className="min-w-0">
                       <h3 className="font-bold mb-4 text-slate-700">{t.absentBuckets}</h3>
-                      <div className="h-64">
-                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <div className="h-64 w-full">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                               <BarChart data={bucketData}>
                                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                   <XAxis dataKey="name" fontSize={10} />
@@ -345,7 +346,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                       </div>
                   </Card>
                   
-                  <Card>
+                  <Card className="min-w-0">
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="font-bold text-slate-700">{t.absenteeList}</h3>
                         <Button variant="secondary" className="text-xs h-8" onClick={handleExport}><Download size={14} /></Button>
@@ -401,10 +402,10 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       return (
           <div className="space-y-6 animate-in fade-in">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card>
+                  <Card className="min-w-0">
                       <h3 className="font-bold mb-4 text-slate-700">{t.topComplaints}</h3>
-                      <div className="h-80">
-                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <div className="h-80 w-full">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                               <BarChart data={chartData} layout="vertical">
                                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                   <XAxis type="number" />
@@ -416,10 +417,10 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                       </div>
                   </Card>
 
-                  <Card>
+                  <Card className="min-w-0">
                       <h3 className="font-bold mb-4 text-slate-700">{t.visitsByGrade}</h3>
-                      <div className="h-80">
-                          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                      <div className="h-80 w-full">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                               <BarChart data={gradeData}>
                                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                   <XAxis dataKey="name" fontSize={12} />
@@ -439,7 +440,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       if (!data) return null;
       return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+              <Card className="min-w-0">
                   <h3 className="font-bold mb-4 text-slate-700">{t.topEPassUsers}</h3>
                   <ul className="space-y-2">
                       {data.epass.topUsers.map((item: any, i: number) => (
@@ -450,7 +451,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                       ))}
                   </ul>
               </Card>
-              <Card>
+              <Card className="min-w-0">
                    <h3 className="font-bold mb-4 text-slate-700">{t.topUnauthorized}</h3>
                    <ul className="space-y-2">
                       {data.epass.topUnauthorized.map((item: any, i: number) => (
@@ -468,7 +469,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   const renderReceptionReports = () => {
       if (!data) return null;
       return (
-          <Card>
+          <Card className="min-w-0">
               <h3 className="font-bold mb-4 text-slate-700">{t.receptionReport}</h3>
                <div className="overflow-y-auto h-96">
                    <table className="w-full text-sm text-left">
@@ -581,12 +582,12 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
 
                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                            {/* Attendance Pie Chart */}
-                           <Card className="lg:col-span-1 flex flex-col">
+                           <Card className="lg:col-span-1 flex flex-col min-w-0">
                                <div className="mb-2">
                                    <h3 className="font-bold text-slate-700 uppercase text-sm tracking-wider">Attendance Report</h3>
                                </div>
-                               <div className="flex-1 min-h-[200px]">
-                                   <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                               <div className="h-[260px] w-full">
+                                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                                        <PieChart>
                                            <Pie 
                                                data={pieData} 
@@ -609,19 +610,19 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                            
                            {/* Quick Stats Cards */}
                            <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4">
-                               <Card className="flex flex-col justify-center items-center p-4">
+                               <Card className="flex flex-col justify-center items-center p-4 min-w-0">
                                    <p className="text-xs text-slate-500 uppercase font-bold mb-1">Clinic</p>
                                    <span className="text-3xl font-bold text-blue-600">{student360Data.history.clinic.length}</span>
                                </Card>
-                               <Card className="flex flex-col justify-center items-center p-4">
+                               <Card className="flex flex-col justify-center items-center p-4 min-w-0">
                                    <p className="text-xs text-slate-500 uppercase font-bold mb-1">E-Pass Report</p>
                                    <span className="text-3xl font-bold text-purple-600">{student360Data.history.epasses.length}</span>
                                </Card>
-                               <Card className="flex flex-col justify-center items-center p-4">
+                               <Card className="flex flex-col justify-center items-center p-4 min-w-0">
                                    <p className="text-xs text-slate-500 uppercase font-bold mb-1">{t.late}</p>
                                    <span className="text-3xl font-bold text-yellow-600">{dailyAttendance.filter((d:any) => d.status === 'Late').length}</span>
                                </Card>
-                               <Card className="flex flex-col justify-center items-center p-4">
+                               <Card className="flex flex-col justify-center items-center p-4 min-w-0">
                                    <p className="text-xs text-slate-500 uppercase font-bold mb-1">{t.earlyLeave}</p>
                                    <span className="text-3xl font-bold text-orange-600">{dailyAttendance.filter((d:any) => d.status === 'Early Leave').length}</span>
                                </Card>

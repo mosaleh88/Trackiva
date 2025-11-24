@@ -3,14 +3,13 @@ import { GoogleGenAI } from "@google/genai";
 
 // Note: In a real app, you would not expose the key on the client, 
 // or you would force the user to input it. 
-// For this demo, we assume the API key is available as an environment variable.
+// For this demo, we assume process.env.API_KEY is available as per instructions.
 
 let ai: GoogleGenAI | null = null;
 
 try {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (apiKey) {
-        ai = new GoogleGenAI({ apiKey });
+    if (process.env.API_KEY) {
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     }
 } catch (error) {
     console.error("Failed to initialize GoogleGenAI", error);
