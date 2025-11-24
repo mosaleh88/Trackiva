@@ -171,7 +171,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
               <form onSubmit={handleLogin} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t.email}</label>
-                  <Input 
+                    <Input 
+                    id="login-email"
+                    name="email"
                     type="email" 
                     value={email} 
                     onChange={e => { setEmail(e.target.value); setError(""); }}
@@ -194,6 +196,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
                   </div>
                   <div className="relative">
                     <Input 
+                      id="login-password"
+                      name="password"
                       type={showPassword ? "text" : "password"} 
                       value={password} 
                       onChange={e => { setPassword(e.target.value); setError(""); }}
@@ -227,6 +231,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
                       <label className="block text-sm font-medium text-slate-700 mb-1">{t.email}</label>
                       <div className="relative">
                           <Input 
+                            id="forgot-email"
+                            name="email"
                             type="email" 
                             value={email} 
                             onChange={e => { setEmail(e.target.value); setError(""); }}
@@ -268,6 +274,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
                       <label className="block text-sm font-medium text-slate-700 mb-1">New Password</label>
                       <div className="relative">
                           <Input 
+                            id="update-password"
+                            name="password"
                             type={showPassword ? "text" : "password"}
                             value={password} 
                             onChange={e => { setPassword(e.target.value); setError(""); }}
