@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Student, AttendanceRecord, EPass, ReceptionLog, AttendanceStatus, UserRole, ScheduleConfig, TimeSlot, EPassDestination, AppSettings, ClinicVisit, User } from '../types';
 import { generateDefaultPermissions } from '../constants';
@@ -121,7 +120,7 @@ class SupabaseStore {
         // This fixes the "CHANNEL_ERROR" loop by ensuring we don't hit connection limits
         const channels = supabase.getChannels();
         if (channels.length > 0) {
-            await Promise.all(channels.map(ch => supabase.removeChannel(ch)));
+            await Promise.all(channels.map((ch: any) => supabase.removeChannel(ch)));
         }
         this.realtimeChannel = null;
 
@@ -136,7 +135,7 @@ class SupabaseStore {
             { event: '*', schema: 'public' },
             (payload: any) => this.handleRealtimeEvent(payload)
           )
-          .subscribe((status, err) => {
+          .subscribe((status: string, err: any) => {
             if (status === 'SUBSCRIBED') {
               console.log('Realtime channel connected.');
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
