@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Student, AttendanceRecord, EPass, ReceptionLog, AttendanceStatus, UserRole, ScheduleConfig, TimeSlot, EPassDestination, AppSettings, ClinicVisit, User } from '../types';
 import { generateDefaultPermissions } from '../constants';
@@ -59,7 +60,17 @@ class SupabaseStore {
             doubleCountFridays: false,
             doubleCountDates: []
         },
-        notificationRules: { 'UNAUTHORIZED': true }
+        notificationRules: { 'UNAUTHORIZED': true },
+        academicCalendar: {
+            academicYearStart: '2024-09-01',
+            academicYearEnd: '2025-06-30',
+            terms: [
+                { id: 't1', name: 'Term 1', startDate: '2024-08-26', endDate: '2024-12-13' },
+                { id: 't2', name: 'Term 2', startDate: '2025-01-06', endDate: '2025-03-21' },
+                { id: 't3', name: 'Term 3', startDate: '2025-04-14', endDate: '2025-06-27' }
+            ],
+            events: []
+        }
     },
     clinicVisits: []
   };
@@ -68,6 +79,7 @@ class SupabaseStore {
   private subscribers: Set<() => void> = new Set();
   private realtimeChannel: any = null;
   private reconnectTimeout: any = null;
+  private isReconnecting = false;
   
 
   // --- Date Standardization Helpers ---
@@ -77,6 +89,24 @@ class SupabaseStore {
     const local = new Date(now.getTime() - (offset * 60 * 1000));
     return local.toISOString().split('T')[0];
   }
+  
+  // Returns the start date of the current academic year (Sept 1st)
+  getAcademicYearStartStr() {
+    // If configured in calendar, use it
+    if (this.data.settings.academicCalendar?.academicYearStart) {
+        return this.data.settings.academicCalendar.academicYearStart;
+    }
+
+    // Fallback logic
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-11
+    
+    // If we are in Jan-Aug (0-7), the academic year started in Sept of previous year
+    // If we are in Sept-Dec (8-11), the academic year started in Sept of current year
+    const startYear = currentMonth < 8 ? currentYear - 1 : currentYear;
+    return `${startYear}-09-01`;
+  }
 
   getStartOfDay(dateStr: string) {
       return new Date(`${dateStr}T00:00:00`).getTime();
@@ -84,6 +114,14 @@ class SupabaseStore {
 
   getEndOfDay(dateStr: string) {
       return new Date(`${dateStr}T23:59:59.999`).getTime();
+  }
+
+  getCalendarEvent(dateStr: string) {
+      const events = this.data.settings.academicCalendar?.events || [];
+      return events.find(e => 
+          dateStr >= e.startDate && dateStr <= e.endDate && 
+          (e.type === 'Holiday' || e.type === 'Break')
+      );
   }
 
 
@@ -109,6 +147,9 @@ class SupabaseStore {
   }
 
   async initRealtime() {
+    if (this.isReconnecting) return;
+    this.isReconnecting = true;
+
     // Clear any pending reconnects to avoid race conditions
     if (this.reconnectTimeout) {
         clearTimeout(this.reconnectTimeout);
@@ -117,7 +158,6 @@ class SupabaseStore {
 
     try {
         // Robust Cleanup: Remove ALL channels to ensure a clean slate
-        // This fixes the "CHANNEL_ERROR" loop by ensuring we don't hit connection limits
         const channels = supabase.getChannels();
         if (channels.length > 0) {
             await Promise.all(channels.map((ch: any) => supabase.removeChannel(ch)));
@@ -138,9 +178,13 @@ class SupabaseStore {
           .subscribe((status: string, err: any) => {
             if (status === 'SUBSCRIBED') {
               console.log('Realtime channel connected.');
+              this.isReconnecting = false;
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-              console.warn(`Realtime status: ${status}`, err);
-              this.scheduleReconnect();
+              // Only reconnect if not intentionally closed
+              if (!this.reconnectTimeout) {
+                  console.warn(`Realtime status: ${status}`, err);
+                  this.scheduleReconnect();
+              }
             }
           });
     } catch (e) {
@@ -150,7 +194,8 @@ class SupabaseStore {
   }
 
   private scheduleReconnect() {
-      if (this.reconnectTimeout) return; // Already scheduled
+      if (this.reconnectTimeout) return; 
+      this.isReconnecting = false; // Allow next attempt
       console.log('Reconnecting realtime in 5s...');
       this.reconnectTimeout = setTimeout(() => {
           this.reconnectTimeout = null;
@@ -190,7 +235,6 @@ class SupabaseStore {
 
       if (event === 'INSERT') {
           // PREVENT GHOST DATA: Only insert if record is recent (last 7 days)
-          // This prevents an old record modified by someone else from appearing in the current view unexpectedly
           let isRecent = true;
           const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
           
@@ -203,7 +247,7 @@ class SupabaseStore {
              if (newRec.startTime < sevenDaysAgo) isRecent = false;
           }
 
-          // Always allow non-time-series data (students, users, destinations, settings)
+          // Always allow non-time-series data
           if (['students', 'users', 'destinations', 'settings'].includes(key)) isRecent = true;
 
           if (isRecent) {
@@ -213,7 +257,6 @@ class SupabaseStore {
       } else if (event === 'UPDATE') {
           const idx = list.findIndex(item => item.id === newRec.id);
           if (idx !== -1) list[idx] = newRec;
-          // Note: We generally don't insert on UPDATE if not found, to avoid popping in old data
       } else if (event === 'DELETE') {
           const idx = list.findIndex(item => item.id === oldRec.id);
           if (idx !== -1) list.splice(idx, 1);
@@ -254,20 +297,16 @@ class SupabaseStore {
           const dateStr = sevenDaysAgo.toISOString().split('T')[0];
           const timestamp = sevenDaysAgo.getTime();
 
-          // Paginate large/static tables
           const [students, users] = await Promise.all([
               fetchAllFromTable<Student>('students'),
               fetchAllFromTable<User>('users'),
           ]);
 
-          // Small tables: no pagination needed
           const [settingsRes, destinationsRes] = await Promise.all([
               supabase.from('settings').select('*').single(),
               supabase.from('destinations').select('*'),
           ]);
 
-          // Time-bound data (7 days): likely <1k, but if you're paranoid, paginate
-          // For now, keep as single query (faster)
           const [attendanceRes, epassesRes, logsRes, visitsRes] = await Promise.all([
               supabase.from('attendance').select('*').gte('date', dateStr),
               supabase.from('epasses').select('*').gte('startTime', timestamp),
@@ -275,7 +314,6 @@ class SupabaseStore {
               supabase.from('clinic_visits').select('*').gte('timestamp', timestamp),
           ]);
 
-          // Assign data
           this.data.students = students;
           this.data.users = users;
           this.data.destinations = destinationsRes.data || [];
@@ -287,7 +325,6 @@ class SupabaseStore {
           if (settingsRes.data) {
               this.data.settings = { ...this.data.settings, ...settingsRes.data };
               
-              // Ensure rolePermissions is never null
               if (!this.data.settings.rolePermissions) {
                   this.data.settings.rolePermissions = generateDefaultPermissions();
               }
@@ -309,11 +346,10 @@ class SupabaseStore {
         const startTs = this.getStartOfDay(startDate);
         const endTs = this.getEndOfDay(endDate);
 
-        // Helper: fetch table with date/time filter + pagination
         const fetchTimeSeries = async <T>(
           table: string,
           timeField: string,
-          isDateField = false // true for 'date' (string), false for timestamp (number)
+          isDateField = false 
         ): Promise<T[]> => {
           return fetchAllFromTable<T>(table, {
             filter: (query) => {
@@ -395,7 +431,7 @@ class SupabaseStore {
       );
   }
 
-  // --- Write Operations (Async + Manual Cache Update) ---
+  // --- Write Operations ---
 
   async addStudent(student: Omit<Student, 'id'>) {
     const { data, error } = await supabase.from('students').insert(student).select().single();
@@ -421,7 +457,6 @@ class SupabaseStore {
   async bulkImportStudents(students: Omit<Student, 'id'>[]) {
     const { data, error } = await supabase.from('students').upsert(students, { onConflict: 'studentNumber' }).select();
     if (error) throw error;
-    // Re-fetch full list to be safe with bulk ops
     await this.refreshData();
     return data;
   }
@@ -495,24 +530,81 @@ class SupabaseStore {
   }
 
   async markAttendance(record: Omit<AttendanceRecord, 'id' | 'timestamp'>) {
-      const existing = this.data.attendance.find(
+      // 1. DETERMINE PREVIOUS STATUS
+      // We check both local cache AND the database to ensure we don't have stale data.
+      // This prevents "New Record" assumptions that lead to duplicate alerts.
+      let previousStatus: AttendanceStatus | undefined = undefined;
+      let existingId: string | undefined = undefined;
+      let existingReason: string | undefined = undefined;
+
+      // Check Cache First
+      const cached = this.data.attendance.find(
           a => a.studentId === record.studentId && a.date === record.date && a.period === record.period
       );
 
-      if (existing) {
-          const { data, error } = await supabase.from('attendance')
-              .update({ status: record.status, reason: record.reason, timestamp: Date.now() })
-              .eq('id', existing.id).select().single();
-          if (error) throw error;
-          this.mergeIntoStore('attendance', data);
-          return data;
+      if (cached) {
+          previousStatus = cached.status;
+          existingId = cached.id;
+          existingReason = cached.reason;
       } else {
-          const { data, error } = await supabase.from('attendance')
-              .insert({ ...record, timestamp: Date.now() }).select().single();
-          if (error) throw error;
-          this.mergeIntoStore('attendance', data);
-          return data;
+          // Check DB (fallback for cache miss)
+          const { data: dbRecord } = await supabase
+              .from('attendance')
+              .select('id, status, reason')
+              .eq('studentId', record.studentId)
+              .eq('date', record.date)
+              .eq('period', record.period)
+              .maybeSingle();
+          
+          if (dbRecord) {
+              previousStatus = dbRecord.status;
+              existingId = dbRecord.id;
+              existingReason = dbRecord.reason;
+          }
       }
+
+      // Optimization: If nothing changed, return early
+      if (previousStatus === record.status && existingReason === record.reason) {
+          return { ...record, id: existingId || 'skipped' };
+      }
+
+      // 2. ALERT CHECK LOGIC
+      // Trigger ONLY if status CHANGED to Absent Unexcused from something else.
+      // This strict check prevents duplicate alerts when just updating notes or resaving.
+      const isAbsentUnexcused = record.status === AttendanceStatus.ABSENT_UNEXCUSED;
+      const wasAbsentUnexcused = previousStatus === AttendanceStatus.ABSENT_UNEXCUSED;
+      const shouldCheckAlert = isAbsentUnexcused && !wasAbsentUnexcused;
+
+      // 3. UPDATE DATABASE (Upsert)
+      const payload = { 
+          studentId: record.studentId,
+          date: record.date,
+          period: record.period,
+          status: record.status,
+          reason: record.reason,
+          timestamp: Date.now()
+      };
+      
+      let result;
+      if (existingId) {
+           result = await supabase.from('attendance').update({ ...payload }).eq('id', existingId).select().single();
+      } else {
+           // Try insert. 
+           // Note: If you have a unique constraint on (studentId, date, period), consider .upsert() or handle error
+           // For now, we trust the pre-check above handled the existence check.
+           result = await supabase.from('attendance').insert(payload).select().single();
+      }
+
+      const { data, error } = result;
+      if (error) throw error;
+
+      this.mergeIntoStore('attendance', data);
+
+      // 4. TRIGGER ALERT (If applicable)
+      if (shouldCheckAlert) {
+          await this.checkAttendanceAlert(record.studentId, data.id);
+      }
+      return data;
   }
 
   async deleteAttendance(studentId: string, date: string, period: string) {
@@ -527,7 +619,7 @@ class SupabaseStore {
       }
   }
 
-  checkAttendanceAlert(studentId: string) {
+  async checkAttendanceAlert(studentId: string, triggerRecordId?: string) {
       const student = this.data.students.find(s => s.id === studentId);
       if (!student) return;
       const settings = this.data.settings.attendanceSettings;
@@ -536,32 +628,57 @@ class SupabaseStore {
       const doubleCountFridays = settings?.doubleCountFridays || false;
       const doubleCountDates = settings?.doubleCountDates || [];
 
-      const records = this.data.attendance.filter(a => a.studentId === studentId);
-      const byDate: Record<string, AttendanceRecord[]> = {};
-      records.forEach(r => { if (!byDate[r.date]) byDate[r.date] = []; byDate[r.date].push(r); });
+      // FETCH FULL HISTORY FOR CURRENT ACADEMIC YEAR
+      // Filter out legacy records to ensure alerts align with current year reports.
+      const { data: records, error } = await supabase
+          .from('attendance')
+          .select('*')
+          .eq('studentId', studentId)
+          .gte('date', this.getAcademicYearStartStr());
 
-      let totalAbsentDays = 0;
-      Object.values(byDate).forEach(dayRecords => {
-          const unexcused = dayRecords.filter(r => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
-          if (unexcused >= threshold) {
-              const dateStr = dayRecords[0].date;
-              // Safe date parsing for day of week check (avoid UTC issues)
-              const [y, m, d] = dateStr.split('-').map(Number);
-              const dateObj = new Date(y, m-1, d); 
-              const isFriday = dateObj.getDay() === 5; // 0=Sun, 5=Fri
-              const isSpecialDate = doubleCountDates.includes(dateStr);
+      if (error || !records || records.length === 0) return;
 
-              if ((isFriday && doubleCountFridays) || isSpecialDate) {
-                  totalAbsentDays += 2;
-              } else {
-                  totalAbsentDays += 1;
+      // Helper to calculate total absent days from a set of records
+      const calculateAbsentDays = (attendanceRecords: AttendanceRecord[]) => {
+          const byDate: Record<string, AttendanceRecord[]> = {};
+          attendanceRecords.forEach(r => { if (!byDate[r.date]) byDate[r.date] = []; byDate[r.date].push(r); });
+
+          let days = 0;
+          Object.values(byDate).forEach(dayRecords => {
+              const unexcused = dayRecords.filter(r => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
+              if (unexcused >= threshold) {
+                  const dateStr = dayRecords[0].date;
+                  const [y, m, d] = dateStr.split('-').map(Number);
+                  const dateObj = new Date(y, m-1, d); 
+                  const isFriday = dateObj.getDay() === 5; 
+                  const isSpecialDate = doubleCountDates.includes(dateStr);
+
+                  if ((isFriday && doubleCountFridays) || isSpecialDate) {
+                      days += 2;
+                  } else {
+                      days += 1;
+                  }
               }
-          }
-      });
+          });
+          return days;
+      };
 
-      if (thresholds.includes(totalAbsentDays)) {
+      const currentTotal = calculateAbsentDays(records);
+      
+      // Calculate previous total by excluding the record that triggered this alert
+      // Since we only call this function when status CHANGES to Absent, removing the current record
+      // gives us the count BEFORE this specific absence event occurred.
+      const previousTotal = calculateAbsentDays(records.filter(r => r.id !== triggerRecordId));
+
+      // Check if we crossed any threshold
+      const crossedThreshold = thresholds.find(t => previousTotal < t && currentTotal >= t);
+
+      if (crossedThreshold) {
           const socialWorker = this.getSocialWorkerForStudent(studentId);
-          if (socialWorker) sendAttendanceAlert(student, totalAbsentDays, socialWorker);
+          if (socialWorker) {
+              console.log(`Triggering Attendance Alert for ${student.name_en}. Crossed ${crossedThreshold}, Current: ${currentTotal}`);
+              await sendAttendanceAlert(student, currentTotal, socialWorker);
+          }
       }
   }
 
@@ -681,6 +798,59 @@ class SupabaseStore {
     const todayEnd = this.getEndOfDay(today);
     const todayLogs = this.data.receptionLogs.filter(l => l.timestamp >= todayStart && l.timestamp <= todayEnd);
 
+    // Recent Activity Aggregation
+    const recentActivity: any[] = [];
+    const studentsLookup = new Map(this.data.students.map(s => [s.id, s]));
+
+    // 1. Reception Logs
+    this.data.receptionLogs.forEach(log => {
+        const s = studentsLookup.get(log.studentId);
+        recentActivity.push({
+            id: log.id,
+            timestamp: log.timestamp,
+            type: 'reception',
+            subtype: log.type, 
+            studentName_en: s?.name_en || 'Unknown',
+            studentName_ar: s?.name_ar || 'Unknown',
+            details: log.reason,
+            isAlert: log.transportConflict
+        });
+    });
+
+    // 2. E-Passes (Created)
+    this.data.ePasses.forEach(pass => {
+        const s = studentsLookup.get(pass.studentId);
+        recentActivity.push({
+            id: pass.id,
+            timestamp: pass.startTime,
+            type: 'epass',
+            subtype: pass.type,
+            studentName_en: s?.name_en || 'Unknown',
+            studentName_ar: s?.name_ar || 'Unknown',
+            details: pass.status,
+            isAlert: pass.type === 'UNAUTHORIZED'
+        });
+    });
+
+    // 3. Attendance (Marked) - Exceptions Only
+    this.data.attendance.forEach(att => {
+        if (att.status !== AttendanceStatus.PRESENT) {
+            const s = studentsLookup.get(att.studentId);
+            recentActivity.push({
+                id: att.id,
+                timestamp: att.timestamp,
+                type: 'attendance',
+                subtype: att.status,
+                studentName_en: s?.name_en || 'Unknown',
+                studentName_ar: s?.name_ar || 'Unknown',
+                details: att.reason,
+                isAlert: att.status === AttendanceStatus.ABSENT_UNEXCUSED
+            });
+        }
+    });
+
+    recentActivity.sort((a, b) => b.timestamp - a.timestamp);
+
     return {
       totalStudents: this.data.students.length,
       presentToday: presentCount,
@@ -692,7 +862,7 @@ class SupabaseStore {
       overduePasses: overduePasses,
       ePassBreakdown: ePassDestinations,
       receptionLogsToday: todayLogs.length,
-      recentIncidents: this.data.receptionLogs.slice(0, 5),
+      recentIncidents: recentActivity.slice(0, 10), // Top 10
       clinicVisitsToday: this.data.clinicVisits.filter(v => v.timestamp >= todayStart && v.timestamp <= todayEnd).length
     };
   }

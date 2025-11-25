@@ -29,7 +29,7 @@ const REPORT_ITEMS_PER_PAGE = 10;
 export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   const t = TRANSLATIONS[lang];
   const [activeTab, setActiveTab] = useState('daily');
-  const [startDate, setStartDate] = useState(store.getTodayStr());
+  const [startDate, setStartDate] = useState(store.getAcademicYearStartStr());
   const [endDate, setEndDate] = useState(store.getTodayStr());
   
   // Global Filters

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, Button, Badge } from './ui';
 import { UserRole, Language, EPassDestination } from '../types';
@@ -7,7 +6,7 @@ import { TRANSLATIONS } from '../constants';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend
 } from 'recharts/lib';
-import { AlertTriangle, Activity, Users, Clock, Stethoscope, LogOut, Ticket } from 'lucide-react';
+import { AlertTriangle, Activity, Users, Clock, Stethoscope, LogOut, Ticket, UserX, AlertOctagon, CheckCircle2, UserCheck } from 'lucide-react';
 
 interface DashboardProps {
   role: UserRole;
@@ -66,6 +65,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
             <div className="flex items-baseline gap-2">
                 <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{onCampusCount}</h3>
                 <span className="text-xs text-slate-400 dark:text-slate-500">/ {summary.totalStudents}</span>
+                <span className="text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-md ml-1">
+                    {((onCampusCount / (summary.totalStudents || 1)) * 100).toFixed(0)}%
+                </span>
             </div>
           </div>
           <div className="p-3 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full">
@@ -127,25 +129,77 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
                         <p>No recent activity</p>
                     </div>
                 ) : (
-                summary.recentIncidents.map((log: any) => (
-                    <div key={log.id} className="flex gap-3 border-b border-slate-50 dark:border-slate-700 pb-3 last:border-0 items-start">
-                        <div className={`mt-1 p-1.5 rounded-full shrink-0 ${log.type === 'LateArrival' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'}`}>
-                            {log.type === 'LateArrival' ? <Clock size={14} /> : <LogOut size={14} />}
+                summary.recentIncidents.map((log: any) => {
+                    let Icon = Activity;
+                    let colorClass = "bg-slate-100 text-slate-500";
+                    let title = "";
+                    
+                    if (log.type === 'reception') {
+                        if (log.subtype === 'LateArrival') {
+                            Icon = Clock;
+                            colorClass = "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400";
+                            title = t.lateArrival;
+                        } else {
+                            Icon = LogOut;
+                            colorClass = "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400";
+                            title = t.earlyLeave;
+                        }
+                    } else if (log.type === 'epass') {
+                        if (log.subtype === 'UNAUTHORIZED') {
+                            Icon = AlertTriangle;
+                            colorClass = "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400";
+                            title = t.unauthorized;
+                        } else {
+                            Icon = Ticket;
+                            colorClass = "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400";
+                             const dest = destinations.find(d => d.id === log.subtype);
+                             title = dest ? (lang === 'en' ? dest.label_en : dest.label_ar) : log.subtype;
+                        }
+                    } else if (log.type === 'attendance') {
+                        // Map status
+                        title = log.subtype; 
+                        if (title === 'Absent (Unexcused)') {
+                             Icon = UserX;
+                             colorClass = "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400";
+                             title = t.absent; 
+                        } else if (title === 'Absent (Excused)') {
+                             Icon = UserX;
+                             colorClass = "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400";
+                             title = t.excused;
+                        } else if (title === 'Late') {
+                             Icon = Clock;
+                             colorClass = "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400";
+                             title = t.late;
+                        } else if (title === 'Early Leave') {
+                             Icon = LogOut;
+                             colorClass = "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400";
+                             title = t.earlyLeave;
+                        }
+                    }
+
+                    return (
+                        <div key={log.id} className="flex gap-3 border-b border-slate-50 dark:border-slate-700 pb-3 last:border-0 items-start">
+                            <div className={`mt-1 p-1.5 rounded-full shrink-0 ${colorClass}`}>
+                                <Icon size={14} />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                                    {title}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    {lang === 'en' ? log.studentName_en : log.studentName_ar}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                                {log.details && <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 bg-slate-50 dark:bg-slate-700 px-2 py-0.5 rounded inline-block">{log.details}</p>}
+                                {log.isAlert && (
+                                    <span className="text-xs text-red-500 font-bold block mt-1">Alert Triggered</span>
+                                )}
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                                {log.type === 'LateArrival' ? t.lateArrival : t.earlyLeave}
-                            </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                            {log.reason && <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 bg-slate-50 dark:bg-slate-700 px-2 py-0.5 rounded inline-block">{log.reason}</p>}
-                            {log.transportConflict && (
-                                <span className="text-xs text-red-500 font-bold block mt-1">{t.transportConflict}</span>
-                            )}
-                        </div>
-                    </div>
-                ))
+                    );
+                })
                 )}
             </div>
         </Card>

@@ -111,6 +111,30 @@ export interface AttendanceConfig {
   doubleCountDates?: string[]; // Specific dates (YYYY-MM-DD) to count as 2 days
 }
 
+export type CalendarEventType = 'Exam' | 'Holiday' | 'Break' | 'Other';
+
+export interface CalendarEvent {
+  id: string;
+  name: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  type: CalendarEventType;
+}
+
+export interface TermConfig {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface AcademicCalendar {
+  academicYearStart: string;
+  academicYearEnd: string;
+  terms: TermConfig[];
+  events: CalendarEvent[];
+}
+
 export interface AppSettings {
   maxPassesPerDay: number;
   rolePermissions: RolePermissions;
@@ -133,6 +157,9 @@ export interface AppSettings {
 
   // Notification Toggles (Key = Pass Type ID or 'UNAUTHORIZED', Value = Enabled)
   notificationRules: Record<string, boolean>;
+
+  // Calendar
+  academicCalendar?: AcademicCalendar;
 }
 
 export interface ReceptionLog {

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Badge, Input, Select, Pagination } from './ui';
 import { store } from '../services/store';
-import { Student, AttendanceStatus, Language, TimeSlot, User } from '../types';
+import { Student, AttendanceStatus, Language, TimeSlot, User, CalendarEvent } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { Clock, Calendar, Filter, Save, Users, X, Trash2, AlertCircle } from 'lucide-react';
 
@@ -37,6 +37,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
   const [availablePeriods, setAvailablePeriods] = useState<TimeSlot[]>([]);
   const [isWeekend, setIsWeekend] = useState(false);
+  const [holidayEvent, setHolidayEvent] = useState<CalendarEvent | null>(null);
 
   // Bulk Action State
   const [bulkActionValue, setBulkActionValue] = useState<string>("");
@@ -64,19 +65,27 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
 
   // Calculate Available Periods based on Date & Auto-Select Current Period
   useEffect(() => {
+    const calendarEvent = store.getCalendarEvent(selectedDate);
     const dateObj = new Date(selectedDate);
     const day = dateObj.getDay(); // 0=Sun, 1=Mon, ... 6=Sat
     const schedule = store.getSchedule();
     let periods: TimeSlot[] = [];
     let isWknd = false;
 
-    if (day === 0 || day === 6) {
+    if (calendarEvent) {
+        setHolidayEvent(calendarEvent);
+        setIsWeekend(false); // It's a holiday, not just a weekend UI
+        periods = [];
+    } else if (day === 0 || day === 6) {
+        setHolidayEvent(null);
         isWknd = true;
         periods = [];
     } else if (day === 5) { // Friday
+        setHolidayEvent(null);
         isWknd = false;
         periods = schedule.friday.filter(s => s.type === 'Period');
     } else {
+        setHolidayEvent(null);
         isWknd = false;
         periods = schedule.standard.filter(s => s.type === 'Period');
     }
@@ -125,7 +134,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
     } else {
         setSelectedPeriod("");
     }
-  }, [selectedDate]);
+  }, [selectedDate, store]); // Trigger when store updates (e.g. events added)
 
   // Load existing attendance from store
   useEffect(() => {
@@ -293,10 +302,6 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
             period: selectedPeriod,
             status,
             reason: reasons[studentId]
-        }).then(() => {
-            if (status === AttendanceStatus.ABSENT_UNEXCUSED) {
-                store.checkAttendanceAlert(studentId);
-            }
         });
     });
 
@@ -373,14 +378,16 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
              {/* Period Selector */}
              <div>
                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
-                    {t.period} {currentPeriodInfo && !isWeekend && <span className="text-primary font-normal">({currentPeriodInfo.startTime})</span>}
+                    {t.period} {currentPeriodInfo && !isWeekend && !holidayEvent && <span className="text-primary font-normal">({currentPeriodInfo.startTime})</span>}
                 </label>
                 <Select 
                     value={selectedPeriod} 
                     onChange={(e) => setSelectedPeriod(e.target.value)}
-                    disabled={isWeekend}
+                    disabled={isWeekend || !!holidayEvent}
                 >
-                    {isWeekend ? (
+                    {holidayEvent ? (
+                        <option>Holiday</option>
+                    ) : isWeekend ? (
                         <option>{t.weekend}</option>
                     ) : (
                         availablePeriods.map(p => (
@@ -396,6 +403,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
                 <Select 
                     value={selectedGender} 
                     onChange={(e) => handleGenderChange(e.target.value)}
+                    disabled={!!holidayEvent}
                 >
                     <option value="">{t.selectGender}</option>
                     <option value="Male">{t.male}</option>
@@ -409,7 +417,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
                 <Select 
                     value={selectedGrade} 
                     onChange={(e) => handleGradeChange(e.target.value)}
-                    disabled={!selectedGender}
+                    disabled={!selectedGender || !!holidayEvent}
                 >
                     <option value="">{t.selectGrade}</option>
                     {availableGrades.map(c => (
@@ -424,7 +432,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
                 <Select 
                     value={selectedSection} 
                     onChange={(e) => setSelectedSection(e.target.value)}
-                    disabled={!selectedGrade}
+                    disabled={!selectedGrade || !!holidayEvent}
                 >
                     <option value="">{t.selectSection}</option>
                     {availableSections.map(s => (
@@ -436,7 +444,15 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
       </Card>
 
       {/* Attendance Area */}
-      {isWeekend ? (
+      {holidayEvent ? (
+        <div className="text-center py-12 bg-indigo-50 dark:bg-slate-800 rounded-xl border border-indigo-100 dark:border-slate-700 animate-in fade-in">
+            <div className="inline-block p-3 bg-white dark:bg-slate-700 rounded-full shadow-sm mb-3">
+                <Calendar size={32} className="text-indigo-500 dark:text-indigo-400" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200">{holidayEvent.name}</h3>
+            <p className="text-slate-500 dark:text-slate-400 font-medium">{t.noAttendance}</p>
+        </div>
+      ) : isWeekend ? (
         <div className="text-center py-12 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
             <div className="inline-block p-3 bg-white dark:bg-slate-700 rounded-full shadow-sm mb-3">
                 <Clock size={32} className="text-slate-400 dark:text-slate-300" />

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge, Pagination } from './ui';
 import { store } from '../services/store';
-import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions, AssignedClass, User, AttendanceConfig } from '../types';
+import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions, AssignedClass, User, AttendanceConfig, AcademicCalendar, CalendarEvent } from '../types';
 import { TRANSLATIONS, ROLES_LIST, AVAILABLE_ICONS, COLOR_THEMES, NAV_ITEMS, generateDefaultPermissions } from '../constants';
 import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, Search, Filter, ArrowUpDown, CreditCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, Download, Loader2, ListChecks, Megaphone, Calendar } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
@@ -12,7 +12,7 @@ interface ManagementProps {
   lang: Language;
 }
 
-type Tab = 'users' | 'students' | 'timetable' | 'epass' | 'access' | 'notifications' | 'attendance_rules';
+type Tab = 'users' | 'students' | 'timetable' | 'epass' | 'access' | 'notifications' | 'attendance_rules' | 'calendar';
 
 const STUDENTS_PER_PAGE = 10;
 const USERS_PER_PAGE = 10;
@@ -111,6 +111,20 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       doubleCountDates: []
   });
   const [newDoubleDate, setNewDoubleDate] = useState("");
+  
+  // Calendar Settings
+  const [calendarSettings, setCalendarSettings] = useState<AcademicCalendar>({
+      academicYearStart: '',
+      academicYearEnd: '',
+      terms: [],
+      events: []
+  });
+  const [newEvent, setNewEvent] = useState<Partial<CalendarEvent>>({
+      type: 'Holiday',
+      name: '',
+      startDate: '',
+      endDate: ''
+  });
 
   const [rolePermissions, setRolePermissions] = useState<RolePermissions>(() => generateDefaultPermissions());
   const [selectedRoleForAccess, setSelectedRoleForAccess] = useState<string>(UserRole.TEACHER);
@@ -171,6 +185,12 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         alertThresholds: [3, 6, 10, 15],
         doubleCountFridays: false,
         doubleCountDates: []
+    });
+    setCalendarSettings(settings.academicCalendar || {
+        academicYearStart: '',
+        academicYearEnd: '',
+        terms: [],
+        events: []
     });
   };
 
@@ -646,6 +666,48 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       alert("Attendance rules updated successfully!");
   };
 
+  const handleSaveCalendar = async () => {
+      setIsLoading(true);
+      try {
+          await store.updateSettings({ academicCalendar: calendarSettings });
+          alert("Calendar updated successfully!");
+      } catch (e) {
+          console.error(e);
+          alert("Failed to update calendar.");
+      } finally {
+          setIsLoading(false);
+      }
+  };
+
+  const handleAddEvent = () => {
+      if(!newEvent.name || !newEvent.startDate || !newEvent.endDate) return;
+      const event: CalendarEvent = {
+          id: generateUUID(),
+          name: newEvent.name!,
+          startDate: newEvent.startDate!,
+          endDate: newEvent.endDate!,
+          type: newEvent.type || 'Other'
+      };
+      setCalendarSettings(prev => ({
+          ...prev,
+          events: [...prev.events, event].sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+      }));
+      setNewEvent({ type: 'Holiday', name: '', startDate: '', endDate: '' });
+  };
+
+  const handleDeleteEvent = (id: string) => {
+      setCalendarSettings(prev => ({
+          ...prev,
+          events: prev.events.filter(e => e.id !== id)
+      }));
+  };
+
+  const handleTermChange = (idx: number, field: keyof TimeSlot | string, value: string) => {
+      const newTerms = [...calendarSettings.terms];
+      newTerms[idx] = { ...newTerms[idx], [field]: value };
+      setCalendarSettings(prev => ({ ...prev, terms: newTerms }));
+  };
+
   const toggleNotificationRule = (key: string) => {
       setNotificationRules(prev => ({
           ...prev,
@@ -903,6 +965,9 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
               </button>
               <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'timetable' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                   {t.timetable}
+              </button>
+              <button onClick={() => setActiveTab('calendar')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'calendar' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+                  <div className="flex items-center gap-2"><Calendar size={16} /> Calendar</div>
               </button>
               <button onClick={() => setActiveTab('epass')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'epass' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                   {t.destinations}
@@ -1308,6 +1373,167 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   </div>
                   <div className="flex justify-end mt-8"><Button onClick={handleUpdateAttendanceRules} size="lg" className="px-8">{t.saveRules}</Button></div>
               </Card>
+          )}
+          
+          {/* Calendar Tab */}
+          {activeTab === 'calendar' && (
+              <div className="space-y-6">
+                  {/* Academic Year Configuration */}
+                  <Card>
+                      <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white flex items-center gap-2">
+                          <Calendar size={20} className="text-primary" />
+                          Academic Year Configuration
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Academic Year Start</label>
+                              <Input 
+                                  type="date" 
+                                  value={calendarSettings.academicYearStart} 
+                                  onChange={e => setCalendarSettings({...calendarSettings, academicYearStart: e.target.value})}
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Academic Year End</label>
+                              <Input 
+                                  type="date" 
+                                  value={calendarSettings.academicYearEnd} 
+                                  onChange={e => setCalendarSettings({...calendarSettings, academicYearEnd: e.target.value})}
+                              />
+                          </div>
+                      </div>
+                  </Card>
+
+                  {/* Terms Configuration */}
+                  <Card>
+                      <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">Academic Terms</h3>
+                      <div className="space-y-4">
+                          {calendarSettings.terms.map((term, idx) => (
+                              <div key={term.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-slate-100 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                                  <div className="flex items-center">
+                                      <span className="font-bold text-slate-700 dark:text-slate-200">{term.name}</span>
+                                  </div>
+                                  <div>
+                                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Start Date</label>
+                                      <Input 
+                                          type="date" 
+                                          value={term.startDate} 
+                                          onChange={e => handleTermChange(idx, 'startDate', e.target.value)}
+                                      />
+                                  </div>
+                                  <div>
+                                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">End Date</label>
+                                      <Input 
+                                          type="date" 
+                                          value={term.endDate} 
+                                          onChange={e => handleTermChange(idx, 'endDate', e.target.value)}
+                                      />
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  </Card>
+
+                  {/* Events & Holidays */}
+                  <Card>
+                      <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">Events, Exams & Holidays</h3>
+                      
+                      {/* Add Event Form */}
+                      <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-6">
+                          <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300 mb-3">Add New Event</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                              <div className="md:col-span-2">
+                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Event Name</label>
+                                  <Input 
+                                      placeholder="e.g. Winter Break, Mid-Term Exams" 
+                                      value={newEvent.name} 
+                                      onChange={e => setNewEvent({...newEvent, name: e.target.value})}
+                                  />
+                              </div>
+                              <div>
+                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Type</label>
+                                  <Select 
+                                      value={newEvent.type} 
+                                      onChange={e => setNewEvent({...newEvent, type: e.target.value as any})}
+                                  >
+                                      <option value="Holiday">Holiday/Off Day</option>
+                                      <option value="Exam">Exam</option>
+                                      <option value="Break">Break (Winter/Spring/Summer)</option>
+                                      <option value="Other">Other</option>
+                                  </Select>
+                              </div>
+                              <div>
+                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Start Date</label>
+                                  <Input 
+                                      type="date" 
+                                      value={newEvent.startDate} 
+                                      onChange={e => setNewEvent({...newEvent, startDate: e.target.value})}
+                                  />
+                              </div>
+                              <div>
+                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">End Date</label>
+                                  <Input 
+                                      type="date" 
+                                      value={newEvent.endDate} 
+                                      onChange={e => setNewEvent({...newEvent, endDate: e.target.value})}
+                                  />
+                              </div>
+                          </div>
+                          <div className="mt-3 flex justify-end">
+                              <Button onClick={handleAddEvent} disabled={!newEvent.name || !newEvent.startDate || !newEvent.endDate}>
+                                  <Plus size={16} /> Add Event
+                              </Button>
+                          </div>
+                      </div>
+
+                      {/* Events List */}
+                      <div className="space-y-2">
+                          {calendarSettings.events.length === 0 ? (
+                              <div className="text-center py-8 text-slate-400 italic">No events scheduled.</div>
+                          ) : (
+                              calendarSettings.events.map(event => (
+                                  <div key={event.id} className="flex flex-wrap md:flex-nowrap items-center justify-between p-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg hover:border-slate-300 transition-colors">
+                                      <div className="flex items-center gap-3 flex-1">
+                                          <div className={`w-2 h-10 rounded-full ${
+                                              event.type === 'Exam' ? 'bg-red-500' : 
+                                              event.type === 'Break' ? 'bg-blue-500' : 
+                                              event.type === 'Holiday' ? 'bg-green-500' : 'bg-slate-400'
+                                          }`}></div>
+                                          <div>
+                                              <p className="font-bold text-slate-800 dark:text-slate-200">{event.name}</p>
+                                              <Badge color={
+                                                  event.type === 'Exam' ? 'red' : 
+                                                  event.type === 'Break' ? 'blue' : 
+                                                  event.type === 'Holiday' ? 'green' : 'gray'
+                                              } className="text-[10px] mt-1">{event.type}</Badge>
+                                          </div>
+                                      </div>
+                                      <div className="flex items-center gap-4 mt-2 md:mt-0">
+                                          <div className="text-right">
+                                              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">From</p>
+                                              <p className="text-sm font-mono text-slate-700 dark:text-slate-300">{event.startDate}</p>
+                                          </div>
+                                          <div className="text-right">
+                                              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">To</p>
+                                              <p className="text-sm font-mono text-slate-700 dark:text-slate-300">{event.endDate}</p>
+                                          </div>
+                                          <button 
+                                              onClick={() => handleDeleteEvent(event.id)}
+                                              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ml-2"
+                                          >
+                                              <Trash2 size={16} />
+                                          </button>
+                                      </div>
+                                  </div>
+                              ))
+                          )}
+                      </div>
+                  </Card>
+
+                  <div className="flex justify-end pt-4">
+                      <Button onClick={handleSaveCalendar} size="lg" className="px-8 shadow-lg">Save Calendar</Button>
+                  </div>
+              </div>
           )}
 
           {/* E-Pass Destinations */}
