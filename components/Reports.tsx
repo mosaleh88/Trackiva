@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge, Pagination } from './ui';
 import { store } from '../services/store';
@@ -552,17 +551,17 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   const renderStudent360 = () => {
       return (
           <div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="md:col-span-2 relative">
-                      <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+              <div className="flex flex-col lg:flex-row gap-4 mb-6">
+                  <div className="flex-1 relative z-30">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                       <Input 
                           placeholder={t.searchStudent} 
-                          className="pl-10"
+                          className="pl-10 h-12 text-base bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm rounded-xl"
                           value={search360}
                           onChange={e => { setSearch360(e.target.value); setStudent360(null); }}
                       />
                       {search360 && !student360 && (
-                          <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg mt-1 z-20 max-h-60 overflow-y-auto">
+                          <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl mt-1 z-50 max-h-60 overflow-y-auto">
                               {students.filter(s => s.name_en.toLowerCase().includes(search360.toLowerCase()) || s.studentNumber.includes(search360)).map(s => (
                                   <button 
                                       key={s.id}
@@ -577,31 +576,35 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                           };
                                           load360();
                                       }}
-                                      className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-200 border-b border-slate-50 dark:border-slate-700 last:border-0"
+                                      className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-200 border-b border-slate-50 dark:border-slate-700 last:border-0"
                                   >
-                                      {lang === 'en' ? s.name_en : s.name_ar} ({s.studentNumber})
+                                      <div className="font-bold">{lang === 'en' ? s.name_en : s.name_ar}</div>
+                                      <div className="text-xs text-slate-500 dark:text-slate-400">{s.studentNumber} - {s.grade} {s.section}</div>
                                   </button>
                               ))}
                           </div>
                       )}
                   </div>
                   
-                  {/* Date Range in Student 360 View */}
-                  <div className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase whitespace-nowrap px-2">{t.dateRange}</span>
-                      <input 
-                          type="date" 
-                          value={startDate} 
-                          onChange={e => setStartDate(e.target.value)}
-                          className="text-xs border-none focus:ring-0 p-0 text-slate-700 dark:text-slate-200 bg-transparent w-full"
-                      />
-                      <span className="text-slate-400">-</span>
-                      <input 
-                          type="date" 
-                          value={endDate} 
-                          onChange={e => setEndDate(e.target.value)}
-                          className="text-xs border-none focus:ring-0 p-0 text-slate-700 dark:text-slate-200 bg-transparent w-full"
-                      />
+                  {/* Date Range Styled */}
+                  <div className="bg-white dark:bg-slate-800 px-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4 h-12 shrink-0">
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.dateRange}</span>
+                      <div className="h-6 w-px bg-slate-100 dark:bg-slate-700"></div>
+                      <div className="flex items-center gap-2">
+                          <input 
+                              type="date" 
+                              value={startDate} 
+                              onChange={e => setStartDate(e.target.value)}
+                              className="text-sm font-medium bg-transparent border-none p-0 text-slate-700 dark:text-slate-200 focus:ring-0 outline-none"
+                          />
+                          <span className="text-slate-400">-</span>
+                          <input 
+                              type="date" 
+                              value={endDate} 
+                              onChange={e => setEndDate(e.target.value)}
+                              className="text-sm font-medium bg-transparent border-none p-0 text-slate-700 dark:text-slate-200 focus:ring-0 outline-none"
+                          />
+                      </div>
                   </div>
               </div>
 
