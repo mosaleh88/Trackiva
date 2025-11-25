@@ -1,7 +1,6 @@
 
-
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Button, Input, Select, Badge } from './ui';
+import { Card, Button, Input, Select, Badge, Pagination } from './ui';
 import { store } from '../services/store';
 import { generateSchoolInsights } from '../services/geminiService';
 import { Language, Student, User } from '../types';
@@ -26,6 +25,7 @@ const TABS = [
 ];
 
 const ITEMS_PER_PAGE = 5;
+const REPORT_ITEMS_PER_PAGE = 10;
 
 export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   const t = TRANSLATIONS[lang];
@@ -50,6 +50,8 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   // Pagination States
   const [attendancePage, setAttendancePage] = useState(1);
   const [epassPage, setEpassPage] = useState(1);
+  const [absenteePage, setAbsenteePage] = useState(1);
+  const [receptionPage, setReceptionPage] = useState(1);
 
   // AI Analyst State
   const [aiInsight, setAiInsight] = useState<string | null>(null);
@@ -62,6 +64,9 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   const [showEPassHistory, setShowEPassHistory] = useState(false);
   const [showReceptionHistory, setShowReceptionHistory] = useState(false);
 
+  const settings = store.getSettings();
+  const attendanceConfig = settings.attendanceSettings;
+
   // Reset pagination and AI when student changes
   useEffect(() => {
       setAttendancePage(1);
@@ -72,6 +77,8 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   // Clear AI insight when tab changes
   useEffect(() => {
       setAiInsight(null);
+      setAbsenteePage(1);
+      setReceptionPage(1);
   }, [activeTab]);
 
   // Auto-refresh Student 360 data when dates change
@@ -123,7 +130,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       });
 
       // Calculate status per day
-      return Object.entries(groups).map(([date, dayRecs]) => {
+      return Object.entries(groups).map(([dateStr, dayRecs]) => {
           const unexcused = dayRecs.filter((r: any) => r.status === 'Absent (Unexcused)').length;
           const excused = dayRecs.filter((r: any) => r.status === 'Absent (Excused)').length;
           const late = dayRecs.some((r: any) => r.status === 'Late');
@@ -133,11 +140,26 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
           let status = 'Present';
           let color = 'green'; // Badge color
           let note = Array.from(new Set(dayRecs.map((r: any) => r.reason).filter(Boolean))).join(', ');
+          let weight = 1;
 
-          // Logic from store.getDataSummary
-          if (unexcused >= 3) {
+          // Configurable Threshold
+          const threshold = attendanceConfig?.absentPeriodThreshold || 3;
+
+          if (unexcused >= threshold) {
               status = 'Absent';
               color = 'red';
+
+              // Double Count Logic
+              // Safe date parsing for day of week check
+              const [y, m, d] = dateStr.split('-').map(Number);
+              const localDate = new Date(y, m-1, d);
+              const isFriday = localDate.getDay() === 5; // 5=Fri
+              const isSpecial = attendanceConfig?.doubleCountDates?.includes(dateStr);
+
+              if ((isFriday && attendanceConfig?.doubleCountFridays) || isSpecial) {
+                  weight = 2;
+                  status = 'Absent (x2)';
+              }
           } else if (total > 0 && excused === total) {
               status = 'Excused Absent';
               color = 'blue';
@@ -149,9 +171,9 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
               color = 'yellow';
           }
 
-          return { date, status, color, note };
+          return { date: dateStr, status, color, note, weight };
       }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [student360Data]);
+  }, [student360Data, attendanceConfig]);
 
   // Pagination Logic for Attendance Log
   const paginatedAttendance = useMemo(() => {
@@ -189,7 +211,9 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       let p = 0, ea = 0, a = 0; 
       
       dailyAttendance.forEach((day: any) => {
-          if (day.status === 'Absent') a++;
+          if (day.status.startsWith('Absent')) {
+              a += day.weight; // Use weighted sum (e.g. 2 days for Friday)
+          }
           else if (day.status === 'Excused Absent') ea++;
           else p++; // Present, Late, Early Leave
       });
@@ -223,6 +247,8 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
           
           setData(reportData);
           setAiInsight(null);
+          setAbsenteePage(1);
+          setReceptionPage(1);
       } catch (e) {
           console.error(e);
       } finally {
@@ -281,8 +307,6 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       </Card>
   );
 
-  // ... (Rest of Render Methods - renderDailySummary, renderAttendanceReports, etc. remain unchanged but utilize the filtered `data` and `students`) ...
-  
   // --- Daily Summary Logic ---
   const renderDailySummary = () => {
       const summary = store.getDataSummary(); 
@@ -327,13 +351,17 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
           { name: t.bucket15plus, Unexcused: data.attendance.buckets['15+'], Excused: data.attendance.excusedBuckets['15+'] },
       ];
 
+      // Pagination for Absentee List
+      const paginatedAbsenteeList = data.attendance.list.slice((absenteePage - 1) * REPORT_ITEMS_PER_PAGE, absenteePage * REPORT_ITEMS_PER_PAGE);
+      const totalAbsenteePages = Math.ceil(data.attendance.list.length / REPORT_ITEMS_PER_PAGE);
+
       return (
           <div className="space-y-6 animate-in fade-in">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card className="min-w-0">
                       <h3 className="font-bold mb-4 text-slate-700 dark:text-slate-200">{t.absentBuckets}</h3>
                       <div className="h-64 w-full">
-                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
                               <BarChart data={bucketData}>
                                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                   <XAxis dataKey="name" fontSize={10} />
@@ -347,12 +375,12 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                       </div>
                   </Card>
                   
-                  <Card className="min-w-0">
+                  <Card className="min-w-0 flex flex-col">
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="font-bold text-slate-700 dark:text-slate-200">{t.absenteeList}</h3>
                         <Button variant="secondary" className="text-xs h-8" onClick={handleExport}><Download size={14} /></Button>
                       </div>
-                      <div className="overflow-y-auto h-64">
+                      <div className="flex-1 overflow-y-auto min-h-[200px]">
                           <table className="w-full text-sm text-left">
                               <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-800 sticky top-0">
                                   <tr>
@@ -362,7 +390,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                   </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
-                                  {data.attendance.list.map((s: any) => (
+                                  {paginatedAbsenteeList.map((s: any) => (
                                       <tr key={s.id} className="border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                           <td className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">{lang === 'en' ? s.name_en : s.name_ar}</td>
                                           <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{s.grade}-{s.section}</td>
@@ -377,6 +405,12 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                               </tbody>
                           </table>
                       </div>
+                      <Pagination 
+                          currentPage={absenteePage}
+                          totalPages={totalAbsenteePages}
+                          onPageChange={setAbsenteePage}
+                          className="mt-2"
+                      />
                   </Card>
               </div>
           </div>
@@ -406,7 +440,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   <Card className="min-w-0">
                       <h3 className="font-bold mb-4 text-slate-700 dark:text-slate-200">{t.topComplaints}</h3>
                       <div className="h-80 w-full">
-                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
                               <BarChart data={chartData} layout="vertical">
                                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                   <XAxis type="number" />
@@ -421,7 +455,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   <Card className="min-w-0">
                       <h3 className="font-bold mb-4 text-slate-700 dark:text-slate-200">{t.visitsByGrade}</h3>
                       <div className="h-80 w-full">
-                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
                               <BarChart data={gradeData}>
                                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                   <XAxis dataKey="name" fontSize={12} />
@@ -469,10 +503,14 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
 
   const renderReceptionReports = () => {
       if (!data) return null;
+
+      const paginatedReception = data.reception.slice((receptionPage - 1) * REPORT_ITEMS_PER_PAGE, receptionPage * REPORT_ITEMS_PER_PAGE);
+      const totalReceptionPages = Math.ceil(data.reception.length / REPORT_ITEMS_PER_PAGE);
+
       return (
-          <Card className="min-w-0">
+          <Card className="min-w-0 flex flex-col h-[500px]">
               <h3 className="font-bold mb-4 text-slate-700 dark:text-slate-200">{t.receptionReport}</h3>
-               <div className="overflow-y-auto h-96">
+               <div className="overflow-y-auto flex-1">
                    <table className="w-full text-sm text-left">
                        <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-800 sticky top-0">
                            <tr>
@@ -483,7 +521,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                            </tr>
                        </thead>
                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                           {data.reception.map((log: any) => {
+                           {paginatedReception.map((log: any) => {
                                const s = students.find(st => st.id === log.studentId);
                                return (
                                    <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
@@ -501,6 +539,12 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                        </tbody>
                    </table>
                </div>
+               <Pagination 
+                   currentPage={receptionPage}
+                   totalPages={totalReceptionPages}
+                   onPageChange={setReceptionPage}
+                   className="mt-4 border-t border-slate-100 dark:border-slate-700 pt-2"
+               />
           </Card>
       );
   };
@@ -567,7 +611,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                            <div className="flex items-center gap-6">
                                <div className="w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-300">
                                    <UserIcon size={40} />
-                               </div>
+                                </div>
                                <div>
                                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{lang === 'en' ? student360.name_en : student360.name_ar}</h2>
                                    <div className="flex flex-wrap gap-2 mt-2">
@@ -588,7 +632,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                    <h3 className="font-bold text-slate-700 dark:text-slate-200 uppercase text-sm tracking-wider">Attendance Report</h3>
                                </div>
                                <div className="h-[260px] w-full">
-                                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
                                        <PieChart>
                                            <Pie 
                                                data={pieData} 
@@ -668,25 +712,12 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                        </tbody>
                                    </table>
                                    {/* Pagination Controls */}
-                                   {totalPages > 1 && (
-                                       <div className="flex justify-end items-center gap-2 p-3 border-t border-slate-100 dark:border-slate-700">
-                                           <button 
-                                               onClick={() => setAttendancePage(p => Math.max(1, p - 1))}
-                                               disabled={attendancePage === 1}
-                                               className="px-3 py-1 text-xs border border-slate-200 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-50"
-                                           >
-                                               Previous
-                                           </button>
-                                           <span className="text-xs text-slate-500 dark:text-slate-400">Page {attendancePage} of {totalPages}</span>
-                                           <button 
-                                               onClick={() => setAttendancePage(p => Math.min(totalPages, p + 1))}
-                                               disabled={attendancePage === totalPages}
-                                               className="px-3 py-1 text-xs border border-slate-200 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-50"
-                                           >
-                                               Next
-                                           </button>
-                                       </div>
-                                   )}
+                                   <Pagination 
+                                       currentPage={attendancePage}
+                                       totalPages={totalPages}
+                                       onPageChange={setAttendancePage}
+                                       className="p-3 border-t border-slate-100 dark:border-slate-700"
+                                   />
                                </div>
                            )}
                        </div>
@@ -802,25 +833,12 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                        </tbody>
                                    </table>
                                    {/* E-Pass Pagination Controls */}
-                                   {totalEpassPages > 1 && (
-                                       <div className="flex justify-end items-center gap-2 p-3 border-t border-slate-100 dark:border-slate-700">
-                                           <button 
-                                               onClick={() => setEpassPage(p => Math.max(1, p - 1))}
-                                               disabled={epassPage === 1}
-                                               className="px-3 py-1 text-xs border border-slate-200 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-50"
-                                           >
-                                               Previous
-                                           </button>
-                                           <span className="text-xs text-slate-500 dark:text-slate-400">Page {epassPage} of {totalEpassPages}</span>
-                                           <button 
-                                               onClick={() => setEpassPage(p => Math.min(totalEpassPages, p + 1))}
-                                               disabled={epassPage === totalEpassPages}
-                                               className="px-3 py-1 text-xs border border-slate-200 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-50"
-                                           >
-                                               Next
-                                           </button>
-                                       </div>
-                                   )}
+                                   <Pagination 
+                                       currentPage={epassPage}
+                                       totalPages={totalEpassPages}
+                                       onPageChange={setEpassPage}
+                                       className="p-3 border-t border-slate-100 dark:border-slate-700"
+                                   />
                                </div>
                            )}
                        </div>
@@ -936,7 +954,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.gender}</label>
-                        <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="py-2 text-sm w-24">
+                        <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="py-2 text-sm w-28">
                             <option value="All">{t.allGenders}</option>
                             <option value="Male">{t.male}</option>
                             <option value="Female">{t.female}</option>
@@ -947,19 +965,19 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
         )}
       </Card>
 
-      {/* AI Insight Card */}
-      {renderAiCard()}
-
-      {/* Main Content Area */}
-      <div className="min-h-[400px]">
-          {activeTab === 'daily' && renderDailySummary()}
-          {activeTab === 'attendance' && renderAttendanceReports()}
-          {activeTab === 'clinic' && renderClinicReports()}
-          {activeTab === 'epass' && renderEPassReports()}
-          {activeTab === 'reception' && renderReceptionReports()}
-          {activeTab === 'student360' && renderStudent360()}
-      </div>
-
+      {/* Report Content Area */}
+      {activeTab === 'daily' && renderDailySummary()}
+      
+      {activeTab !== 'daily' && (
+          <>
+              {activeTab !== 'student360' && renderAiCard()}
+              {activeTab === 'attendance' && renderAttendanceReports()}
+              {activeTab === 'clinic' && renderClinicReports()}
+              {activeTab === 'epass' && renderEPassReports()}
+              {activeTab === 'reception' && renderReceptionReports()}
+              {activeTab === 'student360' && renderStudent360()}
+          </>
+      )}
     </div>
   );
 };

@@ -1,7 +1,6 @@
 
-
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Button, Input, Select, Badge } from './ui';
+import { Card, Button, Input, Select, Badge, Pagination } from './ui';
 import { useStore } from '../services/store';
 import { Language, ClinicVisit, Student, EPass, User } from '../types';
 import { TRANSLATIONS, CLINIC_SYMPTOMS } from '../constants';
@@ -12,6 +11,8 @@ interface ClinicProps {
   lang: Language;
   currentUser: User | null;
 }
+
+const HISTORY_ITEMS_PER_PAGE = 10;
 
 export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
   const t = TRANSLATIONS[lang];
@@ -32,6 +33,9 @@ export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
 
+  // Pagination
+  const [historyPage, setHistoryPage] = useState(1);
+
   // Reactive Data
   const visits = store.getClinicVisits();
   const students = useMemo(() => currentUser ? store.getStudentsForUser(currentUser.id) : store.getStudents(), [currentUser, store.getStudents()]);
@@ -47,6 +51,16 @@ export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
       recent.forEach(v => counts[v.symptom] = (counts[v.symptom] || 0) + 1);
       return Object.entries(counts).filter(([sym, count]) => count >= 3);
   }, [visits]);
+
+  // History Pagination Logic
+  const paginatedVisits = useMemo(() => {
+      // Sort visits by timestamp desc
+      const sortedVisits = [...visits].sort((a,b) => b.timestamp - a.timestamp);
+      const start = (historyPage - 1) * HISTORY_ITEMS_PER_PAGE;
+      return sortedVisits.slice(start, start + HISTORY_ITEMS_PER_PAGE);
+  }, [visits, historyPage]);
+
+  const totalHistoryPages = Math.ceil(visits.length / HISTORY_ITEMS_PER_PAGE);
 
   // --- Filter Logic ---
   const walkInAvailableGrades = useMemo(() => { if (!walkInGender) return []; return Array.from(new Set(students.filter(s => s.gender === walkInGender).map(s => s.grade))).sort(); }, [students, walkInGender]);
@@ -195,9 +209,113 @@ export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
                   <div className="lg:col-span-2">{selectedStudentId ? renderVisitForm() : <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 bg-slate-50 dark:bg-slate-800/50 min-h-[300px]"><FileText size={48} className="opacity-20 mb-4" /><p className="text-sm font-medium">Select a student from the queue or search to log a visit</p></div>}</div>
               </div>
           )}
-          {activeTab === 'history' && <Card><h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">{t.medicalHistory}</h3><div className="overflow-x-auto"><table className="w-full text-left border-collapse"><thead><tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm border-b border-slate-100 dark:border-slate-700"><th className="p-3 text-start">{t.date}</th><th className="p-3 text-start">{t.studentName}</th><th className="p-3 text-start">{t.admitted}</th><th className="p-3 text-start">{t.discharged}</th><th className="p-3 text-start">{t.symptom}</th><th className="p-3 text-start">{t.severity}</th><th className="p-3 text-start">{t.outcome}</th></tr></thead><tbody>{visits.length === 0 ? <tr><td colSpan={7} className="p-6 text-center text-slate-400 italic">No records found</td></tr> : visits.map(v => { const s = students.find(stu => stu.id === v.studentId); return (<tr key={v.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"><td className="p-3 text-sm text-start text-slate-700 dark:text-slate-300">{new Date(v.timestamp).toLocaleDateString()}</td><td className="p-3 font-medium text-start text-slate-800 dark:text-slate-200">{lang === 'en' ? s?.name_en : s?.name_ar}</td><td className="p-3 text-sm font-mono text-slate-500 dark:text-slate-400 text-start">{new Date(v.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td><td className="p-3 text-sm font-mono text-slate-500 dark:text-slate-400 text-start">{v.dischargeTime ? new Date(v.dischargeTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-'}</td><td className="p-3 text-start text-slate-700 dark:text-slate-300">{v.symptom}</td><td className="p-3 text-start"><Badge color={v.severity === 'Emergency' || v.severity === 'High' ? 'red' : 'blue'}>{v.severity}</Badge></td><td className="p-3 text-sm text-start text-slate-700 dark:text-slate-300">{v.outcome}</td></tr>)})}</tbody></table></div></Card>}
+          {activeTab === 'history' && (
+              <Card>
+                  <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">{t.medicalHistory}</h3>
+                  <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                          <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm border-b border-slate-100 dark:border-slate-700">
+                                  <th className="p-3 text-start">{t.date}</th>
+                                  <th className="p-3 text-start">{t.studentName}</th>
+                                  <th className="p-3 text-start">{t.admitted}</th>
+                                  <th className="p-3 text-start">{t.discharged}</th>
+                                  <th className="p-3 text-start">{t.symptom}</th>
+                                  <th className="p-3 text-start">{t.severity}</th>
+                                  <th className="p-3 text-start">{t.outcome}</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              {paginatedVisits.length === 0 ? (
+                                  <tr><td colSpan={7} className="p-6 text-center text-slate-400 italic">No records found</td></tr>
+                              ) : (
+                                  paginatedVisits.map(v => { 
+                                      const s = students.find(stu => stu.id === v.studentId); 
+                                      return (
+                                          <tr key={v.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
+                                              <td className="p-3 text-sm text-start text-slate-700 dark:text-slate-300">{new Date(v.timestamp).toLocaleDateString()}</td>
+                                              <td className="p-3 font-medium text-start text-slate-800 dark:text-slate-200">{lang === 'en' ? s?.name_en : s?.name_ar}</td>
+                                              <td className="p-3 text-sm font-mono text-slate-500 dark:text-slate-400 text-start">{new Date(v.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                              <td className="p-3 text-sm font-mono text-slate-500 dark:text-slate-400 text-start">{v.dischargeTime ? new Date(v.dischargeTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-'}</td>
+                                              <td className="p-3 text-start text-slate-700 dark:text-slate-300">{v.symptom}</td>
+                                              <td className="p-3 text-start"><Badge color={v.severity === 'Emergency' || v.severity === 'High' ? 'red' : 'blue'}>{v.severity}</Badge></td>
+                                              <td className="p-3 text-sm text-start text-slate-700 dark:text-slate-300">{v.outcome}</td>
+                                          </tr>
+                                      )
+                                  })
+                              )}
+                          </tbody>
+                      </table>
+                  </div>
+                  <Pagination 
+                      currentPage={historyPage}
+                      totalPages={totalHistoryPages}
+                      onPageChange={setHistoryPage}
+                      className="pt-4"
+                  />
+              </Card>
+          )}
           {activeTab === 'report' && renderReportTab()}
-          {activeTab === 'analytics' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><Card className="h-80 flex flex-col min-w-0"><h3 className="font-bold mb-4 text-slate-800 dark:text-white">{t.commonComplaints}</h3><div className="flex-1 min-h-0 w-full"><ResponsiveContainer width="100%" height="100%" minWidth={0}><BarChart data={symptomData} layout="vertical"><CartesianGrid strokeDasharray="3 3" horizontal={false} /><XAxis type="number" /><YAxis dataKey="name" type="category" width={100} fontSize={12} /><Tooltip /><Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} /></BarChart></ResponsiveContainer></div></Card><Card className="h-80 flex flex-col min-w-0"><h3 className="font-bold mb-4 text-slate-800 dark:text-white">{t.visitsByGrade}</h3><div className="flex-1 min-h-0 w-full"><ResponsiveContainer width="100%" height="100%" minWidth={0}><BarChart data={gradeData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} /><YAxis allowDecimals={false} /><Tooltip /><Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div></Card><Card className="h-80 flex flex-col min-w-0"><h3 className="font-bold mb-4 text-slate-800 dark:text-white">{t.visitsBySection}</h3><div className="flex-1 min-h-0 w-full"><ResponsiveContainer width="100%" height="100%" minWidth={0}><BarChart data={sectionData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} /><YAxis allowDecimals={false} /><Tooltip /><Bar dataKey="value" fill="#f59e0b" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div></Card><Card className="h-80 flex flex-col min-w-0"><h3 className="font-bold mb-4 text-slate-800 dark:text-white">{t.visitsByGender}</h3><div className="flex-1 min-h-0 w-full"><ResponsiveContainer width="100%" height="100%" minWidth={0}><BarChart data={genderData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={12} /><YAxis allowDecimals={false} /><Tooltip /><Bar dataKey="value" fill="#ec4899" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div></Card></div>}
+          {activeTab === 'analytics' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="h-80 flex flex-col min-w-0">
+                    <h3 className="font-bold mb-4 text-slate-800 dark:text-white">{t.commonComplaints}</h3>
+                    <div className="flex-1 min-h-0 w-full">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
+                            <BarChart data={symptomData} layout="vertical">
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                <XAxis type="number" />
+                                <YAxis dataKey="name" type="category" width={100} fontSize={12} />
+                                <Tooltip />
+                                <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+                <Card className="h-80 flex flex-col min-w-0">
+                    <h3 className="font-bold mb-4 text-slate-800 dark:text-white">{t.visitsByGrade}</h3>
+                    <div className="flex-1 min-h-0 w-full">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
+                            <BarChart data={gradeData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis dataKey="name" fontSize={12} />
+                                <YAxis allowDecimals={false} />
+                                <Tooltip />
+                                <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+                <Card className="h-80 flex flex-col min-w-0">
+                    <h3 className="font-bold mb-4 text-slate-800 dark:text-white">{t.visitsBySection}</h3>
+                    <div className="flex-1 min-h-0 w-full">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
+                            <BarChart data={sectionData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis dataKey="name" fontSize={12} />
+                                <YAxis allowDecimals={false} />
+                                <Tooltip />
+                                <Bar dataKey="value" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+                <Card className="h-80 flex flex-col min-w-0">
+                    <h3 className="font-bold mb-4 text-slate-800 dark:text-white">{t.visitsByGender}</h3>
+                    <div className="flex-1 min-h-0 w-full">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
+                            <BarChart data={genderData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis dataKey="name" fontSize={12} />
+                                <YAxis allowDecimals={false} />
+                                <Tooltip />
+                                <Bar dataKey="value" fill="#ec4899" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+            </div>
+          )}
       </div>
   );
 };

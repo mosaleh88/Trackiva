@@ -105,6 +105,10 @@ export interface AttendanceConfig {
   // Alerts configuration
   alertThresholds: number[]; // e.g. [1, 3, 6, 10, 15]
   schedule?: ScheduleConfig;
+  
+  // Double Count Logic
+  doubleCountFridays?: boolean; // Count Friday absence as 2 days
+  doubleCountDates?: string[]; // Specific dates (YYYY-MM-DD) to count as 2 days
 }
 
 export interface AppSettings {

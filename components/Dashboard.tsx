@@ -198,7 +198,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
         <Card className="lg:col-span-1 h-full min-h-[22rem] min-w-0">
             <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">{t.destinationBreakdown}</h3>
             <div className="relative h-72 w-full min-w-0">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
                     <PieChart>
                         <Pie
                             data={passData}

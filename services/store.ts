@@ -1,10 +1,9 @@
 
 import { useState, useEffect } from 'react';
 import { Student, AttendanceRecord, EPass, ReceptionLog, AttendanceStatus, UserRole, ScheduleConfig, TimeSlot, EPassDestination, AppSettings, ClinicVisit, User } from '../types';
-import { DEFAULT_DESTINATIONS, NAV_ITEMS, generateDefaultPermissions } from '../constants';
+import { generateDefaultPermissions } from '../constants';
 import { sendAttendanceAlert } from './telegramService';
 import { supabase } from './supabase';
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 // ... (Default Schedules) ...
 const DEFAULT_STANDARD_SCHEDULE: TimeSlot[] = [
@@ -54,7 +53,13 @@ class SupabaseStore {
     settings: { 
         maxPassesPerDay: 4,
         rolePermissions: {}, // Initialize as empty
-        attendanceSettings: { absentPeriodThreshold: 3, countAllExcusedAsExcusedDay: true, alertThresholds: [3, 6, 10, 15] },
+        attendanceSettings: { 
+            absentPeriodThreshold: 3, 
+            countAllExcusedAsExcusedDay: true, 
+            alertThresholds: [3, 6, 10, 15],
+            doubleCountFridays: false,
+            doubleCountDates: []
+        },
         notificationRules: { 'UNAUTHORIZED': true }
     },
     clinicVisits: []
@@ -63,6 +68,7 @@ class SupabaseStore {
   private initialized = false;
   private subscribers: Set<() => void> = new Set();
   private realtimeChannel: any = null;
+  private reconnectTimeout: any = null;
   
 
   // --- Date Standardization Helpers ---
@@ -103,41 +109,54 @@ class SupabaseStore {
     this.subscribers.forEach(callback => callback());
   }
 
-  initRealtime() {
-    // Cleanup existing channel if it exists
-    if (this.realtimeChannel) {
-        supabase.removeChannel(this.realtimeChannel);
+  async initRealtime() {
+    // Clear any pending reconnects to avoid race conditions
+    if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = null;
     }
 
-    this.realtimeChannel = supabase.channel('db-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public' },
-        (payload: any) => this.handleRealtimeEvent(payload)
-      )
-      .subscribe(async (status: 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR', err?: Error) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Realtime channel connected.');
+    try {
+        // Robust Cleanup: Remove ALL channels to ensure a clean slate
+        // This fixes the "CHANNEL_ERROR" loop by ensuring we don't hit connection limits
+        const channels = supabase.getChannels();
+        if (channels.length > 0) {
+            await Promise.all(channels.map(ch => supabase.removeChannel(ch)));
         }
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.error(`Realtime channel error (${status}):`, err);
-          
-          // Capture the faulty channel reference
-          const faultyChannel = this.realtimeChannel;
-          this.realtimeChannel = null;
+        this.realtimeChannel = null;
 
-          // Attempt to clean up the faulty channel
-          if (faultyChannel) {
-             await supabase.removeChannel(faultyChannel);
-          }
+        // Create new channel
+        const channelName = `db-changes-${Date.now()}`;
+        const channel = supabase.channel(channelName);
+        this.realtimeChannel = channel;
 
-          // Retry connection after delay
-          setTimeout(() => {
-              console.log('Attempting to reconnect realtime...');
-              this.initRealtime(); 
-          }, 5000); 
-        }
-      });
+        channel
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public' },
+            (payload: any) => this.handleRealtimeEvent(payload)
+          )
+          .subscribe((status, err) => {
+            if (status === 'SUBSCRIBED') {
+              console.log('Realtime channel connected.');
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+              console.warn(`Realtime status: ${status}`, err);
+              this.scheduleReconnect();
+            }
+          });
+    } catch (e) {
+        console.error("Error initializing realtime:", e);
+        this.scheduleReconnect();
+    }
+  }
+
+  private scheduleReconnect() {
+      if (this.reconnectTimeout) return; // Already scheduled
+      console.log('Reconnecting realtime in 5s...');
+      this.reconnectTimeout = setTimeout(() => {
+          this.reconnectTimeout = null;
+          this.initRealtime(); 
+      }, 5000);
   }
 
   private handleRealtimeEvent(payload: any) {
@@ -515,6 +534,8 @@ class SupabaseStore {
       const settings = this.data.settings.attendanceSettings;
       const thresholds = settings?.alertThresholds || [3, 6, 10, 15];
       const threshold = settings?.absentPeriodThreshold || 3;
+      const doubleCountFridays = settings?.doubleCountFridays || false;
+      const doubleCountDates = settings?.doubleCountDates || [];
 
       const records = this.data.attendance.filter(a => a.studentId === studentId);
       const byDate: Record<string, AttendanceRecord[]> = {};
@@ -523,7 +544,20 @@ class SupabaseStore {
       let totalAbsentDays = 0;
       Object.values(byDate).forEach(dayRecords => {
           const unexcused = dayRecords.filter(r => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
-          if (unexcused >= threshold) totalAbsentDays++;
+          if (unexcused >= threshold) {
+              const dateStr = dayRecords[0].date;
+              // Safe date parsing for day of week check (avoid UTC issues)
+              const [y, m, d] = dateStr.split('-').map(Number);
+              const dateObj = new Date(y, m-1, d); 
+              const isFriday = dateObj.getDay() === 5; // 0=Sun, 5=Fri
+              const isSpecialDate = doubleCountDates.includes(dateStr);
+
+              if ((isFriday && doubleCountFridays) || isSpecialDate) {
+                  totalAbsentDays += 2;
+              } else {
+                  totalAbsentDays += 1;
+              }
+          }
       });
 
       if (thresholds.includes(totalAbsentDays)) {
@@ -673,6 +707,8 @@ class SupabaseStore {
       const endTs = this.getEndOfDay(endDate);
       const threshold = dataSource.settings.attendanceSettings?.absentPeriodThreshold ?? 3;
       const countExcusedAsDay = dataSource.settings.attendanceSettings?.countAllExcusedAsExcusedDay ?? true;
+      const doubleCountFridays = dataSource.settings.attendanceSettings?.doubleCountFridays ?? false;
+      const doubleCountDates = dataSource.settings.attendanceSettings?.doubleCountDates ?? [];
 
       let targetStudents = userId ? this.getStudentsForUser(userId) : dataSource.students;
       if (filters) {
@@ -698,13 +734,28 @@ class SupabaseStore {
 
       Object.entries(attendanceByDateStudent).forEach(([key, records]: any) => {
           const studentId = key.split('-')[1];
+          const recordDate = records[0].date;
+
           if (!studentAttendance[studentId]) studentAttendance[studentId] = { P: 0, A: 0, EA: 0, L: 0, EL: 0, total: 0 };
           const unexcused = records.filter((r:any) => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
           const excused = records.filter((r:any) => r.status === AttendanceStatus.ABSENT_EXCUSED).length;
           const late = records.some((r:any) => r.status === AttendanceStatus.LATE);
           const early = records.some((r:any) => r.status === AttendanceStatus.EARLY_LEAVE);
           
-          if (unexcused >= threshold) studentAttendance[studentId].A++;
+          if (unexcused >= threshold) {
+              // DOUBLE COUNT LOGIC
+              // Safe date parsing for day of week check (avoid UTC issues)
+              const [y, m, d] = recordDate.split('-').map(Number);
+              const dateObj = new Date(y, m-1, d); 
+              const isFriday = dateObj.getDay() === 5; // 5 = Friday
+              const isSpecialDate = doubleCountDates.includes(recordDate);
+
+              if ((isFriday && doubleCountFridays) || isSpecialDate) {
+                  studentAttendance[studentId].A += 2;
+              } else {
+                  studentAttendance[studentId].A += 1;
+              }
+          }
           else if (countExcusedAsDay && records.length > 0 && excused === records.length) studentAttendance[studentId].EA++;
           else if (early) studentAttendance[studentId].EL++;
           else if (late) studentAttendance[studentId].L++;

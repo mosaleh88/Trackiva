@@ -1,11 +1,10 @@
 
-
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Button, Input, Select, Badge } from './ui';
+import { Card, Button, Input, Select, Badge, Pagination } from './ui';
 import { store } from '../services/store';
 import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions, AssignedClass, User, AttendanceConfig } from '../types';
 import { TRANSLATIONS, ROLES_LIST, AVAILABLE_ICONS, COLOR_THEMES, NAV_ITEMS, generateDefaultPermissions } from '../constants';
-import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, Search, Filter, ArrowUpDown, CreditCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, Download, Loader2, ListChecks, Megaphone, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, Search, Filter, ArrowUpDown, CreditCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, Download, Loader2, ListChecks, Megaphone, Calendar } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -16,6 +15,7 @@ interface ManagementProps {
 type Tab = 'users' | 'students' | 'timetable' | 'epass' | 'access' | 'notifications' | 'attendance_rules';
 
 const STUDENTS_PER_PAGE = 10;
+const USERS_PER_PAGE = 10;
 
 // Helper for natural grade sorting (KG1, KG2, 1, 2, ... 10, 11)
 const gradeSort = (a: string, b: string) => {
@@ -63,6 +63,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   // User Filters
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("All");
+  const [userPage, setUserPage] = useState(1);
 
   // Student Filters & Search
   const [searchTerm, setSearchTerm] = useState("");
@@ -105,8 +106,11 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const [attendanceRules, setAttendanceRules] = useState<AttendanceConfig>({
       absentPeriodThreshold: 3,
       countAllExcusedAsExcusedDay: true,
-      alertThresholds: [3, 6, 10, 15]
+      alertThresholds: [3, 6, 10, 15],
+      doubleCountFridays: false,
+      doubleCountDates: []
   });
+  const [newDoubleDate, setNewDoubleDate] = useState("");
 
   const [rolePermissions, setRolePermissions] = useState<RolePermissions>(() => generateDefaultPermissions());
   const [selectedRoleForAccess, setSelectedRoleForAccess] = useState<string>(UserRole.TEACHER);
@@ -139,6 +143,10 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       setStudentPage(1);
   }, [searchTerm, filterGrade, filterSection, filterGender]);
 
+  useEffect(() => {
+      setUserPage(1);
+  }, [userSearchTerm, userRoleFilter]);
+
   const refreshData = async () => {
     // Ensure data is fresh
     await store.refreshData();
@@ -157,7 +165,13 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     setWlTelegramChatId(settings.watchlistChatId || "");
     setNotificationRules(settings.notificationRules || {});
     setRolePermissions(settings.rolePermissions || generateDefaultPermissions());
-    setAttendanceRules(settings.attendanceSettings || { absentPeriodThreshold: 3, countAllExcusedAsExcusedDay: true, alertThresholds: [3, 6, 10, 15] });
+    setAttendanceRules(settings.attendanceSettings || { 
+        absentPeriodThreshold: 3, 
+        countAllExcusedAsExcusedDay: true, 
+        alertThresholds: [3, 6, 10, 15],
+        doubleCountFridays: false,
+        doubleCountDates: []
+    });
   };
 
   // Generate QR Code when viewing card
@@ -185,6 +199,13 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       return matchesSearch && matchesRole;
     });
   }, [users, userSearchTerm, userRoleFilter]);
+
+  const paginatedUsers = useMemo(() => {
+      const start = (userPage - 1) * USERS_PER_PAGE;
+      return filteredUsers.slice(start, start + USERS_PER_PAGE);
+  }, [filteredUsers, userPage]);
+
+  const totalUserPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
 
   // --- Student Logic ---
 
@@ -663,6 +684,23 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
       setAttendanceRules({ ...attendanceRules, alertThresholds: next });
   };
 
+  const handleAddDoubleDate = () => {
+      if (!newDoubleDate) return;
+      if (attendanceRules.doubleCountDates?.includes(newDoubleDate)) return;
+      setAttendanceRules(prev => ({
+          ...prev,
+          doubleCountDates: [...(prev.doubleCountDates || []), newDoubleDate].sort()
+      }));
+      setNewDoubleDate("");
+  };
+
+  const handleRemoveDoubleDate = (date: string) => {
+      setAttendanceRules(prev => ({
+          ...prev,
+          doubleCountDates: prev.doubleCountDates?.filter(d => d !== date)
+      }));
+  };
+
   const renderIdCardModal = () => {
     if (!viewingCard) return null;
     
@@ -969,26 +1007,12 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                           </table>
                       </div>
                       
-                      {/* Pagination */}
-                      {totalStudentPages > 1 && (
-                          <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex justify-center gap-2">
-                              <button 
-                                  disabled={studentPage === 1}
-                                  onClick={() => setStudentPage(p => p - 1)}
-                                  className="p-2 rounded-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-50"
-                              >
-                                  <ChevronLeft size={16} />
-                              </button>
-                              <span className="py-2 px-4 text-sm text-slate-600 dark:text-slate-400 font-bold">Page {studentPage} of {totalStudentPages}</span>
-                              <button 
-                                  disabled={studentPage === totalStudentPages}
-                                  onClick={() => setStudentPage(p => p + 1)}
-                                  className="p-2 rounded-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-50"
-                              >
-                                  <ChevronRight size={16} />
-                              </button>
-                          </div>
-                      )}
+                      <Pagination 
+                          currentPage={studentPage}
+                          totalPages={totalStudentPages}
+                          onPageChange={setStudentPage}
+                          className="p-4 border-t border-slate-100 dark:border-slate-800"
+                      />
                   </Card>
               </div>
           )}
@@ -1041,7 +1065,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   </Card>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {filteredUsers.map(user => (
+                      {paginatedUsers.map(user => (
                           <div key={user.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
                               <div className="flex justify-between items-start mb-2">
                                   <div className="flex items-center gap-3">
@@ -1062,6 +1086,11 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                           </div>
                       ))}
                   </div>
+                  <Pagination 
+                      currentPage={userPage}
+                      totalPages={totalUserPages}
+                      onPageChange={setUserPage}
+                  />
               </div>
           )}
 
@@ -1103,6 +1132,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
               </div>
           )}
           
+          {/* ... (Notifications, Attendance Rules, E-Pass Destinations, Timetable tabs remain similar, no major tables to paginate here except maybe Destinations if huge, but usually not needed) ... */}
           {/* Notifications Tab */}
           {activeTab === 'notifications' && (
               <div className="space-y-6">
@@ -1218,6 +1248,47 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       <div className="flex items-start gap-3 p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800">
                           <input type="checkbox" checked={attendanceRules.countAllExcusedAsExcusedDay} onChange={e => setAttendanceRules({...attendanceRules, countAllExcusedAsExcusedDay: e.target.checked})} className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
                           <div><label className="block font-bold text-slate-700 dark:text-slate-200">{t.countAllExcused}</label><p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t.countAllExcusedDesc}</p></div>
+                      </div>
+
+                      {/* Double Count Friday Toggle */}
+                      <div className="flex items-start gap-3 p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800">
+                          <input type="checkbox" checked={attendanceRules.doubleCountFridays || false} onChange={e => setAttendanceRules({...attendanceRules, doubleCountFridays: e.target.checked})} className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
+                          <div><label className="block font-bold text-slate-700 dark:text-slate-200">{t.doubleCountFriday}</label><p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t.doubleCountFridayDesc}</p></div>
+                      </div>
+
+                      {/* Specific Double Count Dates */}
+                      <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl">
+                           <label className="block font-bold text-slate-700 dark:text-slate-200 mb-2">{t.doubleCountDates}</label>
+                           <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t.doubleCountDatesDesc}</p>
+                           
+                           <div className="flex gap-2 mb-3">
+                               <div className="relative">
+                                   <Input 
+                                       type="date" 
+                                       value={newDoubleDate}
+                                       onChange={(e) => setNewDoubleDate(e.target.value)}
+                                       className="pl-9 w-40"
+                                   />
+                                   <Calendar className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                               </div>
+                               <Button onClick={handleAddDoubleDate} size="sm"><Plus size={16} /> {t.addDate}</Button>
+                           </div>
+
+                           {attendanceRules.doubleCountDates && attendanceRules.doubleCountDates.length > 0 && (
+                               <div className="flex flex-wrap gap-2">
+                                   {attendanceRules.doubleCountDates.map((date) => (
+                                       <Badge key={date} color="red" className="flex items-center gap-1 pl-2 pr-1 py-1">
+                                           {date}
+                                           <button onClick={() => handleRemoveDoubleDate(date)} className="hover:bg-red-200 dark:hover:bg-red-800 rounded-full p-0.5 text-red-800 dark:text-red-100">
+                                               <X size={12} />
+                                           </button>
+                                       </Badge>
+                                   ))}
+                               </div>
+                           )}
+                           {(!attendanceRules.doubleCountDates || attendanceRules.doubleCountDates.length === 0) && (
+                               <p className="text-xs text-slate-400 italic">No specific dates added.</p>
+                           )}
                       </div>
 
                       <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl">

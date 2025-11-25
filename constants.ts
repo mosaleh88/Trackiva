@@ -326,6 +326,11 @@ export const TRANSLATIONS = {
     attendanceAlertThresholds: "Absence Alert Thresholds (Days)",
     attendanceAlertDesc: "Select which days of accumulated absence trigger a notification to the assigned Social Worker.",
     saveRules: "Save Rules",
+    doubleCountFriday: "Double Count Friday Absence",
+    doubleCountFridayDesc: "If checked, absences on Fridays will count as 2 days.",
+    doubleCountDates: "Double Count Specific Dates",
+    doubleCountDatesDesc: "Add specific dates where absences should count as 2 days (e.g. before holidays).",
+    addDate: "Add Date",
     // User Management
     assignedClasses: "Assigned Classes",
     assignClass: "Assign Class",
@@ -601,6 +606,11 @@ export const TRANSLATIONS = {
     attendanceAlertThresholds: "عتبات تنبيه الغياب (أيام)",
     attendanceAlertDesc: "اختر أيام الغياب المتراكم التي تؤدي إلى إرسال إشعار للأخصائي الاجتماعي.",
     saveRules: "حفظ القواعد",
+    doubleCountFriday: "مضاعفة الغياب يوم الجمعة",
+    doubleCountFridayDesc: "إذا تم تحديده، سيتم احتساب الغياب يوم الجمعة كيومين.",
+    doubleCountDates: "تواريخ الغياب المضاعف",
+    doubleCountDatesDesc: "أضف تواريخ محددة يتم فيها احتساب الغياب كيومين (مثل ما قبل العطلات).",
+    addDate: "إضافة تاريخ",
     // User Management
     assignedClasses: "الفصول المعينة",
     assignClass: "تعيين فصل",

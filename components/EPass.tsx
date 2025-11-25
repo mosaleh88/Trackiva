@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Button, Select, Badge, Input } from './ui';
+import { Card, Button, Select, Badge, Input, Pagination } from './ui';
 import { useStore } from '../services/store';
 import { Language, EPass as EPassType, Student, EPassDestination, UserRole, User } from '../types';
 import { TRANSLATIONS } from '../constants';
-import { Search, Filter, Ticket, Library, Stethoscope, Armchair, Briefcase, Coffee, Gamepad2, Music, Dumbbell, Beaker, BookOpen, Users, Ban, AlertOctagon, LayoutDashboard, AlertTriangle, Clock } from 'lucide-react';
+import { Search, Filter, Ticket, Library, Stethoscope, Armchair, Briefcase, Coffee, Gamepad2, Music, Dumbbell, Beaker, BookOpen, Users, Ban, AlertOctagon, LayoutDashboard, AlertTriangle, Clock, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { sendUnauthorizedAlert, sendPassCreatedAlert } from '../services/telegramService';
 
 interface EPassProps {
@@ -19,6 +18,7 @@ const ICON_MAP: any = {
 };
 
 const UNAUTHORIZED_TYPE = 'UNAUTHORIZED';
+const DASHBOARD_ITEMS_PER_PAGE = 10;
 
 export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUserId }) => {
   const t = TRANSLATIONS[lang];
@@ -32,6 +32,10 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
   const [selectedSection, setSelectedSection] = useState<string>("");
   const [overrideMap, setOverrideMap] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Dashboard Pagination & Sorting
+  const [dashboardPage, setDashboardPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
   // Reactive Data from Store
   const users = store.getUsers();
@@ -70,6 +74,30 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
       if (!dest) return false;
       return (Date.now() - p.startTime) > (dest.maxDuration * 60 * 1000);
   }).length;
+
+  // Sorting Logic
+  const sortedPasses = useMemo(() => {
+      let sorted = [...passes];
+      if (sortConfig) {
+          sorted.sort((a, b) => {
+              if (sortConfig.key === 'startTime') {
+                  return sortConfig.direction === 'asc' 
+                      ? a.startTime - b.startTime 
+                      : b.startTime - a.startTime;
+              }
+              return 0;
+          });
+      }
+      return sorted;
+  }, [passes, sortConfig]);
+
+  // Dashboard Pagination Logic
+  const paginatedPasses = useMemo(() => {
+      const start = (dashboardPage - 1) * DASHBOARD_ITEMS_PER_PAGE;
+      return sortedPasses.slice(start, start + DASHBOARD_ITEMS_PER_PAGE);
+  }, [sortedPasses, dashboardPage]);
+
+  const totalDashboardPages = Math.ceil(passes.length / DASHBOARD_ITEMS_PER_PAGE);
 
   // --- Hierarchical Filter Logic ---
   const availableGrades = useMemo(() => {
@@ -126,6 +154,16 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
 
   const handleAllowOverride = (studentId: string) => {
       setOverrideMap(prev => ({ ...prev, [studentId]: true }));
+  };
+
+  const handleSort = (key: string) => {
+      setSortConfig(current => {
+          if (current?.key === key && current.direction === 'asc') {
+              return { key, direction: 'desc' };
+          }
+          return { key, direction: 'asc' };
+      });
+      setDashboardPage(1);
   };
 
   const getActivePass = (studentId: string) => passes.find(p => p.studentId === studentId);
@@ -294,16 +332,28 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
                               <th className="p-3 text-start">{t.grade}</th>
                               <th className="p-3 text-start">{t.issuedBy}</th>
                               <th className="p-3 text-start">{t.where}</th>
-                              <th className="p-3 text-start">{t.startTime}</th>
+                              <th 
+                                  className="p-3 text-start cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none"
+                                  onClick={() => handleSort('startTime')}
+                              >
+                                  <div className="flex items-center gap-2">
+                                      {t.startTime}
+                                      {sortConfig?.key === 'startTime' ? (
+                                          sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                                      ) : (
+                                          <ArrowUpDown size={14} className="text-slate-300" />
+                                      )}
+                                  </div>
+                              </th>
                               <th className="p-3 text-start">{t.timeElapsed}</th>
                               <th className="p-3 text-center rounded-tr-lg">{t.actions}</th>
                           </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                          {passes.length === 0 ? (
+                          {paginatedPasses.length === 0 ? (
                               <tr><td colSpan={7} className="p-8 text-center text-slate-400 italic">No active passes</td></tr>
                           ) : (
-                              passes.map(pass => {
+                              paginatedPasses.map(pass => {
                                   const student = students.find(s => s.id === pass.studentId);
                                   const issuer = users.find(u => u.id === pass.teacherId);
                                   const isUnauthorized = pass.type === UNAUTHORIZED_TYPE;
@@ -335,6 +385,12 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
                       </tbody>
                   </table>
               </div>
+              <Pagination 
+                  currentPage={dashboardPage}
+                  totalPages={totalDashboardPages}
+                  onPageChange={setDashboardPage}
+                  className="p-4 border-t border-slate-100 dark:border-slate-700"
+              />
           </Card>
       </div>
   );

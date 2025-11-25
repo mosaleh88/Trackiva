@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Card
 export interface CardProps {
@@ -86,3 +87,37 @@ export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (
     </div>
   </div>
 );
+
+// Pagination
+export interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  className?: string;
+}
+
+export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange, className = "" }) => {
+  if (totalPages <= 1) return null;
+  
+  return (
+    <div className={`flex justify-center items-center gap-2 mt-4 ${className}`}>
+      <button
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+        disabled={currentPage === 1}
+        className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        <ChevronLeft size={16} />
+      </button>
+      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+        Page {currentPage} of {totalPages}
+      </span>
+      <button
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage === totalPages}
+        className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        <ChevronRight size={16} />
+      </button>
+    </div>
+  );
+};

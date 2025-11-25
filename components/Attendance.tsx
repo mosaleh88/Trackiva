@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Button, Badge, Input, Select } from './ui';
+import { Card, Button, Badge, Input, Select, Pagination } from './ui';
 import { store } from '../services/store';
 import { Student, AttendanceStatus, Language, TimeSlot, User } from '../types';
 import { TRANSLATIONS } from '../constants';
@@ -10,6 +10,8 @@ interface AttendanceProps {
   lang: Language;
   currentUser: User | null;
 }
+
+const STUDENTS_PER_PAGE = 10;
 
 export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => {
   const t = TRANSLATIONS[lang];
@@ -38,6 +40,9 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
 
   // Bulk Action State
   const [bulkActionValue, setBulkActionValue] = useState<string>("");
+
+  // Pagination
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (currentUser) {
@@ -139,6 +144,11 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
     setUnsavedChanges(false);
   }, [selectedDate, selectedPeriod, store]); // Dependency on store allows re-render on Realtime update
 
+  // Reset page on filter change
+  useEffect(() => {
+      setPage(1);
+  }, [selectedGender, selectedGrade, selectedSection, selectedDate, selectedPeriod]);
+
   // --- Derived Data for Hierarchical Dropdowns ---
   
   const availableGrades = useMemo(() => {
@@ -164,6 +174,13 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
                s.section === selectedSection;
     });
   }, [students, selectedGender, selectedGrade, selectedSection]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredStudents.length / STUDENTS_PER_PAGE);
+  const paginatedStudents = useMemo(() => {
+      const start = (page - 1) * STUDENTS_PER_PAGE;
+      return filteredStudents.slice(start, start + STUDENTS_PER_PAGE);
+  }, [filteredStudents, page]);
 
   // --- Handlers ---
 
@@ -235,6 +252,8 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
     if (!bulkActionValue) return;
     
     const newMarks = { ...marked };
+    // Apply to filtered students (all pages) or just current page? Usually all filtered.
+    // We'll apply to all visible students in the class
     filteredStudents.forEach(s => {
         if (!newMarks[s.id]) { // Only fill blank entries
             newMarks[s.id] = bulkActionValue as AttendanceStatus;
@@ -494,7 +513,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                        {filteredStudents.map(student => (
+                        {paginatedStudents.map(student => (
                             <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors bg-white dark:bg-slate-900">
                                 <td className="p-3 font-mono text-slate-500 dark:text-slate-400 text-sm text-start align-top">{student.studentNumber}</td>
                                 <td className="p-3 font-medium text-slate-800 dark:text-slate-100 text-start align-top">
@@ -569,6 +588,12 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
                     </tbody>
                 </table>
             </div>
+            <Pagination 
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                className="p-4 border-t border-slate-100 dark:border-slate-700"
+            />
           </Card>
 
           {/* Submit Button - Static at bottom */}
