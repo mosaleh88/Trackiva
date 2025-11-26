@@ -640,10 +640,8 @@ class SupabaseStore {
 
     const calculateAbsentDays = (attendanceRecords: AttendanceRecord[]) => {
       const byDate: Record<string, AttendanceRecord[]> = {};
-attendanceRecords.forEach((r: AttendanceRecord) => {
-  if (!byDate[r.date]) byDate[r.date] = [];
-  byDate[r.date].push(r);
-});
+      attendanceRecords.forEach(r => { if (!byDate[r.date]) byDate[r.date] = []; byDate[r.date].push(r); });
+
       let days = 0;
       Object.values(byDate).forEach(dayRecords => {
         const unexcused = dayRecords.filter(r => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
@@ -777,20 +775,18 @@ attendanceRecords.forEach((r: AttendanceRecord) => {
     });
 
     const todayRecords = this.data.attendance.filter(a => a.date === today);
-const studentMap = todayRecords.reduce((map, r: AttendanceRecord) => {
-  if (!map[r.studentId]) map[r.studentId] = [];
-  map[r.studentId].push(r);
-  return map;
-}, {} as Record<string, AttendanceRecord[]>);
+    const studentMap: Record<string, AttendanceRecord[]> = {};
+    this.data.students.forEach(s => studentMap[s.id] = []);
+    todayRecords.forEach(r => { if (studentMap[r.studentId]) studentMap[r.studentId].push(r); });
 
     let presentCount = 0, lateCount = 0, earlyLeaveCount = 0, excusedAbsentCount = 0, unexcusedAbsentCount = 0;
 
-    Object.values(studentMap).forEach(records => {
+    Object.values(studentMap).forEach((records: AttendanceRecord[]) => {
       if (records.length === 0) return;
-      const unexcused = records.filter(r => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
-      const excused = records.filter(r => r.status === AttendanceStatus.ABSENT_EXCUSED).length;
-      const late = records.some(r => r.status === AttendanceStatus.LATE);
-      const early = records.some(r => r.status === AttendanceStatus.EARLY_LEAVE);
+      const unexcused = records.filter((r: AttendanceRecord) => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
+      const excused = records.filter((r: AttendanceRecord) => r.status === AttendanceStatus.ABSENT_EXCUSED).length;
+      const late = records.some((r: AttendanceRecord) => r.status === AttendanceStatus.LATE);
+      const early = records.some((r: AttendanceRecord) => r.status === AttendanceStatus.EARLY_LEAVE);
 
       if (unexcused >= threshold) { unexcusedAbsentCount++; return; }
       if (countExcusedAsDay && records.length > 0 && excused === records.length) { excusedAbsentCount++; return; }
@@ -893,25 +889,22 @@ const studentMap = todayRecords.reduce((map, r: AttendanceRecord) => {
     const filteredLogs = dataSource.receptionLogs.filter(l => l.timestamp >= startTs && l.timestamp <= endTs && targetStudentIds.has(l.studentId));
 
     const studentAttendance: any = {};
-    const attendanceByDateStudent: Record<string, AttendanceRecord[]> = {};
-filteredAttendance.forEach((r: AttendanceRecord) => {
-  const key = `${r.date}-${r.studentId}`;
-  if (!attendanceByDateStudent[key]) attendanceByDateStudent[key] = [];
-  attendanceByDateStudent[key].push(r);
-});
+    const attendanceByDateStudent: any = {};
+    filteredAttendance.forEach(r => {
+      const key = `${r.date}-${r.studentId}`;
+      if (!attendanceByDateStudent[key]) attendanceByDateStudent[key] = [];
+      attendanceByDateStudent[key].push(r);
+    });
 
-Object.entries(attendanceByDateStudent).forEach(([key, records]) => {
-  const studentId = key.split('-')[1];
-  const recordDate = records[0].date;
+    Object.entries(attendanceByDateStudent).forEach(([key, records]: any) => {
+      const studentId = key.split('-')[1];
+      const recordDate = records[0].date;
 
-  if (!studentAttendance[studentId]) {
-    studentAttendance[studentId] = { P: 0, A: 0, EA: 0, L: 0, EL: 0, total: 0 };
-  }
-
-  const unexcused = records.filter(r => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
-  const excused = records.filter(r => r.status === AttendanceStatus.ABSENT_EXCUSED).length;
-  const late = records.some(r => r.status === AttendanceStatus.LATE);
-  const early = records.some(r => r.status === AttendanceStatus.EARLY_LEAVE);
+      if (!studentAttendance[studentId]) studentAttendance[studentId] = { P: 0, A: 0, EA: 0, L: 0, EL: 0, total: 0 };
+      const unexcused = records.filter((r: any) => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
+      const excused = records.filter((r: any) => r.status === AttendanceStatus.ABSENT_EXCUSED).length;
+      const late = records.some((r: any) => r.status === AttendanceStatus.LATE);
+      const early = records.some((r: any) => r.status === AttendanceStatus.EARLY_LEAVE);
 
       if (unexcused >= threshold) {
         const [y, m, d] = recordDate.split('-').map(Number);
