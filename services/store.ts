@@ -1,5 +1,3 @@
-// src/services/store.ts
-
 import { useState, useEffect } from 'react';
 import {
   Student,
