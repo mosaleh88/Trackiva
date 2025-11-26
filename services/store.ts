@@ -889,22 +889,25 @@ class SupabaseStore {
     const filteredLogs = dataSource.receptionLogs.filter(l => l.timestamp >= startTs && l.timestamp <= endTs && targetStudentIds.has(l.studentId));
 
     const studentAttendance: any = {};
-    const attendanceByDateStudent: any = {};
-    filteredAttendance.forEach(r => {
-      const key = `${r.date}-${r.studentId}`;
-      if (!attendanceByDateStudent[key]) attendanceByDateStudent[key] = [];
-      attendanceByDateStudent[key].push(r);
-    });
+    const attendanceByDateStudent: Record<string, AttendanceRecord[]> = {};
+filteredAttendance.forEach((r: AttendanceRecord) => {
+  const key = `${r.date}-${r.studentId}`;
+  if (!attendanceByDateStudent[key]) attendanceByDateStudent[key] = [];
+  attendanceByDateStudent[key].push(r);
+});
 
-    Object.entries(attendanceByDateStudent).forEach(([key, records]: any) => {
-      const studentId = key.split('-')[1];
-      const recordDate = records[0].date;
+Object.entries(attendanceByDateStudent).forEach(([key, records]) => {
+  const studentId = key.split('-')[1];
+  const recordDate = records[0].date;
 
-      if (!studentAttendance[studentId]) studentAttendance[studentId] = { P: 0, A: 0, EA: 0, L: 0, EL: 0, total: 0 };
-      const unexcused = records.filter((r: any) => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
-      const excused = records.filter((r: any) => r.status === AttendanceStatus.ABSENT_EXCUSED).length;
-      const late = records.some((r: any) => r.status === AttendanceStatus.LATE);
-      const early = records.some((r: any) => r.status === AttendanceStatus.EARLY_LEAVE);
+  if (!studentAttendance[studentId]) {
+    studentAttendance[studentId] = { P: 0, A: 0, EA: 0, L: 0, EL: 0, total: 0 };
+  }
+
+  const unexcused = records.filter(r => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
+  const excused = records.filter(r => r.status === AttendanceStatus.ABSENT_EXCUSED).length;
+  const late = records.some(r => r.status === AttendanceStatus.LATE);
+  const early = records.some(r => r.status === AttendanceStatus.EARLY_LEAVE);
 
       if (unexcused >= threshold) {
         const [y, m, d] = recordDate.split('-').map(Number);
