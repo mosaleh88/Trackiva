@@ -361,10 +361,11 @@ class SupabaseStore {
     }
   }
 
-  async fetchDataForRange(startDate: string, endDate: string, options: { cache: boolean } = { cache: false }) {
+  async fetchDataForRange(startDate: string, endDate: string, options: { cache?: boolean, types?: ('attendance' | 'epasses' | 'receptionLogs' | 'clinicVisits')[] } = {}) {
     try {
       const startTs = this.getStartOfDay(startDate);
       const endTs = this.getEndOfDay(endDate);
+      const types = options.types || ['attendance', 'epasses', 'receptionLogs', 'clinicVisits'];
 
       const fetchTimeSeries = async <T>(
         table: string,
@@ -382,20 +383,36 @@ class SupabaseStore {
         });
       };
 
+      const attendancePromise = types.includes('attendance') 
+        ? fetchTimeSeries<AttendanceRecord>('attendance', 'date', true) 
+        : Promise.resolve([]);
+        
+      const epassesPromise = types.includes('epasses') 
+        ? fetchTimeSeries<EPass>('epasses', 'startTime', false) 
+        : Promise.resolve([]);
+        
+      const logsPromise = types.includes('receptionLogs') 
+        ? fetchTimeSeries<ReceptionLog>('reception_logs', 'timestamp', false) 
+        : Promise.resolve([]);
+        
+      const visitsPromise = types.includes('clinicVisits') 
+        ? fetchTimeSeries<ClinicVisit>('clinic_visits', 'timestamp', false) 
+        : Promise.resolve([]);
+
       const [attendance, epasses, logs, visits] = await Promise.all([
-        fetchTimeSeries<AttendanceRecord>('attendance', 'date', true),
-        fetchTimeSeries<EPass>('epasses', 'startTime', false),
-        fetchTimeSeries<ReceptionLog>('reception_logs', 'timestamp', false),
-        fetchTimeSeries<ClinicVisit>('clinic_visits', 'timestamp', false),
+        attendancePromise,
+        epassesPromise,
+        logsPromise,
+        visitsPromise
       ]);
 
       const result = { attendance, ePasses: epasses, receptionLogs: logs, clinicVisits: visits };
 
       if (options.cache) {
-        this.data.attendance = this.mergeData(this.data.attendance, result.attendance);
-        this.data.ePasses = this.mergeData(this.data.ePasses, result.ePasses);
-        this.data.receptionLogs = this.mergeData(this.data.receptionLogs, result.receptionLogs);
-        this.data.clinicVisits = this.mergeData(this.data.clinicVisits, result.clinicVisits);
+        if (types.includes('attendance')) this.data.attendance = this.mergeData(this.data.attendance, result.attendance);
+        if (types.includes('epasses')) this.data.ePasses = this.mergeData(this.data.ePasses, result.ePasses);
+        if (types.includes('receptionLogs')) this.data.receptionLogs = this.mergeData(this.data.receptionLogs, result.receptionLogs);
+        if (types.includes('clinicVisits')) this.data.clinicVisits = this.mergeData(this.data.clinicVisits, result.clinicVisits);
         this.notify();
       }
 

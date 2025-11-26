@@ -94,11 +94,15 @@ export interface PaginationProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
+  isRTL?: boolean;
 }
 
-export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange, className = "" }) => {
+export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange, className = "", isRTL = false }) => {
   if (totalPages <= 1) return null;
   
+  const PrevIcon = isRTL ? ChevronRight : ChevronLeft;
+  const NextIcon = isRTL ? ChevronLeft : ChevronRight;
+
   return (
     <div className={`flex justify-center items-center gap-2 mt-4 ${className}`}>
       <button
@@ -106,17 +110,17 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
         disabled={currentPage === 1}
         className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        <ChevronLeft size={16} />
+        <PrevIcon size={16} />
       </button>
       <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-        Page {currentPage} of {totalPages}
+        {isRTL ? `${totalPages} / ${currentPage}` : `Page ${currentPage} of ${totalPages}`}
       </span>
       <button
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
         className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        <ChevronRight size={16} />
+        <NextIcon size={16} />
       </button>
     </div>
   );

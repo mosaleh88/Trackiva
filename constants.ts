@@ -410,7 +410,20 @@ export const TRANSLATIONS = {
     percentage: "Percentage",
     count: "Count",
     viewReport: "View Report",
-    noData: "No data available for the selected period."
+    noData: "No data available for the selected period.",
+    clickToGenerate: "Select filters and click Generate to view report.",
+    
+    // NEW / MISSING KEYS
+    printProfile: "Print Profile",
+    attendanceReportTitle: "Attendance Report",
+    attendanceLogDaily: "Attendance Log (Daily)",
+    clinicHistory: "Clinic History",
+    epassLog: "E-Pass Log",
+    receptionLog: "Reception Log",
+    more: "more",
+    studentComprehensiveReport: "Student Comprehensive Report",
+    generatedOn: "Generated on",
+    attendanceLogExceptions: "Attendance Log (Exceptions Only)",
   },
   ar: {
     login: "تسجيل الدخول",
@@ -690,6 +703,19 @@ export const TRANSLATIONS = {
     percentage: "النسبة",
     count: "العدد",
     viewReport: "عرض التقرير",
-    noData: "لا توجد بيانات متاحة للفترة المحددة."
+    noData: "لا توجد بيانات متاحة للفترة المحددة.",
+    clickToGenerate: "اختر المرشحات وانقر على توليد لعرض التقرير.",
+
+    // NEW / MISSING KEYS
+    printProfile: "طباعة الملف الشخصي",
+    attendanceReportTitle: "تقرير الحضور",
+    attendanceLogDaily: "سجل الحضور (اليومي)",
+    clinicHistory: "سجل العيادة",
+    epassLog: "سجل التصاريح",
+    receptionLog: "سجل الاستقبال",
+    more: "المزيد",
+    studentComprehensiveReport: "تقرير الطالب الشامل",
+    generatedOn: "تم الإنشاء في",
+    attendanceLogExceptions: "سجل الحضور (الاستثناءات فقط)",
   }
 };
