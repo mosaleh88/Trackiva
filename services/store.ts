@@ -773,9 +773,11 @@ class SupabaseStore {
     });
 
     const todayRecords = this.data.attendance.filter(a => a.date === today);
-    const studentMap: Record<string, AttendanceRecord[]> = {};
-    this.data.students.forEach(s => studentMap[s.id] = []);
-    todayRecords.forEach(r => { if (studentMap[r.studentId]) studentMap[r.studentId].push(r); });
+const studentMap: Record<string, AttendanceRecord[]> = {};
+this.data.students.forEach(s => studentMap[s.id] = []);
+todayRecords.forEach((r: AttendanceRecord) => { 
+  if (studentMap[r.studentId]) studentMap[r.studentId].push(r); 
+});
 
     let presentCount = 0, lateCount = 0, earlyLeaveCount = 0, excusedAbsentCount = 0, unexcusedAbsentCount = 0;
 
