@@ -640,8 +640,10 @@ class SupabaseStore {
 
     const calculateAbsentDays = (attendanceRecords: AttendanceRecord[]) => {
       const byDate: Record<string, AttendanceRecord[]> = {};
-      attendanceRecords.forEach(r => { if (!byDate[r.date]) byDate[r.date] = []; byDate[r.date].push(r); });
-
+attendanceRecords.forEach((r: AttendanceRecord) => {
+  if (!byDate[r.date]) byDate[r.date] = [];
+  byDate[r.date].push(r);
+});
       let days = 0;
       Object.values(byDate).forEach(dayRecords => {
         const unexcused = dayRecords.filter(r => r.status === AttendanceStatus.ABSENT_UNEXCUSED).length;
@@ -775,10 +777,10 @@ class SupabaseStore {
     });
 
     const todayRecords = this.data.attendance.filter(a => a.date === today);
-const studentMap = todayRecords.reduce((acc, r: AttendanceRecord) => {
-  if (!acc[r.studentId]) acc[r.studentId] = [];
-  acc[r.studentId].push(r);
-  return acc;
+const studentMap = todayRecords.reduce((map, r: AttendanceRecord) => {
+  if (!map[r.studentId]) map[r.studentId] = [];
+  map[r.studentId].push(r);
+  return map;
 }, {} as Record<string, AttendanceRecord[]>);
 
     let presentCount = 0, lateCount = 0, earlyLeaveCount = 0, excusedAbsentCount = 0, unexcusedAbsentCount = 0;
