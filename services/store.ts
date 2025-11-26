@@ -291,6 +291,8 @@ class SupabaseStore {
   async refreshData() {
     try {
       const todayStr = this.getTodayStr();
+      const todayStart = this.getStartOfDay(todayStr);
+
       const sevenDaysAgo = new Date(todayStr);
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const dateStr = sevenDaysAgo.toISOString().split('T')[0];
@@ -320,6 +322,30 @@ class SupabaseStore {
       this.data.ePasses = epassesRes.data || [];
       this.data.receptionLogs = logsRes.data || [];
       this.data.clinicVisits = visitsRes.data || [];
+
+      // --- AUTO-CLOSE LOGIC: End any active passes from previous days ---
+      const oldActivePasses = this.data.ePasses.filter(p => p.status === 'Active' && p.startTime < todayStart);
+      
+      if (oldActivePasses.length > 0) {
+        // 1. Update Local State immediately for UI consistency
+        oldActivePasses.forEach(p => {
+             p.status = 'Completed';
+             p.endTime = p.startTime + (30 * 60 * 1000); // Set ~30 mins duration
+             p.notes = (p.notes ? p.notes + ' ' : '') + '[System: Auto-closed New Day]';
+        });
+
+        // 2. Update Database in background
+        const updates = oldActivePasses.map(p => 
+             supabase.from('epasses').update({ 
+                 status: 'Completed', 
+                 endTime: p.endTime,
+                 notes: p.notes 
+             }).eq('id', p.id)
+        );
+        
+        Promise.all(updates).catch(err => console.error("Error auto-closing old passes:", err));
+      }
+      // ------------------------------------------------------------------
 
       if (settingsRes.data) {
         this.data.settings = { ...this.data.settings, ...settingsRes.data };
@@ -726,7 +752,12 @@ class SupabaseStore {
 
   getDataSummary() {
     const today = this.getTodayStr();
-    const activePasses = this.data.ePasses.filter(p => p.status === 'Active');
+    const todayStart = this.getStartOfDay(today); // New Day boundary
+    
+    // Filter active passes: ONLY count active passes that started TODAY. 
+    // This ensures "new day, new start" even if cleanup hasn't fully run yet.
+    const activePasses = this.data.ePasses.filter(p => p.status === 'Active' && p.startTime >= todayStart);
+    
     const threshold = this.data.settings.attendanceSettings?.absentPeriodThreshold ?? 3;
     const countExcusedAsDay = this.data.settings.attendanceSettings?.countAllExcusedAsExcusedDay ?? true;
 
@@ -764,7 +795,6 @@ class SupabaseStore {
       else presentCount++;
     });
 
-    const todayStart = this.getStartOfDay(today);
     const todayEnd = this.getEndOfDay(today);
     const todayLogs = this.data.receptionLogs.filter(l => l.timestamp >= todayStart && l.timestamp <= todayEnd);
 
@@ -786,6 +816,9 @@ class SupabaseStore {
     });
 
     this.data.ePasses.forEach(pass => {
+      // Only show today's passes in recent activity or recently completed ones
+      if (pass.startTime < (Date.now() - 24*60*60*1000)) return;
+
       const s = studentsLookup.get(pass.studentId);
       recentActivity.push({
         id: pass.id,
