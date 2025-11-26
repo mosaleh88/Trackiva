@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge, Pagination } from './ui';
 import { store } from '../services/store';
 import { generateSchoolInsights } from '../services/geminiService';
 import { Language, Student, User } from '../types';
 import { TRANSLATIONS } from '../constants';
-import { BarChart3, Calendar, Download, Filter, Search, User as UserIcon, LayoutDashboard, Activity, Ticket, DoorOpen, ChevronDown, ChevronRight, Printer, Stethoscope, Clock, AlertTriangle, CheckCircle2, ArrowRight, BrainCircuit, UserCheck, Loader2, MousePointerClick } from 'lucide-react';
+import { BarChart3, Calendar, Download, Filter, Search, User as UserIcon, LayoutDashboard, Activity, Ticket, DoorOpen, ChevronDown, ChevronRight, Printer, Stethoscope, Clock, AlertTriangle, CheckCircle2, ArrowRight, BrainCircuit, UserCheck, Loader2, MousePointerClick, ArrowUpDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Label } from 'recharts/lib';
 
 interface ReportsProps {
@@ -62,6 +61,9 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   const [epassPage, setEpassPage] = useState(1);
   const [absenteePage, setAbsenteePage] = useState(1);
   const [receptionPage, setReceptionPage] = useState(1);
+  const [fullListPage, setFullListPage] = useState(1);
+  const [lateListPage, setLateListPage] = useState(1);
+  const [logsPage, setLogsPage] = useState(1);
 
   // AI Analyst State
   const [aiInsight, setAiInsight] = useState<string | null>(null);
@@ -72,6 +74,10 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   const [showClinicHistory, setShowClinicHistory] = useState(false);
   const [showEPassHistory, setShowEPassHistory] = useState(false);
   const [showReceptionHistory, setShowReceptionHistory] = useState(false);
+
+  // Attendance Report Specific State
+  const [includeExcusedInBuckets, setIncludeExcusedInBuckets] = useState(false);
+  const [attendanceSortConfig, setAttendanceSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'name_en', direction: 'asc' });
 
   const settings = store.getSettings();
   const attendanceConfig = settings.attendanceSettings;
@@ -127,7 +133,12 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
           }));
           
           // Reset paginations
-          if (tab === 'attendance') setAbsenteePage(1);
+          if (tab === 'attendance') {
+              setAbsenteePage(1);
+              setFullListPage(1);
+              setLateListPage(1);
+              setLogsPage(1); // Added missing reset for logs pagination
+          }
           if (tab === 'reception') setReceptionPage(1);
           setAiInsight(null);
 
@@ -293,6 +304,15 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
 
   const handleExport = () => {
       alert("Report exported to Excel (Simulated)");
+  };
+
+  const handleAttendanceSort = (key: string) => {
+      setAttendanceSortConfig(current => {
+          if (current.key === key && current.direction === 'asc') {
+              return { key, direction: 'desc' };
+          }
+          return { key, direction: 'asc' };
+      });
   };
 
   // -- Reusable Filter Bar Component --
@@ -574,35 +594,186 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
 
   const renderAttendanceReports = () => {
       const { data, loading } = reportStates.attendance;
-      
-      let bucketData: any[] = [];
-      let paginatedAbsenteeList: any[] = [];
-      let totalAbsenteePages = 0;
+      if (loading) return <div className="space-y-6 animate-in fade-in"><FilterBar tabName="attendance" /><div className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-slate-300" size={32} /></div></div>;
+      if (!data) return <div className="space-y-6 animate-in fade-in"><FilterBar tabName="attendance" /><div className="h-80 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl"><MousePointerClick size={48} className="mb-4 opacity-20" /><p>{t.clickToGenerate}</p></div></div>;
 
-      if (data) {
-          bucketData = [
-              { name: t.bucket1_2, Unexcused: data.attendance.buckets['1-2'], Excused: data.attendance.excusedBuckets['1-2'] },
-              { name: t.bucket3_5, Unexcused: data.attendance.buckets['3-5'], Excused: data.attendance.excusedBuckets['3-5'] },
-              { name: t.bucket6_9, Unexcused: data.attendance.buckets['6-9'], Excused: data.attendance.excusedBuckets['6-9'] },
-              { name: t.bucket10_14, Unexcused: data.attendance.buckets['10-14'], Excused: data.attendance.excusedBuckets['10-14'] },
-              { name: t.bucket15plus, Unexcused: data.attendance.buckets['15+'], Excused: data.attendance.excusedBuckets['15+'] },
-          ];
-          paginatedAbsenteeList = data.attendance.list.slice((absenteePage - 1) * REPORT_ITEMS_PER_PAGE, absenteePage * REPORT_ITEMS_PER_PAGE);
-          totalAbsenteePages = Math.ceil(data.attendance.list.length / REPORT_ITEMS_PER_PAGE);
-      }
+      const bucketData = [
+          { name: t.bucket1_2, Unexcused: data.attendance.buckets['1-2'], Excused: data.attendance.excusedBuckets['1-2'] },
+          { name: t.bucket3_5, Unexcused: data.attendance.buckets['3-5'], Excused: data.attendance.excusedBuckets['3-5'] },
+          { name: t.bucket6_9, Unexcused: data.attendance.buckets['6-9'], Excused: data.attendance.excusedBuckets['6-9'] },
+          { name: t.bucket10_14, Unexcused: data.attendance.buckets['10-14'], Excused: data.attendance.excusedBuckets['10-14'] },
+          { name: t.bucket15plus, Unexcused: data.attendance.buckets['15+'], Excused: data.attendance.excusedBuckets['15+'] },
+      ];
+
+      // 1. Logs Pagination
+      const logs = data.attendance.logs || [];
+      const paginatedLogs = logs.slice((logsPage - 1) * REPORT_ITEMS_PER_PAGE, logsPage * REPORT_ITEMS_PER_PAGE);
+      const totalLogsPages = Math.ceil(logs.length / REPORT_ITEMS_PER_PAGE);
+
+      // 3. Full List Sorting & Pagination
+      const sortedFullList = [...data.attendance.comprehensiveList].sort((a: any, b: any) => {
+          const { key, direction } = attendanceSortConfig;
+          let valA = key === 'attendancePercentage' || key.startsWith('stats') ? (key.includes('.') ? a.stats[key.split('.')[1]] : a[key]) : a[key];
+          let valB = key === 'attendancePercentage' || key.startsWith('stats') ? (key.includes('.') ? b.stats[key.split('.')[1]] : b[key]) : b[key];
+          if (key === 'grade') { return direction === 'asc' ? a.grade.localeCompare(b.grade, undefined, {numeric: true}) : b.grade.localeCompare(a.grade, undefined, {numeric: true}); }
+          if (valA < valB) return direction === 'asc' ? -1 : 1;
+          if (valA > valB) return direction === 'asc' ? 1 : -1;
+          return 0;
+      });
+      const paginatedFullList = sortedFullList.slice((fullListPage - 1) * REPORT_ITEMS_PER_PAGE, fullListPage * REPORT_ITEMS_PER_PAGE);
+      const totalFullListPages = Math.ceil(sortedFullList.length / REPORT_ITEMS_PER_PAGE);
+
+      // 4. Absentee Report Buckets Summary
+      const absenteeSummary = [
+          { label: t.bucket1_2, count: includeExcusedInBuckets ? data.attendance.buckets['1-2'] + data.attendance.excusedBuckets['1-2'] : data.attendance.buckets['1-2'] },
+          { label: t.bucket3_5, count: includeExcusedInBuckets ? data.attendance.buckets['3-5'] + data.attendance.excusedBuckets['3-5'] : data.attendance.buckets['3-5'] },
+          { label: t.bucket6_9, count: includeExcusedInBuckets ? data.attendance.buckets['6-9'] + data.attendance.excusedBuckets['6-9'] : data.attendance.buckets['6-9'] },
+          { label: t.bucket10_14, count: includeExcusedInBuckets ? data.attendance.buckets['10-14'] + data.attendance.excusedBuckets['10-14'] : data.attendance.buckets['10-14'] },
+          { label: t.bucket15plus, count: includeExcusedInBuckets ? data.attendance.buckets['15+'] + data.attendance.excusedBuckets['15+'] : data.attendance.buckets['15+'], isFlag: true },
+      ];
+
+      // 5. Late List
+      const lateList = sortedFullList.filter((s: any) => s.stats.L > 0).sort((a: any, b: any) => b.stats.L - a.stats.L);
+      const paginatedLateList = lateList.slice((lateListPage - 1) * REPORT_ITEMS_PER_PAGE, lateListPage * REPORT_ITEMS_PER_PAGE);
+      const totalLateListPages = Math.ceil(lateList.length / REPORT_ITEMS_PER_PAGE);
+
+      // Average Calculation
+      const averagePct = sortedFullList.length ? Math.round(sortedFullList.reduce((acc: number, curr: any) => acc + curr.attendancePercentage, 0) / sortedFullList.length) : 0;
 
       return (
-          <div className="space-y-6 animate-in fade-in">
+          <div className="space-y-8 animate-in fade-in">
               <FilterBar tabName="attendance" />
-              {loading ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <Card className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-slate-300" size={32} /></Card>
-                      <Card className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-slate-300" size={32} /></Card>
+
+              {/* 1. Attendance Logs (Daily) */}
+              <Card className="border-t-4 border-t-blue-500">
+                  <h3 className="font-bold text-lg text-slate-800 dark:text-white mb-4">{t.attendanceLogDaily}</h3>
+                  <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-start">
+                          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 font-bold uppercase text-xs">
+                              <tr>
+                                  <th className="p-3 text-start">{t.date}</th>
+                                  <th className="p-3 text-start">{t.studentName}</th>
+                                  <th className="p-3 text-start">{t.status}</th>
+                                  <th className="p-3 text-start">{t.reason}</th>
+                              </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                              {paginatedLogs.map((log: any) => (
+                                  <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                      <td className="p-3 text-slate-600 dark:text-slate-300">{new Date(log.date).toLocaleDateString()}</td>
+                                      <td className="p-3 font-bold text-slate-800 dark:text-white">{lang === 'en' ? log.student.name_en : log.student.name_ar}</td>
+                                      <td className="p-3">
+                                          {/* Styled badges as requested in screenshot */}
+                                          {log.status === 'Present' && (
+                                              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md font-bold text-xs">Present</span>
+                                          )}
+                                          {log.status === 'Absent (Excused)' && (
+                                              <span className="bg-red-100 text-red-700 px-3 py-1 rounded-md font-bold text-xs">Absent (Excused)</span>
+                                          )}
+                                          {log.status === 'Absent (Unexcused)' && (
+                                              <span className="bg-red-100 text-red-700 px-3 py-1 rounded-md font-bold text-xs">Absent (Unexcused)</span>
+                                          )}
+                                          {log.status === 'Late' && (
+                                              <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-md font-bold text-xs">Late</span>
+                                          )}
+                                          {log.status === 'Early Leave' && (
+                                              <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-md font-bold text-xs">Early Leave</span>
+                                          )}
+                                      </td>
+                                      <td className="p-3 text-slate-500 italic">{log.reason || '-'}</td>
+                                  </tr>
+                              ))}
+                              {paginatedLogs.length === 0 && <tr><td colSpan={4} className="p-4 text-center text-slate-400">No logs found</td></tr>}
+                          </tbody>
+                      </table>
                   </div>
-              ) : data ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <Card className="min-w-0">
-                          <h3 className="font-bold mb-4 text-slate-700 dark:text-slate-200">{t.absentBuckets}</h3>
+                  <Pagination currentPage={logsPage} totalPages={totalLogsPages} onPageChange={setLogsPage} className="p-4" />
+              </Card>
+
+              {/* 2. Attendance Percentage and Term Wise */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 flex flex-col items-center justify-center py-6">
+                      <span className="text-xs font-bold text-blue-600 dark:text-blue-300 uppercase tracking-wider mb-1">Selected Range</span>
+                      <span className="text-4xl font-bold text-slate-800 dark:text-white">{averagePct}%</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 mt-1">Average Attendance</span>
+                  </Card>
+                  {settings.academicCalendar?.terms.map((term: any) => (
+                      <Card key={term.id} className="flex flex-col items-center justify-center py-6 opacity-75 hover:opacity-100 transition-opacity border border-slate-200 dark:border-slate-700">
+                          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{term.name}</span>
+                          <span className="text-2xl font-bold text-slate-700 dark:text-slate-300">--%</span>
+                          <span className="text-[10px] text-slate-400">{term.startDate} - {term.endDate}</span>
+                      </Card>
+                  ))}
+              </div>
+
+              {/* 3. Absentee List (Full Attendance List) */}
+              <Card>
+                  <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-bold text-lg text-slate-800 dark:text-white">{t.absenteeList} (Full List)</h3>
+                      <Button variant="secondary" size="sm" onClick={handleExport}><Download size={16} className="mr-2" /> Export</Button>
+                  </div>
+                  <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-start border-collapse">
+                          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase text-xs">
+                              <tr>
+                                  <th className="p-3 text-start cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('studentNumber')}>ID <ArrowUpDown size={12} className="inline" /></th>
+                                  <th className="p-3 text-start cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('name_en')}>Name <ArrowUpDown size={12} className="inline" /></th>
+                                  <th className="p-3 text-start cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('grade')}>Grade <ArrowUpDown size={12} className="inline" /></th>
+                                  <th className="p-3 text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('stats.P')}>Present</th>
+                                  <th className="p-3 text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('stats.A')}>Absent</th>
+                                  <th className="p-3 text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('stats.L')}>Late</th>
+                                  <th className="p-3 text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('stats.EL')}>Early</th>
+                                  <th className="p-3 text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('attendancePercentage')}>%</th>
+                              </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                              {paginatedFullList.map((s: any) => (
+                                  <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                      <td className="p-3 font-mono text-slate-500">{s.studentNumber}</td>
+                                      <td className="p-3 font-medium text-slate-800 dark:text-slate-200">{lang === 'en' ? s.name_en : s.name_ar}</td>
+                                      <td className="p-3"><Badge color="gray">{s.grade}-{s.section}</Badge></td>
+                                      <td className="p-3 text-center text-green-600 font-bold">{s.stats.P}</td>
+                                      <td className="p-3 text-center text-red-600 font-bold">{s.stats.A}</td>
+                                      <td className="p-3 text-center text-yellow-600 font-bold">{s.stats.L}</td>
+                                      <td className="p-3 text-center text-orange-600 font-bold">{s.stats.EL}</td>
+                                      <td className="p-3 text-center">
+                                          <span className={`font-bold ${s.attendancePercentage < 90 ? 'text-red-600' : 'text-green-600'}`}>{s.attendancePercentage}%</span>
+                                      </td>
+                                  </tr>
+                              ))}
+                          </tbody>
+                      </table>
+                  </div>
+                  <Pagination currentPage={fullListPage} totalPages={totalFullListPages} onPageChange={setFullListPage} className="p-4 border-t border-slate-100 dark:border-slate-700" />
+              </Card>
+
+              {/* 4. Absentee Report (Bucketed) */}
+              <Card>
+                  <div className="flex justify-between items-center mb-4 border-b border-slate-100 dark:border-slate-700 pb-4">
+                      <h3 className="font-bold text-lg text-slate-800 dark:text-white">Absentee Report</h3>
+                      <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600 dark:text-slate-300 font-medium bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-lg hover:bg-slate-200 transition-colors">
+                          <input 
+                              type="checkbox" 
+                              checked={includeExcusedInBuckets} 
+                              onChange={(e) => setIncludeExcusedInBuckets(e.target.checked)} 
+                              className="rounded text-primary focus:ring-primary w-4 h-4"
+                          />
+                          <span>Include Excused Absences</span>
+                      </label>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                          {absenteeSummary.map((item, idx) => (
+                              <div key={idx} className={`flex justify-between items-center p-4 rounded-lg border ${item.isFlag ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' : 'bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}>
+                                  <div>
+                                      <p className={`font-bold ${item.isFlag ? 'text-red-800 dark:text-red-300' : 'text-slate-700 dark:text-slate-200'}`}>Absences {item.label}</p>
+                                      {item.isFlag && <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded">RED FLAG</span>}
+                                  </div>
+                                  <div className="text-2xl font-bold text-slate-800 dark:text-white">{item.count}</div>
+                              </div>
+                          ))}
+                      </div>
+                      <div className="flex items-center justify-center bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-6">
                           <div className="h-64 w-full relative">
                               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={50}>
                                   <BarChart data={bucketData}>
@@ -610,59 +781,41 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                       <XAxis dataKey="name" fontSize={10} />
                                       <YAxis />
                                       <Tooltip />
-                                      <Legend />
                                       <Bar dataKey="Unexcused" fill="#ef4444" name={t.unexcused} />
                                       <Bar dataKey="Excused" fill="#3b82f6" name={t.excused} />
                                   </BarChart>
                               </ResponsiveContainer>
                           </div>
-                      </Card>
-                      
-                      <Card className="min-w-0 flex flex-col">
-                          <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold text-slate-700 dark:text-slate-200">{t.absenteeList}</h3>
-                            <Button variant="secondary" className="text-xs h-8" onClick={handleExport}><Download size={14} /></Button>
-                          </div>
-                          <div className="flex-1 overflow-y-auto min-h-[200px] relative">
-                              <table className="w-full text-sm text-start">
-                                  <thead className="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-800 sticky top-0">
-                                      <tr>
-                                          <th className="px-3 py-2 text-start">{t.studentName}</th>
-                                          <th className="px-3 py-2 text-start">{t.grade}</th>
-                                          <th className="px-3 py-2 text-center">Days</th>
-                                      </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
-                                      {paginatedAbsenteeList.map((s: any) => (
-                                          <tr key={s.id} className="border-b dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                              <td className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">{lang === 'en' ? s.name_en : s.name_ar}</td>
-                                              <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{s.grade}-{s.section}</td>
-                                              <td className={`px-3 py-2 text-center font-bold ${s.daysAbsent >= 15 ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                                                  {s.daysAbsent}
-                                              </td>
-                                          </tr>
-                                      ))}
-                                      {paginatedAbsenteeList.length === 0 && (
-                                          <tr><td colSpan={3} className="text-center py-8 text-slate-400">No absentees found for selected period</td></tr>
-                                      )}
-                                  </tbody>
-                              </table>
-                          </div>
-                          <Pagination 
-                              currentPage={absenteePage}
-                              totalPages={totalAbsenteePages}
-                              onPageChange={setAbsenteePage}
-                              className="mt-2"
-                              isRTL={lang === 'ar'}
-                          />
-                      </Card>
+                      </div>
                   </div>
-              ) : (
-                  <div className="h-80 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
-                      <MousePointerClick size={48} className="mb-4 opacity-20" />
-                      <p>{t.clickToGenerate}</p>
+              </Card>
+
+              {/* 5. Attendance Late Arrivals Report */}
+              <Card>
+                  <h3 className="font-bold text-lg text-slate-800 dark:text-white mb-4 flex items-center gap-2"><Clock className="text-yellow-500" /> Late Arrivals Report</h3>
+                  <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-start">
+                          <thead className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 font-bold uppercase text-xs">
+                              <tr>
+                                  <th className="p-3 text-start">Name</th>
+                                  <th className="p-3 text-start">Grade</th>
+                                  <th className="p-3 text-center">Late Count</th>
+                              </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                              {paginatedLateList.map((s: any) => (
+                                  <tr key={s.id}>
+                                      <td className="p-3 font-medium">{lang === 'en' ? s.name_en : s.name_ar}</td>
+                                      <td className="p-3">{s.grade}-{s.section}</td>
+                                      <td className="p-3 text-center font-bold text-lg text-yellow-600">{s.stats.L}</td>
+                                  </tr>
+                              ))}
+                              {paginatedLateList.length === 0 && <tr><td colSpan={3} className="p-4 text-center text-slate-400">No late arrivals recorded</td></tr>}
+                          </tbody>
+                      </table>
                   </div>
-              )}
+                  <Pagination currentPage={lateListPage} totalPages={totalLateListPages} onPageChange={setLateListPage} className="p-4" />
+              </Card>
           </div>
       );
   };
@@ -881,7 +1034,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                           placeholder={t.searchStudent} 
                           className={`${lang === 'ar' ? 'pr-10' : 'pl-10'} h-12 text-base bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm rounded-xl`}
                           value={search360}
-                          onChange={e => { setSearch360(e.target.value); setStudent360(null); }}
+                          onChange={e => { setSearch360(e.target.value); }}
                       />
                       {search360 && !student360 && (
                           <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl mt-1 z-10 max-h-60 overflow-y-auto">
