@@ -984,7 +984,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                                               verticalAlign="bottom" 
                                               height={36} 
                                               iconType="circle" 
-                                              formatter={(value, entry: any) => (
+                                              formatter={(value: any, entry: any) => (
                                                 <span className="text-slate-600 dark:text-slate-300 font-medium ml-1">
                                                   {value} ({entry.payload.value} {lang === 'en' ? 'days' : 'أيام'})
                                                 </span>
