@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge, Pagination } from './ui';
 import { store } from '../services/store';
@@ -34,8 +35,12 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   const [student360StartDate, setStudent360StartDate] = useState(store.getAcademicYearStartStr());
   const [student360EndDate, setStudent360EndDate] = useState(store.getTodayStr());
   const [search360, setSearch360] = useState("");
+  // Selected student for search (not yet generated)
+  const [selectedSearchStudent, setSelectedSearchStudent] = useState<Student | null>(null);
+  // Generated report student and data
   const [student360, setStudent360] = useState<Student | null>(null);
   const [student360Data, setStudent360Data] = useState<any>(null);
+  const [isGenerating360, setIsGenerating360] = useState(false);
   
   // -- Independent State for Other Reports --
   const defaultFilters = {
@@ -156,18 +161,22 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       setAiInsight(null);
   }, [student360]);
 
-  // Auto-refresh Student 360 data when dates change
-  useEffect(() => {
-      if (student360) {
-          const load360 = async () => {
-             // For 360 view, we need all data types, so we don't restrict types
-             const fetchedData = await store.fetchDataForRange(student360StartDate, student360EndDate, { cache: false });
-             const sData = store.getStudent360Data(student360.id, student360StartDate, student360EndDate, fetchedData);
-             setStudent360Data(sData);
-          };
-          load360();
+  const handleGenerate360 = async () => {
+      if (!selectedSearchStudent) return;
+      
+      setIsGenerating360(true);
+      try {
+          // For 360 view, we need all data types
+          const fetchedData = await store.fetchDataForRange(student360StartDate, student360EndDate, { cache: false });
+          const sData = store.getStudent360Data(selectedSearchStudent.id, student360StartDate, student360EndDate, fetchedData);
+          setStudent360Data(sData);
+          setStudent360(selectedSearchStudent);
+      } catch (e) {
+          console.error("Error generating 360 report", e);
+      } finally {
+          setIsGenerating360(false);
       }
-  }, [student360StartDate, student360EndDate, student360]);
+  };
 
   // --- AI Analyst Handler ---
   const handleAskAi = async () => {
@@ -296,11 +305,14 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       ].filter(d => d.value > 0);
   }, [dailyAttendance, t]);
   
+  // FIX: Using store.countSchoolDays ensures the denominator is the calendar-based scheduled days
   const presentPct = useMemo(() => {
-      const totalDays = dailyAttendance.length || 1;
+      const totalScheduled = store.countSchoolDays(student360StartDate, student360EndDate);
+      const denominator = totalScheduled > 0 ? totalScheduled : 1;
       const presentCount = pieData.find(d => d.name === t.present)?.value || 0;
-      return Math.round((presentCount / totalDays) * 100);
-  }, [pieData, dailyAttendance.length, t.present]);
+      let pct = Math.round((presentCount / denominator) * 100);
+      return Math.min(100, pct);
+  }, [pieData, student360StartDate, student360EndDate, t.present, settings.academicCalendar]);
 
   const handleExport = () => {
       alert("Report exported to Excel (Simulated)");
@@ -706,7 +718,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   ))}
               </div>
 
-              {/* 3. Absentee List (Full Attendance List) */}
+              {/* 3. Absentee List (Full List) */}
               <Card>
                   <div className="flex justify-between items-center mb-4">
                       <h3 className="font-bold text-lg text-slate-800 dark:text-white">{t.absenteeList} (Full List)</h3>
@@ -1025,61 +1037,86 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
 
   const renderStudent360 = () => {
       const locale = lang === 'ar' ? 'ar-EG' : 'en-US';
+      
+      // Filter logic for dropdown
+      const filteredSearchStudents = students.filter(s => 
+          s.name_en.toLowerCase().includes(search360.toLowerCase()) || 
+          s.studentNumber.includes(search360)
+      ).slice(0, 10); // Limit to 10 results
+
       return (
           <div>
-              <div className="flex flex-col lg:flex-row gap-4 mb-6">
-                  <div className="flex-1 relative z-10">
-                      <Search className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${lang === 'ar' ? 'right-3' : 'left-3'}`} size={20} />
-                      <Input 
-                          placeholder={t.searchStudent} 
-                          className={`${lang === 'ar' ? 'pr-10' : 'pl-10'} h-12 text-base bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm rounded-xl`}
-                          value={search360}
-                          onChange={e => { setSearch360(e.target.value); }}
-                      />
-                      {search360 && !student360 && (
-                          <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl mt-1 z-10 max-h-60 overflow-y-auto">
-                              {students.filter(s => s.name_en.toLowerCase().includes(search360.toLowerCase()) || s.studentNumber.includes(search360)).map(s => (
-                                  <button 
-                                      key={s.id}
-                                      onClick={() => { 
-                                          const load360 = async () => {
-                                              // For 360 view, we need ALL data types, so we don't limit types
-                                              const fetchedData = await store.fetchDataForRange(student360StartDate, student360EndDate, { cache: false });
-                                              const sData = store.getStudent360Data(s.id, student360StartDate, student360EndDate, fetchedData);
-                                              setStudent360Data(sData);
-                                              setStudent360(s); 
+              <div className="flex flex-col lg:flex-row gap-4 mb-6 items-start lg:items-center">
+                  <div className="flex-1 relative z-10 w-full">
+                      <div className="relative">
+                          <Search className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${lang === 'ar' ? 'right-3' : 'left-3'}`} size={20} />
+                          <Input 
+                              placeholder={t.searchStudent} 
+                              className={`${lang === 'ar' ? 'pr-10' : 'pl-10'} h-12 text-base bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm rounded-xl`}
+                              value={search360}
+                              onChange={e => { 
+                                  setSearch360(e.target.value); 
+                                  setSelectedSearchStudent(null); // Reset selection on edit
+                              }}
+                              onFocus={() => { if(selectedSearchStudent) setSelectedSearchStudent(null); }}
+                          />
+                          {/* Dropdown */}
+                          {search360 && !selectedSearchStudent && (
+                              <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl mt-1 z-20 max-h-60 overflow-y-auto">
+                                  {filteredSearchStudents.map(s => (
+                                      <button 
+                                          key={s.id}
+                                          onClick={() => { 
+                                              setSelectedSearchStudent(s);
                                               setSearch360(lang === 'en' ? s.name_en : s.name_ar); 
-                                          };
-                                          load360();
-                                      }}
-                                      className="w-full text-start px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-200 border-b border-slate-50 dark:border-slate-700 last:border-0"
-                                  >
-                                      <div className="font-bold">{lang === 'en' ? s.name_en : s.name_ar}</div>
-                                      <div className="text-xs text-slate-500 dark:text-slate-400">{s.studentNumber} - {s.grade} {s.section}</div>
-                                  </button>
-                              ))}
-                          </div>
-                      )}
+                                          }}
+                                          className="w-full text-start px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-200 border-b border-slate-50 dark:border-slate-700 last:border-0"
+                                      >
+                                          <div className="font-bold">{lang === 'en' ? s.name_en : s.name_ar}</div>
+                                          <div className="text-xs text-slate-500 dark:text-slate-400">{s.studentNumber} - {s.grade} {s.section}</div>
+                                      </button>
+                                  ))}
+                                  {filteredSearchStudents.length === 0 && (
+                                      <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400 italic">No students found</div>
+                                  )}
+                              </div>
+                          )}
+                      </div>
                   </div>
                   
-                  <div className="bg-white dark:bg-slate-800 px-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4 h-12 shrink-0">
-                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t.dateRange}</span>
-                      <div className="h-6 w-px bg-slate-100 dark:bg-slate-700"></div>
-                      <div className="flex items-center gap-2">
-                          <input 
-                              type="date" 
-                              value={student360StartDate} 
-                              onChange={e => setStudent360StartDate(e.target.value)}
-                              className="text-sm font-medium bg-transparent border-none p-0 text-slate-700 dark:text-slate-200 focus:ring-0 outline-none"
-                          />
-                          <span className="text-slate-400">-</span>
-                          <input 
-                              type="date" 
-                              value={student360EndDate} 
-                              onChange={e => setStudent360EndDate(e.target.value)}
-                              className="text-sm font-medium bg-transparent border-none p-0 text-slate-700 dark:text-slate-200 focus:ring-0 outline-none"
-                          />
+                  <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+                      <div className="bg-white dark:bg-slate-800 px-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4 h-12 grow sm:grow-0">
+                          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">{t.dateRange}</span>
+                          <div className="h-6 w-px bg-slate-100 dark:bg-slate-700"></div>
+                          <div className="flex items-center gap-2">
+                              <input 
+                                  type="date" 
+                                  value={student360StartDate} 
+                                  onChange={e => setStudent360StartDate(e.target.value)}
+                                  className="text-sm font-medium bg-transparent border-none p-0 text-slate-700 dark:text-slate-200 focus:ring-0 outline-none w-28"
+                              />
+                              <span className="text-slate-400">-</span>
+                              <input 
+                                  type="date" 
+                                  value={student360EndDate} 
+                                  onChange={e => setStudent360EndDate(e.target.value)}
+                                  className="text-sm font-medium bg-transparent border-none p-0 text-slate-700 dark:text-slate-200 focus:ring-0 outline-none w-28"
+                              />
+                          </div>
                       </div>
+
+                      <Button 
+                          onClick={handleGenerate360} 
+                          disabled={!selectedSearchStudent || isGenerating360}
+                          className="h-12 px-8 rounded-xl shadow-lg shadow-blue-200 dark:shadow-none"
+                      >
+                          {isGenerating360 ? (
+                              <Loader2 className="animate-spin mr-2" size={20} />
+                          ) : (
+                              <MousePointerClick className="mr-2" size={20} />
+                          )}
+                          {t.generate}
+                      </Button>
                   </div>
               </div>
 
@@ -1193,214 +1230,54 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                        </div>
 
                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 overflow-hidden">
-                           <button 
-                               onClick={() => setShowAttendanceHistory(!showAttendanceHistory)}
-                               className="w-full flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
-                           >
-                               <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200">
-                                   <Calendar size={20} />
-                                   <span>{t.attendanceLogDaily}</span>
-                               </div>
+                           <button onClick={() => setShowAttendanceHistory(!showAttendanceHistory)} className="w-full flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
+                               <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200"><Calendar size={20} /><span>{t.attendanceLogDaily}</span></div>
                                {showAttendanceHistory ? <ChevronDown size={20} className="text-slate-500" /> : <ChevronRight size={20} className="text-slate-500" />}
                            </button>
-                           
                            {showAttendanceHistory && (
                                <div>
                                    <table className="w-full text-start text-sm">
-                                       <thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                                           <tr>
-                                               <th className="px-6 py-3 text-start">{t.date}</th>
-                                               <th className="px-6 py-3 text-start">{t.status}</th>
-                                               <th className="px-6 py-3 text-start">{t.notes}</th>
-                                           </tr>
-                                       </thead>
-                                       <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
-                                           {paginatedAttendance.length === 0 ? (
-                                               <tr><td colSpan={3} className="px-6 py-4 text-center text-slate-400">{t.noData}</td></tr>
-                                           ) : (
-                                               paginatedAttendance.map((day: any) => (
-                                                   <tr key={day.date}>
-                                                       <td className="px-6 py-3 text-slate-700 dark:text-slate-300">{new Date(day.date).toLocaleDateString(locale)}</td>
-                                                       <td className="px-6 py-3"><Badge color={day.color as any}>{day.status}</Badge></td>
-                                                       <td className="px-6 py-3 text-slate-500 dark:text-slate-400">{day.note || '-'}</td>
-                                                   </tr>
-                                               ))
-                                           )}
-                                       </tbody>
+                                       <thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400"><tr><th className="px-6 py-3 text-start">{t.date}</th><th className="px-6 py-3 text-start">{t.status}</th><th className="px-6 py-3 text-start">{t.notes}</th></tr></thead>
+                                       <tbody className="divide-y divide-slate-50 dark:divide-slate-700">{paginatedAttendance.length === 0 ? <tr><td colSpan={3} className="px-6 py-4 text-center text-slate-400">{t.noData}</td></tr> : paginatedAttendance.map((day: any) => (<tr key={day.date}><td className="px-6 py-3 text-slate-700 dark:text-slate-300">{new Date(day.date).toLocaleDateString(locale)}</td><td className="px-6 py-3"><Badge color={day.color as any}>{day.status}</Badge></td><td className="px-6 py-3 text-slate-500 dark:text-slate-400">{day.note || '-'}</td></tr>))}</tbody>
                                    </table>
-                                   <Pagination 
-                                       currentPage={attendancePage}
-                                       totalPages={totalPages}
-                                       onPageChange={setAttendancePage}
-                                       className="p-3 border-t border-slate-100 dark:border-slate-700"
-                                       isRTL={lang === 'ar'}
-                                   />
+                                   <Pagination currentPage={attendancePage} totalPages={totalPages} onPageChange={setAttendancePage} className="p-3 border-t border-slate-100 dark:border-slate-700" isRTL={lang === 'ar'} />
                                </div>
                            )}
                        </div>
-
+                       
                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 overflow-hidden">
-                           <button 
-                               onClick={() => setShowClinicHistory(!showClinicHistory)}
-                               className="w-full flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
-                           >
-                               <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200">
-                                   <Stethoscope size={20} />
-                                   <span>{t.clinicHistory}</span>
-                               </div>
+                           <button onClick={() => setShowClinicHistory(!showClinicHistory)} className="w-full flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
+                               <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200"><Stethoscope size={20} /><span>{t.clinicHistory}</span></div>
                                {showClinicHistory ? <ChevronDown size={20} className="text-slate-500" /> : <ChevronRight size={20} className="text-slate-500" />}
                            </button>
-                           
                            {showClinicHistory && (
-                               <div className="max-h-60 overflow-y-auto">
-                                   <table className="w-full text-start text-sm">
-                                       <thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                                           <tr>
-                                               <th className="px-6 py-3 text-start">{t.date}</th>
-                                               <th className="px-6 py-3 text-start">{t.symptom}</th>
-                                               <th className="px-6 py-3 text-start">{t.treatment}</th>
-                                               <th className="px-6 py-3 text-start">{t.outcome}</th>
-                                           </tr>
-                                       </thead>
-                                       <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
-                                           {student360Data.history.clinic.map((v: any) => (
-                                               <tr key={v.id}>
-                                                   <td className="px-6 py-3 text-slate-700 dark:text-slate-300">{new Date(v.timestamp).toLocaleDateString(locale)}</td>
-                                                   <td className="px-6 py-3 text-slate-700 dark:text-slate-300">{v.symptom}</td>
-                                                   <td className="px-6 py-3 text-slate-500 dark:text-slate-400">{v.treatment || '-'}</td>
-                                                   <td className="px-6 py-3 text-slate-700 dark:text-slate-300">
-                                                       {v.outcome === 'ReturnToClass' ? t.returnToClass : v.outcome === 'SentHome' ? t.sentHome : v.outcome}
-                                                   </td>
-                                               </tr>
-                                           ))}
-                                           {student360Data.history.clinic.length === 0 && (
-                                               <tr><td colSpan={4} className="px-6 py-4 text-center text-slate-400">{t.noData}</td></tr>
-                                           )}
-                                       </tbody>
-                                   </table>
-                               </div>
+                               <div className="max-h-60 overflow-y-auto"><table className="w-full text-start text-sm"><thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400"><tr><th className="px-6 py-3 text-start">{t.date}</th><th className="px-6 py-3 text-start">{t.symptom}</th><th className="px-6 py-3 text-start">{t.treatment}</th><th className="px-6 py-3 text-start">{t.outcome}</th></tr></thead><tbody className="divide-y divide-slate-50 dark:divide-slate-700">{student360Data.history.clinic.map((v: any) => (<tr key={v.id}><td className="px-6 py-3 text-slate-700 dark:text-slate-300">{new Date(v.timestamp).toLocaleDateString(locale)}</td><td className="px-6 py-3 text-slate-700 dark:text-slate-300">{v.symptom}</td><td className="px-6 py-3 text-slate-500 dark:text-slate-400">{v.treatment || '-'}</td><td className="px-6 py-3 text-slate-700 dark:text-slate-300">{v.outcome === 'ReturnToClass' ? t.returnToClass : v.outcome === 'SentHome' ? t.sentHome : v.outcome}</td></tr>))} {student360Data.history.clinic.length === 0 && <tr><td colSpan={4} className="px-6 py-4 text-center text-slate-400">{t.noData}</td></tr>}</tbody></table></div>
                            )}
                        </div>
 
                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 overflow-hidden">
-                           <button 
-                               onClick={() => setShowEPassHistory(!showEPassHistory)}
-                               className="w-full flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
-                           >
-                               <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200">
-                                   <Ticket size={20} />
-                                   <span>{t.epassLog}</span>
-                               </div>
+                           <button onClick={() => setShowEPassHistory(!showEPassHistory)} className="w-full flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
+                               <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200"><Ticket size={20} /><span>{t.epassLog}</span></div>
                                {showEPassHistory ? <ChevronDown size={20} className="text-slate-500" /> : <ChevronRight size={20} className="text-slate-500" />}
                            </button>
-                           
                            {showEPassHistory && (
                                <div>
                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-4 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700">
-                                       {Object.entries(epassStats)
-                                           .sort((a, b) => b[1] - a[1]) 
-                                           .map(([type, count]: any) => (
-                                           <div key={type} className="bg-white dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 text-center shadow-sm">
-                                               <div className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold truncate" title={type}>{type}</div>
-                                               <div className="text-lg font-bold text-slate-800 dark:text-slate-200">{count}</div>
-                                           </div>
-                                       ))}
+                                       {Object.entries(epassStats).sort((a, b) => b[1] - a[1]).map(([type, count]: any) => (<div key={type} className="bg-white dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 text-center shadow-sm"><div className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-bold truncate" title={type}>{type}</div><div className="text-lg font-bold text-slate-800 dark:text-slate-200">{count}</div></div>))}
                                    </div>
-
-                                   <table className="w-full text-start text-sm">
-                                       <thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                                           <tr>
-                                               <th className="px-6 py-3 text-start">{t.date}</th>
-                                               <th className="px-6 py-3 text-start">Time</th>
-                                               <th className="px-6 py-3 text-start">{t.type}</th>
-                                               <th className="px-6 py-3 text-start">{t.issuedBy}</th>
-                                               <th className="px-6 py-3 text-start">{t.duration}</th>
-                                           </tr>
-                                       </thead>
-                                       <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
-                                           {paginatedEPasses.length === 0 ? (
-                                               <tr><td colSpan={5} className="px-6 py-4 text-center text-slate-400">{t.noData}</td></tr>
-                                           ) : (
-                                               paginatedEPasses.map((p: any) => {
-                                                   const issuer = store.getUser(p.teacherId)?.name || 'Unknown';
-                                                   let destName = p.type;
-                                                   if (p.type !== 'UNAUTHORIZED') {
-                                                       const d = store.getDestinations().find(dest => dest.id === p.type);
-                                                       if (d) destName = lang === 'en' ? d.label_en : d.label_ar;
-                                                   } else {
-                                                       destName = t.unauthorized;
-                                                   }
-
-                                                   return (
-                                                       <tr key={p.id}>
-                                                           <td className="px-6 py-3 text-slate-700 dark:text-slate-300">{new Date(p.startTime).toLocaleDateString(locale)}</td>
-                                                           <td className="px-6 py-3 font-mono text-xs text-slate-500 dark:text-slate-400" dir="ltr">
-                                                               {new Date(p.startTime).toLocaleTimeString(locale, {hour: '2-digit', minute:'2-digit'})}
-                                                           </td>
-                                                           <td className="px-6 py-3">
-                                                               {p.type === 'UNAUTHORIZED' ? <span className="text-red-600 font-bold text-xs bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">{t.unauthorized}</span> : <Badge color="blue">{destName}</Badge>}
-                                                           </td>
-                                                           <td className="px-6 py-3 text-slate-600 dark:text-slate-300 text-xs">{issuer}</td>
-                                                           <td className="px-6 py-3 text-slate-500 dark:text-slate-400 font-mono text-xs">
-                                                               {p.endTime ? Math.floor((p.endTime - p.startTime) / 60000) + (lang === 'ar' ? ' دقيقة' : ' mins') : <span className="text-green-600 dark:text-green-400 font-bold animate-pulse">Active</span>}
-                                                           </td>
-                                                       </tr>
-                                                   );
-                                               })
-                                           )}
-                                       </tbody>
-                                   </table>
-                                   <Pagination 
-                                       currentPage={epassPage}
-                                       totalPages={totalEpassPages}
-                                       onPageChange={setEpassPage}
-                                       className="p-3 border-t border-slate-100 dark:border-slate-700"
-                                       isRTL={lang === 'ar'}
-                                   />
+                                   <table className="w-full text-start text-sm"><thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400"><tr><th className="px-6 py-3 text-start">{t.date}</th><th className="px-6 py-3 text-start">Time</th><th className="px-6 py-3 text-start">{t.type}</th><th className="px-6 py-3 text-start">{t.issuedBy}</th><th className="px-6 py-3 text-start">{t.duration}</th></tr></thead><tbody className="divide-y divide-slate-50 dark:divide-slate-700">{paginatedEPasses.length === 0 ? <tr><td colSpan={5} className="px-6 py-4 text-center text-slate-400">{t.noData}</td></tr> : paginatedEPasses.map((p: any) => { const issuer = store.getUser(p.teacherId)?.name || 'Unknown'; let destName = p.type; if (p.type !== 'UNAUTHORIZED') { const d = store.getDestinations().find(dest => dest.id === p.type); if (d) destName = lang === 'en' ? d.label_en : d.label_ar; } else { destName = t.unauthorized; } return (<tr key={p.id}><td className="px-6 py-3 text-slate-700 dark:text-slate-300">{new Date(p.startTime).toLocaleDateString(locale)}</td><td className="px-6 py-3 font-mono text-xs text-slate-500 dark:text-slate-400" dir="ltr">{new Date(p.startTime).toLocaleTimeString(locale, {hour: '2-digit', minute:'2-digit'})}</td><td className="px-6 py-3">{p.type === 'UNAUTHORIZED' ? <span className="text-red-600 font-bold text-xs bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">{t.unauthorized}</span> : <Badge color="blue">{destName}</Badge>}</td><td className="px-6 py-3 text-slate-600 dark:text-slate-300 text-xs">{issuer}</td><td className="px-6 py-3 text-slate-500 dark:text-slate-400 font-mono text-xs">{p.endTime ? Math.floor((p.endTime - p.startTime) / 60000) + (lang === 'ar' ? ' دقيقة' : ' mins') : <span className="text-green-600 dark:text-green-400 font-bold animate-pulse">Active</span>}</td></tr>); })}</tbody></table>
+                                   <Pagination currentPage={epassPage} totalPages={totalEpassPages} onPageChange={setEpassPage} className="p-3 border-t border-slate-100 dark:border-slate-700" isRTL={lang === 'ar'} />
                                </div>
                            )}
                        </div>
 
                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 overflow-hidden">
-                           <button 
-                               onClick={() => setShowReceptionHistory(!showReceptionHistory)}
-                               className="w-full flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
-                           >
-                               <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200">
-                                   <DoorOpen size={20} />
-                                   <span>{t.receptionLog}</span>
-                               </div>
+                           <button onClick={() => setShowReceptionHistory(!showReceptionHistory)} className="w-full flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
+                               <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200"><DoorOpen size={20} /><span>{t.receptionLog}</span></div>
                                {showReceptionHistory ? <ChevronDown size={20} className="text-slate-500" /> : <ChevronRight size={20} className="text-slate-500" />}
                            </button>
-                           
                            {showReceptionHistory && (
-                               <div className="max-h-60 overflow-y-auto">
-                                   <table className="w-full text-start text-sm">
-                                       <thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                                           <tr>
-                                               <th className="px-6 py-3 text-start">{t.date}</th>
-                                               <th className="px-6 py-3 text-start">{t.type}</th>
-                                               <th className="px-6 py-3 text-start">{t.reason}</th>
-                                           </tr>
-                                       </thead>
-                                       <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
-                                           {student360Data.history.reception.map((l: any) => (
-                                               <tr key={l.id}>
-                                                   <td className="px-6 py-3 text-slate-700 dark:text-slate-300">{new Date(l.timestamp).toLocaleDateString(locale)}</td>
-                                                   <td className="px-6 py-3">
-                                                       <Badge color={l.type === 'LateArrival' ? 'blue' : 'orange'}>
-                                                           {l.type === 'LateArrival' ? t.lateArrival : t.earlyLeave}
-                                                       </Badge>
-                                                   </td>
-                                                   <td className="px-6 py-3 text-slate-500 dark:text-slate-400">{l.reason || '-'}</td>
-                                               </tr>
-                                           ))}
-                                           {student360Data.history.reception.length === 0 && (
-                                               <tr><td colSpan={3} className="px-6 py-4 text-center text-slate-400">{t.noData}</td></tr>
-                                           )}
-                                       </tbody>
-                                   </table>
-                               </div>
+                               <div className="max-h-60 overflow-y-auto"><table className="w-full text-start text-sm"><thead className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400"><tr><th className="px-6 py-3 text-start">{t.date}</th><th className="px-6 py-3 text-start">{t.type}</th><th className="px-6 py-3 text-start">{t.reason}</th></tr></thead><tbody className="divide-y divide-slate-50 dark:divide-slate-700">{student360Data.history.reception.map((l: any) => (<tr key={l.id}><td className="px-6 py-3 text-slate-700 dark:text-slate-300">{new Date(l.timestamp).toLocaleDateString(locale)}</td><td className="px-6 py-3"><Badge color={l.type === 'LateArrival' ? 'blue' : 'orange'}>{l.type === 'LateArrival' ? t.lateArrival : t.earlyLeave}</Badge></td><td className="px-6 py-3 text-slate-500 dark:text-slate-400">{l.reason || '-'}</td></tr>))} {student360Data.history.reception.length === 0 && <tr><td colSpan={3} className="px-6 py-4 text-center text-slate-400">{t.noData}</td></tr>}</tbody></table></div>
                            )}
                        </div>
                   </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Select, Badge, Input, Pagination } from './ui';
 import { useStore } from '../services/store';
@@ -265,7 +266,7 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
                                     ) : (
                                         <div className="space-y-3">
                                             <div className="grid grid-cols-2 gap-2">
-                                                {destinations.map(dest => {
+                                                {destinations.map((dest: EPassDestination) => {
                                                     const IconComp = ICON_MAP[dest.iconName] || Ticket;
                                                     return (
                                                         <button key={dest.id} disabled={isLoading} onClick={() => handleCreatePass(student.id, dest.id)} className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors gap-1 ${getThemeClasses(dest.colorTheme)} disabled:opacity-50`}>
@@ -309,7 +310,7 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
           <div>
               <h3 className="font-bold text-slate-800 dark:text-white mb-3 text-lg">{t.destinationBreakdown}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {destinations.map(dest => {
+                  {destinations.map((dest: EPassDestination) => {
                       const count = destinationStats[dest.id] || 0;
                       const IconComp = ICON_MAP[dest.iconName] || Ticket;
                       return (
