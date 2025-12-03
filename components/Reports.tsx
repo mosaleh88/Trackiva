@@ -581,7 +581,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase text-xs">
                 <tr>
-                  <th className="p-4 text-start cursor-pointer hover:bg-slate-.org-slate-100 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('studentNumber')}>ID <ArrowUpDown size={14} className="inline" /></th>
+                  <th className="p-4 text-start cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('studentNumber')}>ID <ArrowUpDown size={14} className="inline" /></th>
                   <th className="p-4 text-start cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('name_en')}>Name <ArrowUpDown size={14} className="inline" /></th>
                   <th className="p-4 text-start cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('grade')}>Grade <ArrowUpDown size={14} className="inline" /></th>
                   <th className="p-4 text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => handleAttendanceSort('stats.P')}>Present</th>
@@ -1061,7 +1061,15 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                       ))}
                     </Pie>
                     <Tooltip />
-                    <Legend verticalAlign="bottom" height={50} />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={50} 
+                      formatter={(value: any, entry: any) => (
+                        <span className="text-slate-600 dark:text-slate-300 font-medium ml-1">
+                          {value} ({entry.payload.value} {lang === 'en' ? 'days' : 'أيام'})
+                        </span>
+                      )}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">

@@ -489,7 +489,7 @@ class SupabaseStore {
     userId?: string,
     sourceData?: Partial<StoreData>
   ) {
-    const dataSource = sourceData || this.data;
+      const dataSource = sourceData ? { ...this.data, ...sourceData } : this.data;
     const settings = (sourceData as any)?.settings?.attendanceSettings || this.data.settings.attendanceSettings;
 
     let students = dataSource.students || [];
