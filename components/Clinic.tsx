@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge, Pagination } from './ui';
 import { useStore } from '../services/store';
@@ -42,7 +41,16 @@ export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
   const activePasses = store.getEPasses().filter(p => p.status === 'Active' && p.type === 'Clinic');
 
   // --- Computed Data ---
-  const incomingStudents = useMemo(() => activePasses.map(p => ({ pass: p, student: students.find(s => s.id === p.studentId) })).filter(i => i.student), [activePasses, students]);
+  const incomingStudents = useMemo(() => {
+      // Filter out passes that are already linked to a recorded visit (student admitted)
+      const linkedPassIds = new Set(visits.map(v => v.linkedPassId).filter(Boolean));
+      
+      return activePasses
+          .filter(p => !linkedPassIds.has(p.id))
+          .map(p => ({ pass: p, student: students.find(s => s.id === p.studentId) }))
+          .filter(i => i.student);
+  }, [activePasses, students, visits]);
+
   const todayVisits = useMemo(() => visits.filter(v => new Date(v.timestamp).toDateString() === new Date().toDateString()), [visits]);
   const epidemicAlert = useMemo(() => {
       const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
@@ -178,7 +186,7 @@ export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
           )}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="flex items-center gap-4 min-w-0"><div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full"><Stethoscope size={24} /></div><div><p className="text-sm text-slate-500 dark:text-slate-400">{t.todayVisits}</p><h3 className="text-2xl font-bold text-slate-800 dark:text-white">{todayVisits.length}</h3></div></Card>
-              <Card className="flex items-center gap-4 min-w-0"><div className="p-3 bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full"><Activity size={24} /></div><div><p className="text-sm text-slate-500 dark:text-slate-400">{t.incomingPatients}</p><h3 className="text-2xl font-bold text-slate-800 dark:text-white">{activePasses.length}</h3></div></Card>
+              <Card className="flex items-center gap-4 min-w-0"><div className="p-3 bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full"><Activity size={24} /></div><div><p className="text-sm text-slate-500 dark:text-slate-400">{t.incomingPatients}</p><h3 className="text-2xl font-bold text-slate-800 dark:text-white">{incomingStudents.length}</h3></div></Card>
               <Card className="flex items-center gap-4 min-w-0"><div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full"><Siren size={24} /></div><div><p className="text-sm text-slate-500 dark:text-slate-400">{t.sentHome}</p><h3 className="text-2xl font-bold text-slate-800 dark:text-white">{todayVisits.filter(v => v.outcome === 'SentHome').length}</h3></div></Card>
               <button onClick={() => setShowEmergencyModal(true)} className="flex flex-col items-center justify-center bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200/50 group min-w-0"><AlertTriangle size={24} className="mb-1 group-hover:scale-110 transition-transform" /><span className="font-bold uppercase text-xs tracking-wider">{t.emergencyAlert}</span></button>
           </div>
@@ -192,8 +200,8 @@ export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
           {activeTab === 'queue' && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-1 space-y-4">
-                      <div className="flex items-center justify-between"><h3 className="font-bold text-slate-700 dark:text-slate-200">{t.incomingPatients}</h3><Badge color="blue">{activePasses.length}</Badge></div>
-                      {activePasses.length === 0 ? <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 bg-slate-50 dark:bg-slate-800/50"><Coffee size={32} className="mx-auto mb-2 opacity-20" /><p>{t.noIncoming}</p></div> : incomingStudents.map(({ pass, student }) => (<div key={pass.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-xl shadow-sm flex justify-between items-center"><div><h4 className="font-bold text-slate-800 dark:text-white">{lang === 'en' ? student?.name_en : student?.name_ar}</h4><p className="text-xs text-slate-500 dark:text-slate-400 font-mono">{new Date(pass.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p></div><Button className="py-1 px-3 text-sm" onClick={() => handleAdmitFromQueue(student!.id, pass.id)}>{t.admitPatient} <ArrowRight size={16} /></Button></div>))}
+                      <div className="flex items-center justify-between"><h3 className="font-bold text-slate-700 dark:text-slate-200">{t.incomingPatients}</h3><Badge color="blue">{incomingStudents.length}</Badge></div>
+                      {incomingStudents.length === 0 ? <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 bg-slate-50 dark:bg-slate-800/50"><Coffee size={32} className="mx-auto mb-2 opacity-20" /><p>{t.noIncoming}</p></div> : incomingStudents.map(({ pass, student }) => (<div key={pass.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-xl shadow-sm flex justify-between items-center"><div><h4 className="font-bold text-slate-800 dark:text-white">{lang === 'en' ? student?.name_en : student?.name_ar}</h4><p className="text-xs text-slate-500 dark:text-slate-400 font-mono">{new Date(pass.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p></div><Button className="py-1 px-3 text-sm" onClick={() => handleAdmitFromQueue(student!.id, pass.id)}>{t.admitPatient} <ArrowRight size={16} /></Button></div>))}
                       <div className="pt-4 border-t border-slate-100 dark:border-slate-700 relative">
                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.admitWalkIn}</p>
                            <div className="grid grid-cols-3 gap-2 mb-2">

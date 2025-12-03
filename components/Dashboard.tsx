@@ -4,8 +4,8 @@ import { UserRole, Language, EPassDestination } from '../types';
 import { useStore } from '../services/store';
 import { TRANSLATIONS } from '../constants';
 import { 
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend
-} from 'recharts/lib';
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend 
+} from 'recharts';
 import { AlertTriangle, Activity, Users, Clock, Stethoscope, LogOut, Ticket, UserX, AlertOctagon, CheckCircle2, UserCheck } from 'lucide-react';
 
 interface DashboardProps {
@@ -56,10 +56,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in">
+    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
       {/* Row 1: KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="flex items-center justify-between">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="animate-in slide-in-from-bottom-4 fade-in duration-500 delay-100">
           <div>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.onCampus}</p>
             <div className="flex items-baseline gap-2">
@@ -75,16 +75,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
           </div>
         </Card>
         
-        <Card className="flex items-center justify-between">
+        <Card className="animate-in slide-in-from-bottom-4 fade-in duration-500 delay-100">
           <div>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.activePasses}</p>
             <div className="flex items-baseline gap-2">
                 <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{summary.activePasses}</h3>
                 {summary.overduePasses > 0 && (
-                    <span className="text-xs font-bold text-red-500 flex items-center gap-0.5">
-                        <AlertTriangle size={10} /> {summary.overduePasses} Overdue
-                    </span>
-                )}
+  <span className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1 animate-pulse">
+    <AlertTriangle size={12} className="animate-pulse" />
+    {summary.overduePasses} Overdue
+  </span>
+)}
             </div>
           </div>
           <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">
@@ -92,7 +93,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
           </div>
         </Card>
 
-        <Card className="flex items-center justify-between">
+        <Card className="animate-in slide-in-from-bottom-4 fade-in duration-500 delay-100">
           <div>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.clinic} {t.todayVisits}</p>
             <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{summary.clinicVisitsToday}</h3>
@@ -102,7 +103,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
           </div>
         </Card>
 
-        <Card className="flex items-center justify-between">
+        <Card className="animate-in slide-in-from-bottom-4 fade-in duration-500 delay-100">
           <div>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.late} / {t.earlyLeave}</p>
             <div className="flex items-center gap-3">
@@ -123,7 +124,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
         {/* Left Column: Recent Activity (Expanded to full height) */}
         <Card className="flex flex-col h-full min-h-[22rem] min-w-0">
             <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">{t.recentActivity}</h3>
-            <div className="flex-1 overflow-y-auto max-h-[18rem] space-y-4 pr-2">
+            <div className="flex-1 overflow-y-auto max-h-[18rem] space-y-4 pr-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
                 {summary.recentIncidents.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-slate-400 dark:text-slate-500">
                         <p>No recent activity</p>
@@ -178,7 +179,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
                     }
 
                     return (
-                        <div key={log.id} className="flex gap-3 border-b border-slate-50 dark:border-slate-700 pb-3 last:border-0 items-start">
+                        <div key={log.id} className="flex gap-3 border-b border-slate-50 dark:border-slate-700 pb-3 last:border-0 items-start hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors rounded-lg -mx-2 px-2 py-1">
                             <div className={`mt-1 p-1.5 rounded-full shrink-0 ${colorClass}`}>
                                 <Icon size={14} />
                             </div>
@@ -254,23 +255,51 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
             <div className="relative h-72 w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={50}>
                     <PieChart>
-                        <Pie
-                            data={passData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={5}
-                            dataKey="value"
-                            stroke="none"
-                        >
-                            {passData.map((entry: any, index: number) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{fontSize: '12px', paddingTop: '20px'}} />
-                    </PieChart>
+  <Pie
+    data={passData}
+    cx="50%"
+    cy="50%"
+    innerRadius={70}
+    outerRadius={100}
+    paddingAngle={3}
+    cornerRadius={8}
+    dataKey="value"
+    stroke="none"
+    animationBegin={0}
+    animationDuration={1200}
+    animationEasing="ease-out"
+  >
+    {passData.map((entry: any, index: number) => (
+      <Cell 
+        key={`cell-${index}`} 
+        fill={entry.color}
+        strokeWidth={3}
+        stroke="rgba(255,255,255,0.8)"
+      />
+    ))}
+  </Pie>
+  <Tooltip 
+    contentStyle={{
+    backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900 with opacity
+    border: 'none',
+    borderRadius: '12px',
+    color: 'white',
+    fontSize: '14px',
+    padding: '8px 12px',
+    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
+    backdropFilter: 'blur(12px)',           // this works in modern browsers
+    WebkitBackdropFilter: 'blur(12px)'      // Safari support
+  }}
+  itemStyle={{ color: 'white' }}
+  cursor={{ fill: 'rgba(255,255,255,0.1)' }}
+  />
+  <Legend 
+    verticalAlign="bottom" 
+    height={50} 
+    iconType="circle" 
+    wrapperStyle={{fontSize: '13px', paddingTop: '30px', fontWeight: '600'}}
+  />
+</PieChart>
                 </ResponsiveContainer>
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none pb-8">
                     <p className="text-3xl font-bold text-slate-800 dark:text-white">{summary.activePasses}</p>

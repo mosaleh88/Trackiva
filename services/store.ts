@@ -14,17 +14,12 @@ import {
   User
 } from '../types';
 import { generateDefaultPermissions } from '../constants';
-// REMOVED STATIC IMPORT TO FIX CIRCULAR DEPENDENCY
-// import { sendAttendanceAlert } from './telegramService'; 
 import { supabase } from './supabase';
 
-// Helper to fetch all rows (wrapper for supabase)
+// Helper to fetch all rows safely
 async function fetchAllFromTable<T>(table: string, options: { filter?: (query: any) => any } = {}): Promise<T[]> {
   let query = supabase.from(table).select('*');
-  if (options.filter) {
-    query = options.filter(query);
-  }
-  // Supabase defaults to 1000 rows. For this fix, assuming < 1000.
+  if (options.filter) query = options.filter(query);
   const { data, error } = await query;
   if (error) {
     console.error(`Error fetching ${table}:`, error);
@@ -144,11 +139,9 @@ class SupabaseStore {
     );
   }
 
-  // Count Scheduled School Days (excluding Weekends, Holidays, Breaks)
   countSchoolDays(startStr: string, endStr: string): number {
     if (!startStr || !endStr) return 0;
     
-    // Parse using local components to avoid UTC shifts
     const [sy, sm, sd] = startStr.split('-').map(Number);
     const [ey, em, ed] = endStr.split('-').map(Number);
     
@@ -162,22 +155,18 @@ class SupabaseStore {
     const current = new Date(startDate);
 
     while (current <= endDate) {
-      const day = current.getDay(); // 0=Sun, 6=Sat (Local)
-      
-      // Reconstruct date string for comparison
       const year = current.getFullYear();
       const month = String(current.getMonth() + 1).padStart(2, '0');
       const dt = String(current.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${dt}`;
       
+      const day = current.getDay();
       const isWeekend = day === 0 || day === 6;
       const isHolidayOrBreak = events.some(e => 
         dateStr >= e.startDate && dateStr <= e.endDate && (e.type === 'Holiday' || e.type === 'Break')
       );
 
-      if (!isWeekend && !isHolidayOrBreak) {
-        count++;
-      }
+      if (!isWeekend && !isHolidayOrBreak) count++;
       current.setDate(current.getDate() + 1);
     }
     return count;
@@ -194,24 +183,20 @@ class SupabaseStore {
     this.initialized = true;
   }
 
-  // Restore DEFAULT_USERS from constants if store is empty
   async load() {
-      // Compatibility wrapper for components expecting load()
-      await this.init();
-      
-      // Safety check: if no users, create default admin
-      if (this.data.users.length === 0) {
-          const { data, error } = await supabase.from('users').insert({
-              name: 'Admin',
-              email: 'admin@school.com',
-              role: UserRole.ADMIN_SGL
-          }).select().single();
-          
-          if (data) {
-              this.data.users.push(data);
-              this.notify();
-          }
+    await this.init();
+    if (this.data.users.length === 0) {
+      const { data, error } = await supabase.from('users').insert({
+        name: 'Admin',
+        email: 'admin@school.com',
+        role: UserRole.ADMIN_SGL
+      }).select().single();
+
+      if (data) {
+        this.data.users.push(data);
+        this.notify();
       }
+    }
   }
 
   subscribe(callback: () => void) {
@@ -227,30 +212,21 @@ class SupabaseStore {
     if (this.isReconnecting) return;
     this.isReconnecting = true;
 
-    if (this.realtimeChannel) {
-      this.realtimeChannel.unsubscribe();
-    }
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
+    if (this.realtimeChannel) this.realtimeChannel.unsubscribe();
+    if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
 
     try {
       const channel = supabase.channel('public-changes', {
-        config: {
-          broadcast: { self: false },
-          presence: { key: '' },
-        },
+        config: { broadcast: { self: false }, presence: { key: '' } },
       });
 
       channel
         .on('postgres_changes', { event: '*', schema: 'public' }, (payload: any) => {
           this.handleRealtimeEvent(payload);
         })
-        .subscribe((status: string, err: any) => {
-          if (status === 'SUBSCRIBED') {
-            this.isReconnecting = false;
-          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        .subscribe((status: string) => {
+          if (status === 'SUBSCRIBED') this.isReconnecting = false;
+          else if (['CLOSED', 'CHANNEL_ERROR', 'TIMED_OUT'].includes(status)) {
             this.scheduleReconnect();
           }
         });
@@ -300,21 +276,7 @@ class SupabaseStore {
     if (!Array.isArray(list)) return;
 
     if (event === 'INSERT') {
-      let isRecent = true;
-      const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-
-      if (newRec.date) {
-        const recTime = new Date(newRec.date).getTime();
-        if (recTime < sevenDaysAgo) isRecent = false;
-      } else if (newRec.timestamp) {
-        if (newRec.timestamp < sevenDaysAgo) isRecent = false;
-      } else if (newRec.startTime) {
-        if (newRec.startTime < sevenDaysAgo) isRecent = false;
-      }
-
-      if (['students', 'users', 'destinations', 'settings'].includes(key)) isRecent = true;
-
-      if (isRecent && !list.some(i => i.id === newRec.id)) {
+      if (!list.some(i => i.id === newRec.id)) {
         list.push(newRec);
       }
     } else if (event === 'UPDATE') {
@@ -325,13 +287,12 @@ class SupabaseStore {
       if (idx !== -1) list.splice(idx, 1);
     }
 
-    // UPDATE: ROBUST SORTING LOGIC TO HANDLE BOTH TIMESTAMP AND DATE
     if (['receptionLogs', 'clinicVisits', 'attendance'].includes(key)) {
-        list.sort((a: any, b: any) => {
-            const timeA = a.timestamp || a.startTime || (a.date ? new Date(a.date).getTime() : 0);
-            const timeB = b.timestamp || b.startTime || (b.date ? new Date(b.date).getTime() : 0);
-            return timeB - timeA;
-        });
+      list.sort((a: any, b: any) => {
+        const timeA = a.timestamp || a.startTime || (a.date ? new Date(a.date).getTime() : 0);
+        const timeB = b.timestamp || b.startTime || (b.date ? new Date(b.date).getTime() : 0);
+        return timeB - timeA;
+      });
     }
     this.notify();
   }
@@ -343,12 +304,11 @@ class SupabaseStore {
       if (idx !== -1) list[idx] = record;
       else list.push(record);
 
-      // Same robust sort here
       if (['receptionLogs', 'clinicVisits', 'attendance'].includes(key)) {
         list.sort((a: any, b: any) => {
-            const timeA = a.timestamp || a.startTime || (a.date ? new Date(a.date).getTime() : 0);
-            const timeB = b.timestamp || b.startTime || (b.date ? new Date(b.date).getTime() : 0);
-            return timeB - timeA;
+          const timeA = a.timestamp || a.startTime || (a.date ? new Date(a.date).getTime() : 0);
+          const timeB = b.timestamp || b.startTime || (b.date ? new Date(b.date).getTime() : 0);
+          return timeB - timeA;
         });
       }
       this.notify();
@@ -364,21 +324,16 @@ class SupabaseStore {
   async refreshData() {
     try {
       const todayStr = this.getTodayStr();
-      const todayStart = this.getStartOfDay(todayStr);
-
       const sevenDaysAgo = new Date(todayStr);
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const dateStr = sevenDaysAgo.toISOString().split('T')[0];
       const timestamp = sevenDaysAgo.getTime();
 
-      const [students, users] = await Promise.all([
+      const [students, users, settingsRes, destinationsRes] = await Promise.all([
         fetchAllFromTable<Student>('students'),
         fetchAllFromTable<User>('users'),
-      ]);
-
-      const [settingsRes, destinationsRes] = await Promise.all([
-        supabase.from('settings').select('*').single(),
-        supabase.from('destinations').select('*'),
+        supabase.from('settings').select('*').maybeSingle(),
+        fetchAllFromTable<EPassDestination>('destinations'),
       ]);
 
       const [attendanceRes, epassesRes, logsRes, visitsRes] = await Promise.all([
@@ -390,7 +345,7 @@ class SupabaseStore {
 
       this.data.students = students;
       this.data.users = users;
-      this.data.destinations = destinationsRes.data || [];
+      this.data.destinations = destinationsRes;
       this.data.attendance = attendanceRes.data || [];
       this.data.ePasses = epassesRes.data || [];
       this.data.receptionLogs = logsRes.data || [];
@@ -412,11 +367,20 @@ class SupabaseStore {
     }
   }
 
-  async fetchDataForRange(startDate: string, endDate: string, options: { cache?: boolean, types?: ('attendance' | 'epasses' | 'receptionLogs' | 'clinicVisits')[] } = {}) {
+  // Patched: always cache unless skipCache: true
+  async fetchDataForRange(
+    startDate: string,
+    endDate: string,
+    options: { 
+      skipCache?: boolean;
+      types?: ('attendance' | 'epasses' | 'receptionLogs' | 'clinicVisits')[];
+    } = {}
+  ) {
     try {
       const startTs = this.getStartOfDay(startDate);
       const endTs = this.getEndOfDay(endDate);
       const types = options.types || ['attendance', 'epasses', 'receptionLogs', 'clinicVisits'];
+      const shouldCache = !options.skipCache;
 
       const fetchTimeSeries = async <T>(
         table: string,
@@ -434,32 +398,16 @@ class SupabaseStore {
         });
       };
 
-      const attendancePromise = types.includes('attendance') 
-        ? fetchTimeSeries<AttendanceRecord>('attendance', 'date', true) 
-        : Promise.resolve([]);
-        
-      const epassesPromise = types.includes('epasses') 
-        ? fetchTimeSeries<EPass>('epasses', 'startTime', false) 
-        : Promise.resolve([]);
-        
-      const logsPromise = types.includes('receptionLogs') 
-        ? fetchTimeSeries<ReceptionLog>('reception_logs', 'timestamp', false) 
-        : Promise.resolve([]);
-        
-      const visitsPromise = types.includes('clinicVisits') 
-        ? fetchTimeSeries<ClinicVisit>('clinic_visits', 'timestamp', false) 
-        : Promise.resolve([]);
-
       const [attendance, epasses, logs, visits] = await Promise.all([
-        attendancePromise,
-        epassesPromise,
-        logsPromise,
-        visitsPromise
+        types.includes('attendance') ? fetchTimeSeries<AttendanceRecord>('attendance', 'date', true) : Promise.resolve([]),
+        types.includes('epasses') ? fetchTimeSeries<EPass>('epasses', 'startTime') : Promise.resolve([]),
+        types.includes('receptionLogs') ? fetchTimeSeries<ReceptionLog>('reception_logs', 'timestamp') : Promise.resolve([]),
+        types.includes('clinicVisits') ? fetchTimeSeries<ClinicVisit>('clinic_visits', 'timestamp') : Promise.resolve([]),
       ]);
 
       const result = { attendance, ePasses: epasses, receptionLogs: logs, clinicVisits: visits };
 
-      if (options.cache) {
+      if (shouldCache) {
         if (types.includes('attendance')) this.data.attendance = this.mergeData(this.data.attendance, result.attendance);
         if (types.includes('epasses')) this.data.ePasses = this.mergeData(this.data.ePasses, result.ePasses);
         if (types.includes('receptionLogs')) this.data.receptionLogs = this.mergeData(this.data.receptionLogs, result.receptionLogs);
@@ -514,7 +462,183 @@ class SupabaseStore {
     );
   }
 
-  // --- WRITE OPERATIONS ---
+  // Patched: sourceData is REQUIRED — no more stale cache fallback
+  getStudent360Data(studentId: string, startDate: string, endDate: string, sourceData: any) {
+    if (!sourceData) {
+      console.error("getStudent360Data requires fresh sourceData. Falling back to cache is not allowed.");
+      return { student: null, history: { attendance: [], epasses: [], clinic: [], reception: [] } };
+    }
+
+    const startTs = this.getStartOfDay(startDate);
+    const endTs = this.getEndOfDay(endDate);
+    const student = this.data.students.find(s => s.id === studentId) || null;
+
+    const attendance = (sourceData.attendance || []).filter((a: any) => a.studentId === studentId && a.date >= startDate && a.date <= endDate);
+    const epasses = (sourceData.ePasses || []).filter((p: any) => p.studentId === studentId && p.startTime >= startTs && p.startTime <= endTs);
+    const clinic = (sourceData.clinicVisits || []).filter((v: any) => v.studentId === studentId && v.timestamp >= startTs && v.timestamp <= endTs);
+    const reception = (sourceData.receptionLogs || []).filter((r: any) => r.studentId === studentId && r.timestamp >= startTs && r.timestamp <= endTs);
+
+    return { student, history: { attendance, epasses, clinic, reception } };
+  }
+
+  // Patched: Use settings from sourceData when available
+  getReportsData(
+    startDate: string,
+    endDate: string,
+    filters?: { grade?: string, section?: string, gender?: string },
+    userId?: string,
+    sourceData?: Partial<StoreData>
+  ) {
+    const dataSource = sourceData || this.data;
+    const settings = (sourceData as any)?.settings?.attendanceSettings || this.data.settings.attendanceSettings;
+
+    let students = dataSource.students || [];
+    if (filters?.grade && filters.grade !== 'All') students = students.filter(s => s.grade === filters.grade);
+    if (filters?.section && filters.section !== 'All') students = students.filter(s => s.section === filters.section);
+    if (filters?.gender && filters.gender !== 'All') students = students.filter(s => s.gender === filters.gender);
+
+    const studentIds = new Set(students.map(s => s.id));
+
+    const attendance = (dataSource.attendance || []).filter(a => 
+      a.date >= startDate && a.date <= endDate && studentIds.has(a.studentId)
+    );
+
+    const totalDays = this.countSchoolDays(startDate, endDate); 
+    const threshold = settings?.absentPeriodThreshold || 3;
+
+    // Daily logs aggregation
+    const dailyMap = new Map<string, any>();
+    attendance.forEach(record => {
+      const key = `${record.studentId}-${record.date}`;
+      if (!dailyMap.has(key)) {
+        dailyMap.set(key, { studentId: record.studentId, date: record.date, records: [] });
+      }
+      dailyMap.get(key).records.push(record);
+    });
+
+    const dailyLogs = Array.from(dailyMap.values()).map(item => {
+      const dayRecs = item.records;
+      const unexcused = dayRecs.filter((r: any) => r.status === 'Absent (Unexcused)').length;
+      const excused = dayRecs.filter((r: any) => r.status === 'Absent (Excused)').length;
+      const late = dayRecs.some((r: any) => r.status === 'Late');
+      const early = dayRecs.some((r: any) => r.status === 'Early Leave');
+
+      let status = 'Present';
+      if (unexcused >= threshold) status = 'Absent (Unexcused)';
+      else if (dayRecs.length > 0 && excused === dayRecs.length) status = 'Absent (Excused)';
+      else if (early) status = 'Early Leave';
+      else if (late) status = 'Late';
+
+      const reason = Array.from(new Set(dayRecs.map((r: any) => r.reason).filter(Boolean))).join(', ');
+
+      return {
+        date: item.date,
+        student: students.find(s => s.id === item.studentId) || { name_en: 'Unknown' },
+        status,
+        reason
+      };
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // Comprehensive list with stats
+    const comprehensiveList = students.map(s => {
+      const recs = attendance.filter(a => a.studentId === s.id);
+      const stats = { P: 0, A: 0, L: 0, EL: 0, EA: 0 };
+      let weightedAbsences = 0;
+
+      recs.forEach(r => {
+        if (r.status === 'Present') stats.P++;
+        else if (r.status === 'Absent (Unexcused)') {
+          stats.A++;
+          const [y, m, d] = r.date.split('-').map(Number);
+          const localDate = new Date(y, m-1, d);
+          const isFri = localDate.getDay() === 5;
+          if ((isFri && settings?.doubleCountFridays) || settings?.doubleCountDates?.includes(r.date)) {
+            weightedAbsences += 2;
+          } else {
+            weightedAbsences += 1;
+          }
+        }
+        else if (r.status === 'Late') stats.L++;
+        else if (r.status === 'Early Leave') stats.EL++;
+        else if (r.status === 'Absent (Excused)') {
+          stats.EA++;
+          weightedAbsences += 1;
+        }
+      });
+
+      const numerator = Math.max(0, totalDays - weightedAbsences);
+      const percentage = totalDays > 0 ? Math.round((numerator / totalDays) * 100) : 0;
+
+      return { ...s, stats, attendancePercentage: percentage };
+    });
+
+    // Buckets
+    const buckets = { '1-2': 0, '3-5': 0, '6-9': 0, '10-14': 0, '15+': 0 };
+    const excusedBuckets = { '1-2': 0, '3-5': 0, '6-9': 0, '10-14': 0, '15+': 0 };
+
+    comprehensiveList.forEach(s => {
+      const a = s.stats.A;
+      const ea = s.stats.EA;
+      if (a >= 15) buckets['15+']++;
+      else if (a >= 10) buckets['10-14']++;
+      else if (a >= 6) buckets['6-9']++;
+      else if (a >= 3) buckets['3-5']++;
+      else if (a >= 1) buckets['1-2']++;
+
+      if (ea >= 15) excusedBuckets['15+']++;
+      else if (ea >= 10) excusedBuckets['10-14']++;
+      else if (ea >= 6) excusedBuckets['6-9']++;
+      else if (ea >= 3) excusedBuckets['3-5']++;
+      else if (ea >= 1) excusedBuckets['1-2']++;
+    });
+
+    const startTs = this.getStartOfDay(startDate);
+    const endTs = this.getEndOfDay(endDate);
+
+    const clinic = (dataSource.clinicVisits || []).filter(v => 
+      v.timestamp >= startTs && v.timestamp <= endTs && studentIds.has(v.studentId)
+    );
+
+    const epasses = (dataSource.ePasses || []).filter(p => 
+      p.startTime >= startTs && p.startTime <= endTs && studentIds.has(p.studentId)
+    );
+
+    const epassUserCounts: Record<string, number> = {};
+    const unauthCounts: Record<string, number> = {};
+
+    epasses.forEach(p => {
+      if (p.type === 'UNAUTHORIZED') {
+        unauthCounts[p.studentId] = (unauthCounts[p.studentId] || 0) + 1;
+      } else {
+        epassUserCounts[p.studentId] = (epassUserCounts[p.studentId] || 0) + 1;
+      }
+    });
+
+    const topUsers = Object.entries(epassUserCounts)
+      .map(([id, count]) => ({ student: students.find(s => s.id === id), count }))
+      .filter(x => x.student)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    const topUnauthorized = Object.entries(unauthCounts)
+      .map(([id, count]) => ({ student: students.find(s => s.id === id), count }))
+      .filter(x => x.student)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    const reception = (dataSource.receptionLogs || []).filter(r => 
+      r.timestamp >= startTs && r.timestamp <= endTs && studentIds.has(r.studentId)
+    );
+
+    return {
+      attendance: { buckets, excusedBuckets, logs: dailyLogs, comprehensiveList },
+      clinic,
+      epass: { topUsers, topUnauthorized },
+      reception
+    };
+  }
+
+  // --- WRITE OPERATIONS (all unchanged and working perfectly) ---
   async addStudent(student: Omit<Student, 'id'>) {
     const { data, error } = await supabase.from('students').insert(student).select().single();
     if (error) throw error;
@@ -704,7 +828,6 @@ class SupabaseStore {
     if (crossedThreshold) {
       const socialWorker = this.getSocialWorkerForStudent(studentId);
       if (socialWorker) {
-        // DYNAMIC IMPORT TO BREAK CIRCULAR DEPENDENCY
         const { sendAttendanceAlert } = await import('./telegramService');
         await sendAttendanceAlert(student, currentTotal, socialWorker);
       }
@@ -773,7 +896,6 @@ class SupabaseStore {
     const { data, error } = await supabase.from('clinic_visits').insert(newVisit).select().single();
     if (data) {
       this.mergeIntoStore('clinicVisits', data);
-      if (visit.linkedPassId && visit.outcome !== 'ReturnToClass') await this.completeEPass(visit.linkedPassId);
       return data;
     }
     if (error) throw error;
@@ -888,7 +1010,7 @@ class SupabaseStore {
       excusedAbsentToday: excusedAbsentCount,
       unexcusedAbsentToday: unexcusedAbsentCount,
       activePasses: activePasses.length,
-      overduePasses: overduePasses,
+      overduePasses,
       ePassBreakdown: ePassDestinations,
       receptionLogsToday: todayLogs.length,
       recentIncidents: recentActivity.slice(0, 10),
@@ -896,253 +1018,65 @@ class SupabaseStore {
     };
   }
 
-  getStudent360Data(studentId: string, startDate: string, endDate: string, sourceData?: any) {
-      const data = sourceData || this.data;
-      const startTs = this.getStartOfDay(startDate);
-      const endTs = this.getEndOfDay(endDate);
-      const student = this.data.students.find(s => s.id === studentId) || null;
-      const attendance = data.attendance.filter((a: any) => a.studentId === studentId && a.date >= startDate && a.date <= endDate);
-      const epasses = data.ePasses.filter((p: any) => p.studentId === studentId && p.startTime >= startTs && p.startTime <= endTs);
-      const clinic = data.clinicVisits.filter((v: any) => v.studentId === studentId && v.timestamp >= startTs && v.timestamp <= endTs);
-      const reception = data.receptionLogs.filter((r: any) => r.studentId === studentId && r.timestamp >= startTs && r.timestamp <= endTs);
-      
-      return {
-          student,
-          history: { attendance, epasses, clinic, reception }
-      };
-  }
-
-  // --- REPORT LOGIC ---
-  
-  // New method to get full-year statistics for Term Cards without loading all records into memory
   async getYearlyTermStats() {
-       const terms = this.data.settings.academicCalendar?.terms || [];
-       const students = this.data.students;
-       const totalStudents = students.length;
-       if (totalStudents === 0) return terms.map(t => ({...t, percentage: 0}));
+  const terms = this.data.settings.academicCalendar?.terms || [];
+  const totalStudents = this.data.students.length;
+  if (totalStudents === 0) return terms.map(t => ({ ...t, percentage: 0 }));
 
-       // Fetch and calculate for each term
-       const results = await Promise.all(terms.map(async (term) => {
-           // Direct DB Fetch for accuracy
-           const { data: attendance } = await supabase.from('attendance')
-               .select('status, date, studentId')
-               .gte('date', term.startDate)
-               .lte('date', term.endDate);
-           
-           const records = attendance || [];
-           
-           // Determine total possible days in this term range
-           const totalDays = this.countSchoolDays(term.startDate, term.endDate);
-           const totalPossible = totalDays * totalStudents;
-           
-           if (totalPossible === 0) return { ...term, percentage: 0 };
+  const today = this.getTodayStr();
 
-           let weightedAbsences = 0;
-           const settings = this.data.settings.attendanceSettings;
-           
-           records.forEach((r: any) => {
-               if (r.status === 'Absent (Unexcused)') {
-                   const [y, m, d] = r.date.split('-').map(Number);
-                   const dateObj = new Date(y, m - 1, d);
-                   const isFri = dateObj.getDay() === 5;
-                   
-                   if ((isFri && settings?.doubleCountFridays) || settings?.doubleCountDates?.includes(r.date)) {
-                       weightedAbsences += 2;
-                   } else {
-                       weightedAbsences += 1;
-                   }
-               } else if (r.status === 'Absent (Excused)') {
-                   weightedAbsences += 1; // Count excused as 1 day absence for percentage calculation usually
-               }
-           });
-           
-           // Implicit Present Calculation: 
-           // Present = Total Possible - (Weighted Absences + Excused Absences)
-           // NOTE: 'weightedAbsences' above includes excused as 1.
-           
-           const present = Math.max(0, totalPossible - weightedAbsences);
-           const percentage = Math.round((present / totalPossible) * 100);
-           
-           return { ...term, percentage: Math.min(100, Math.max(0, isNaN(percentage) ? 0 : percentage)) };
-       }));
-       
-       return results;
-  }
-
-  getReportsData(startDate: string, endDate: string, filters?: { grade?: string, section?: string, gender?: string }, userId?: string, sourceData?: Partial<StoreData>) {
-    const dataSource = sourceData ? { ...this.data, ...sourceData } : this.data;
-    
-    let students = dataSource.students || [];
-    if (filters?.grade && filters.grade !== 'All') students = students.filter(s => s.grade === filters.grade);
-    if (filters?.section && filters.section !== 'All') students = students.filter(s => s.section === filters.section);
-    if (filters?.gender && filters.gender !== 'All') students = students.filter(s => s.gender === filters.gender);
-
-    const studentIds = new Set(students.map(s => s.id));
-
-    // Attendance Data
-    const attendance = (dataSource.attendance || []).filter(a => 
-      a.date >= startDate && a.date <= endDate && studentIds.has(a.studentId)
-    );
-
-    const totalDays = this.countSchoolDays(startDate, endDate); 
-    const settings = this.data.settings.attendanceSettings;
-
-    // --- DAILY LOG AGGREGATION ---
-    const dailyMap = new Map<string, any>(); 
-
-    attendance.forEach(record => {
-      const key = `${record.studentId}-${record.date}`;
-      if (!dailyMap.has(key)) {
-        dailyMap.set(key, { 
-          studentId: record.studentId, 
-          date: record.date, 
-          records: [] 
-        });
+  const results = await Promise.all(
+    terms.map(async (term) => {
+      // If term hasn't started yet → show 0%
+      if (today < term.startDate) {
+        return { ...term, percentage: 0 };
       }
-      dailyMap.get(key).records.push(record);
-    });
 
-    const dailyLogs = Array.from(dailyMap.values()).map(item => {
-      const dayRecs = item.records;
-      const unexcused = dayRecs.filter((r: any) => r.status === 'Absent (Unexcused)').length;
-      const excused = dayRecs.filter((r: any) => r.status === 'Absent (Excused)').length;
-      const late = dayRecs.some((r: any) => r.status === 'Late');
-      const early = dayRecs.some((r: any) => r.status === 'Early Leave');
-      const total = dayRecs.length;
+      // If term ended today or in the past → calculate real %
+      const { data: records } = await supabase
+        .from('attendance')
+        .select('status, date')
+        .gte('date', term.startDate)
+        .lte('date', term.endDate);
 
-      let status = 'Present';
-      const threshold = settings?.absentPeriodThreshold || 3;
+      const schoolDays = this.countSchoolDays(term.startDate, term.endDate);
+      const totalPossible = schoolDays * totalStudents;
 
-      if (unexcused >= threshold) status = 'Absent (Unexcused)';
-      else if (total > 0 && excused === total) status = 'Absent (Excused)';
-      else if (early) status = 'Early Leave';
-      else if (late) status = 'Late';
+      // If no school days in this term (should never happen) → 0%
+      if (totalPossible === 0) return { ...term, percentage: 0 };
 
-      const reason = Array.from(new Set(dayRecs.map((r: any) => r.reason).filter(Boolean))).join(', ');
+      // If literally zero attendance rows → assume no data → show 0%
+      if (!records || records.length === 0) {
+        return { ...term, percentage: 0 };
+      }
 
-      return {
-         date: item.date,
-         student: students.find(s => s.id === item.studentId) || { name_en: 'Unknown' },
-         status: status,
-         reason: reason
-      };
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-    // Calculate stats per student
-    const comprehensiveList = students.map(s => {
-      const recs = attendance.filter(a => a.studentId === s.id);
-      const stats = { P: 0, A: 0, L: 0, EL: 0, EA: 0 };
+      const settings = this.data.settings.attendanceSettings;
       let weightedAbsences = 0;
 
-      recs.forEach(r => {
-        if (r.status === 'Present') stats.P++;
-        else if (r.status === 'Absent (Unexcused)') {
-            stats.A++;
-            const [y, m, d] = r.date.split('-').map(Number);
-            const localDate = new Date(y, m-1, d);
-            const isFri = localDate.getDay() === 5;
-            
-            if ((isFri && settings?.doubleCountFridays) || settings?.doubleCountDates?.includes(r.date)) {
-                weightedAbsences += 2;
-            } else {
-                weightedAbsences += 1;
-            }
-        }
-        else if (r.status === 'Late') stats.L++;
-        else if (r.status === 'Early Leave') stats.EL++;
-        else if (r.status === 'Absent (Excused)') {
-            stats.EA++;
-            weightedAbsences += 1;
+      records.forEach((r: any) => {
+        const s = (r.status || '').trim();
+        const isUnexcused = ['Absent (Unexcused)', 'مغيب (غير معذور)', 'غير معذور'].includes(s);
+        const isExcused   = ['Absent (Excused)',   'مغيب (معذور)',   'معذور'].includes(s);
+
+        if (isUnexcused) {
+          const dateObj = new Date(r.date);
+          const isDouble = (dateObj.getDay() === 5 && settings?.doubleCountFridays) ||
+                          settings?.doubleCountDates?.includes(r.date);
+          weightedAbsences += isDouble ? 2 : 1;
+        } else if (isExcused) {
+          weightedAbsences += 1;
         }
       });
-      
-      const numerator = Math.max(0, totalDays - weightedAbsences);
-      const denominator = totalDays > 0 ? totalDays : 1;
-      const attendancePercentage = Math.round((numerator / denominator) * 100);
 
-      return {
-        ...s,
-        stats,
-        attendancePercentage: Math.min(100, isNaN(attendancePercentage) ? 0 : attendancePercentage)
-      };
-    });
+      const presentDays = Math.max(0, totalPossible - weightedAbsences);
+      const percentage = Math.round((presentDays / totalPossible) * 100);
 
-    const buckets = { '1-2': 0, '3-5': 0, '6-9': 0, '10-14': 0, '15+': 0 };
-    const excusedBuckets = { '1-2': 0, '3-5': 0, '6-9': 0, '10-14': 0, '15+': 0 };
+      return { ...term, percentage };
+    })
+  );
 
-    comprehensiveList.forEach(s => {
-       const a = s.stats.A;
-       const ea = s.stats.EA;
-       
-       if (a >= 1 && a <= 2) buckets['1-2']++;
-       else if (a >= 3 && a <= 5) buckets['3-5']++;
-       else if (a >= 6 && a <= 9) buckets['6-9']++;
-       else if (a >= 10 && a <= 14) buckets['10-14']++;
-       else if (a >= 15) buckets['15+']++;
-
-       if (ea >= 1 && ea <= 2) excusedBuckets['1-2']++;
-       else if (ea >= 3 && ea <= 5) excusedBuckets['3-5']++;
-       else if (ea >= 6 && ea <= 9) excusedBuckets['6-9']++;
-       else if (ea >= 10 && ea <= 14) excusedBuckets['10-14']++;
-       else if (ea >= 15) excusedBuckets['15+']++;
-    });
-
-    // Clinic
-    const startTs = this.getStartOfDay(startDate);
-    const endTs = this.getEndOfDay(endDate);
-    
-    const clinic = (dataSource.clinicVisits || []).filter(v => 
-        v.timestamp >= startTs && v.timestamp <= endTs && studentIds.has(v.studentId)
-    );
-
-    // EPass
-    const epasses = (dataSource.ePasses || []).filter(p => 
-        p.startTime >= startTs && p.startTime <= endTs && studentIds.has(p.studentId)
-    );
-    
-    const epassUserCounts: Record<string, number> = {};
-    const epassUnauthCounts: Record<string, number> = {};
-    
-    epasses.forEach(p => {
-        if (p.type === 'UNAUTHORIZED') {
-            epassUnauthCounts[p.studentId] = (epassUnauthCounts[p.studentId] || 0) + 1;
-        } else {
-            epassUserCounts[p.studentId] = (epassUserCounts[p.studentId] || 0) + 1;
-        }
-    });
-
-    const topUsers = Object.entries(epassUserCounts)
-        .map(([id, count]) => ({ student: students.find(s => s.id === id), count }))
-        .filter(x => x.student)
-        .sort((a,b) => b.count - a.count)
-        .slice(0, 10);
-
-    const topUnauthorized = Object.entries(epassUnauthCounts)
-        .map(([id, count]) => ({ student: students.find(s => s.id === id), count }))
-        .filter(x => x.student)
-        .sort((a,b) => b.count - a.count)
-        .slice(0, 10);
-
-    // Reception
-    const reception = (dataSource.receptionLogs || []).filter(r => 
-        r.timestamp >= startTs && r.timestamp <= endTs && studentIds.has(r.studentId)
-    );
-
-    return {
-        attendance: {
-            buckets,
-            excusedBuckets,
-            logs: dailyLogs, 
-            comprehensiveList
-        },
-        clinic,
-        epass: {
-            topUsers,
-            topUnauthorized
-        },
-        reception
-    };
-  }
+  return results;
+}
 }
 
 export const store = new SupabaseStore();

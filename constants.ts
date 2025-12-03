@@ -257,6 +257,8 @@ export const TRANSLATIONS = {
     timeElapsed: "Time Elapsed",
     where: "Where",
     issuedBy: "Issued By",
+    dailyLimitReached: "Daily Limit Reached",
+    passesUsed: "passes used",
     // Reception
     readyToProcess: "Ready to Process",
     selectStudentMsg: "Select a student from the list to begin",
@@ -424,6 +426,10 @@ export const TRANSLATIONS = {
     studentComprehensiveReport: "Student Comprehensive Report",
     generatedOn: "Generated on",
     attendanceLogExceptions: "Attendance Log (Exceptions Only)",
+    issuePassFor: "Issue Pass For",
+        selectDestination: "Select Destination",
+        clickToOverride: "Click card to allow pass anyway",
+        clickToIssuePass: "Click to Issue Pass",
   },
   ar: {
     login: "تسجيل الدخول",
@@ -550,6 +556,12 @@ export const TRANSLATIONS = {
     timeElapsed: "الوقت المنقضي",
     where: "إلى أين",
     issuedBy: "أصدر بواسطة",
+    issuePassFor: "إصدار تصريح لـ",
+        selectDestination: "اختر الوجهة",
+        clickToOverride: "اضغط على البطاقة للسماح بالتصريح",
+        clickToIssuePass: "اضغط لإصدار تصريح",
+        dailyLimitReached: "تم الوصول للحد الأقصى اليومي",
+    passesUsed: "تصاريح مستخدمة",
     // Reception
     readyToProcess: "جاهز للمعالجة",
     selectStudentMsg: "اختر طالباً من القائمة للبدء",
