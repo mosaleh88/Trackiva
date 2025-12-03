@@ -430,6 +430,8 @@ export const TRANSLATIONS = {
         selectDestination: "Select Destination",
         clickToOverride: "Click card to allow pass anyway",
         clickToIssuePass: "Click to Issue Pass",
+        noDataForAi: 'No data available for AI analysis.',
+aiError: 'Failed to generate AI insights. Please try again.',
   },
   ar: {
     login: "تسجيل الدخول",
@@ -454,6 +456,8 @@ export const TRANSLATIONS = {
     late: "متأخر",
     askAi: "اسأل المحلل الذكي",
     aiThinking: "جاري تحليل البيانات...",
+    noDataForAi: 'لا توجد بيانات متاحة لتحليل الذكاء الاصطناعي.',
+aiError: 'فشل إنشاء الرؤى الذكية. حاول مرة أخرى.',
     recentActivity: "النشاط الأخير",
     activePasses: "التصاريح النشطة",
     createPass: "إنشاء تصريح",

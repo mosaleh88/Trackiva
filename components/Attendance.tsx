@@ -15,7 +15,6 @@ const STUDENTS_PER_PAGE = 10;
 
 export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => {
   const t = TRANSLATIONS[lang];
-  // Initialize with standardized local date
   const [selectedDate, setSelectedDate] = useState<string>(store.getTodayStr());
   
   const [students, setStudents] = useState<Student[]>([]);
@@ -24,12 +23,10 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Modal State
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [selectedStudentForReason, setSelectedStudentForReason] = useState<string | null>(null);
   const [tempReason, setTempReason] = useState("");
   
-  // Hierarchical Filters
   const [selectedGender, setSelectedGender] = useState<string>("");
   const [selectedGrade, setSelectedGrade] = useState<string>("");
   const [selectedSection, setSelectedSection] = useState<string>("");
@@ -39,104 +36,95 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
   const [isWeekend, setIsWeekend] = useState(false);
   const [holidayEvent, setHolidayEvent] = useState<CalendarEvent | null>(null);
 
-  // Bulk Action State
   const [bulkActionValue, setBulkActionValue] = useState<string>("");
 
-  // Pagination
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (currentUser) {
-        setStudents(store.getStudentsForUser(currentUser.id)); 
+      setStudents(store.getStudentsForUser(currentUser.id)); 
     }
   }, [currentUser]);
 
-  // Fetch data if navigating to past dates (older than 7 days)
+  // FIXED: Use correct option name (skipCache instead of cache)
   useEffect(() => {
-      const todayStr = store.getTodayStr();
-      const selectedTs = new Date(selectedDate).getTime();
-      const sevenDaysAgoTs = new Date(todayStr).getTime() - (7 * 24 * 60 * 60 * 1000);
-      
-      if (selectedTs < sevenDaysAgoTs) {
-          // FIX: Fetch specific date with cache=true so editing works
-          store.fetchDataForRange(selectedDate, selectedDate, { cache: true });
-      }
+    const todayStr = store.getTodayStr();
+    const selectedTs = new Date(selectedDate).getTime();
+    const sevenDaysAgoTs = new Date(todayStr).getTime() - (7 * 24 * 60 * 60 * 1000);
+    
+    if (selectedTs < sevenDaysAgoTs) {
+      // Fetch old data and cache it so editing works
+      store.fetchDataForRange(selectedDate, selectedDate, { types: ['attendance'] });
+    }
   }, [selectedDate]);
 
-  // Calculate Available Periods based on Date & Auto-Select Current Period
   useEffect(() => {
     const calendarEvent = store.getCalendarEvent(selectedDate);
     const dateObj = new Date(selectedDate);
-    const day = dateObj.getDay(); // 0=Sun, 1=Mon, ... 6=Sat
+    const day = dateObj.getDay();
     const schedule = store.getSchedule();
     let periods: TimeSlot[] = [];
     let isWknd = false;
 
     if (calendarEvent) {
-        setHolidayEvent(calendarEvent);
-        setIsWeekend(false); // It's a holiday, not just a weekend UI
-        periods = [];
+      setHolidayEvent(calendarEvent);
+      setIsWeekend(false);
+      periods = [];
     } else if (day === 0 || day === 6) {
-        setHolidayEvent(null);
-        isWknd = true;
-        periods = [];
-    } else if (day === 5) { // Friday
-        setHolidayEvent(null);
-        isWknd = false;
-        periods = schedule.friday.filter(s => s.type === 'Period');
+      setHolidayEvent(null);
+      isWknd = true;
+      periods = [];
+    } else if (day === 5) {
+      setHolidayEvent(null);
+      isWknd = false;
+      periods = schedule.friday.filter(s => s.type === 'Period');
     } else {
-        setHolidayEvent(null);
-        isWknd = false;
-        periods = schedule.standard.filter(s => s.type === 'Period');
+      setHolidayEvent(null);
+      isWknd = false;
+      periods = schedule.standard.filter(s => s.type === 'Period');
     }
 
     setIsWeekend(isWknd);
     setAvailablePeriods(periods);
 
-    // Logic to auto-select period based on current time
     if (periods.length > 0) {
-        const todayStr = store.getTodayStr();
-        
-        if (selectedDate === todayStr) {
-            const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const todayStr = store.getTodayStr();
+      
+      if (selectedDate === todayStr) {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-            // 1. Try to find the exact active period
-            const currentPeriod = periods.find(p => {
-                const [startH, startM] = p.startTime.split(':').map(Number);
-                const [endH, endM] = p.endTime.split(':').map(Number);
-                const startTotal = startH * 60 + startM;
-                const endTotal = endH * 60 + endM;
-                return currentMinutes >= startTotal && currentMinutes < endTotal;
-            });
+        const currentPeriod = periods.find(p => {
+          const [startH, startM] = p.startTime.split(':').map(Number);
+          const [endH, endM] = p.endTime.split(':').map(Number);
+          const startTotal = startH * 60 + startM;
+          const endTotal = endH * 60 + endM;
+          return currentMinutes >= startTotal && currentMinutes < endTotal;
+        });
 
-            if (currentPeriod) {
-                setSelectedPeriod(currentPeriod.id);
-            } else {
-                // 2. If not inside a period (e.g. Break/Lunch), find the NEXT upcoming period
-                const nextPeriod = periods.find(p => {
-                    const [startH, startM] = p.startTime.split(':').map(Number);
-                    const startTotal = startH * 60 + startM;
-                    return currentMinutes < startTotal;
-                });
-
-                if (nextPeriod) {
-                    setSelectedPeriod(nextPeriod.id);
-                } else {
-                    // 3. If day is over (after last period), default to the last period (for review)
-                    setSelectedPeriod(periods[periods.length - 1].id);
-                }
-            }
+        if (currentPeriod) {
+          setSelectedPeriod(currentPeriod.id);
         } else {
-             // If looking at a past/future date, default to the first period (P1)
-             setSelectedPeriod(periods[0].id);
-        }
-    } else {
-        setSelectedPeriod("");
-    }
-  }, [selectedDate, store]); // Trigger when store updates (e.g. events added)
+          const nextPeriod = periods.find(p => {
+            const [startH, startM] = p.startTime.split(':').map(Number);
+            const startTotal = startH * 60 + startM;
+            return currentMinutes < startTotal;
+          });
 
-  // Load existing attendance from store
+          if (nextPeriod) {
+            setSelectedPeriod(nextPeriod.id);
+          } else {
+            setSelectedPeriod(periods[periods.length - 1].id);
+          }
+        }
+      } else {
+        setSelectedPeriod(periods[0].id);
+      }
+    } else {
+      setSelectedPeriod("");
+    }
+  }, [selectedDate, store]);
+
   useEffect(() => {
     if (!selectedPeriod) return;
 
@@ -145,21 +133,18 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
     const reasonMap: Record<string, string> = {};
 
     existing.forEach(r => {
-        map[r.studentId] = r.status;
-        if (r.reason) reasonMap[r.studentId] = r.reason;
+      map[r.studentId] = r.status;
+      if (r.reason) reasonMap[r.studentId] = r.reason;
     });
     setMarked(map);
     setReasons(reasonMap);
     setUnsavedChanges(false);
-  }, [selectedDate, selectedPeriod, store]); // Dependency on store allows re-render on Realtime update
+  }, [selectedDate, selectedPeriod, store]);
 
-  // Reset page on filter change
   useEffect(() => {
-      setPage(1);
+    setPage(1);
   }, [selectedGender, selectedGrade, selectedSection, selectedDate, selectedPeriod]);
 
-  // --- Derived Data for Hierarchical Dropdowns ---
-  
   const availableGrades = useMemo(() => {
     if (!selectedGender) return [];
     const genderStudents = students.filter(s => s.gender === selectedGender);
@@ -169,7 +154,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
   const availableSections = useMemo(() => {
     if (!selectedGender || !selectedGrade) return [];
     const classStudents = students.filter(s => 
-        s.gender === selectedGender && s.grade === selectedGrade
+      s.gender === selectedGender && s.grade === selectedGrade
     );
     return Array.from(new Set(classStudents.map(s => s.section))).sort();
   }, [students, selectedGender, selectedGrade]);
@@ -178,154 +163,146 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
     if (!selectedGender || !selectedGrade || !selectedSection) return [];
 
     return students.filter(s => {
-        return s.gender === selectedGender && 
-               s.grade === selectedGrade && 
-               s.section === selectedSection;
+      return s.gender === selectedGender && 
+             s.grade === selectedGrade && 
+             s.section === selectedSection;
     });
   }, [students, selectedGender, selectedGrade, selectedSection]);
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredStudents.length / STUDENTS_PER_PAGE);
   const paginatedStudents = useMemo(() => {
-      const start = (page - 1) * STUDENTS_PER_PAGE;
-      return filteredStudents.slice(start, start + STUDENTS_PER_PAGE);
+    const start = (page - 1) * STUDENTS_PER_PAGE;
+    return filteredStudents.slice(start, start + STUDENTS_PER_PAGE);
   }, [filteredStudents, page]);
 
-  // --- Handlers ---
-
   const handleGenderChange = (val: string) => {
-      setSelectedGender(val);
-      setSelectedGrade("");
-      setSelectedSection("");
+    setSelectedGender(val);
+    setSelectedGrade("");
+    setSelectedSection("");
   };
 
   const handleGradeChange = (val: string) => {
-      setSelectedGrade(val);
-      setSelectedSection("");
+    setSelectedGrade(val);
+    setSelectedSection("");
   };
 
+ 1;
+
   const handleMark = (studentId: string, status: AttendanceStatus) => {
-    // Toggle check: if clicking the same status, remove it
     if (marked[studentId] === status) {
-        const newMarked = { ...marked };
-        delete newMarked[studentId];
-        setMarked(newMarked);
-        
-        if (reasons[studentId]) {
-             setReasons(prev => {
-                const next = { ...prev };
-                delete next[studentId];
-                return next;
-             });
-        }
-        setUnsavedChanges(true);
-        return;
+      const newMarked = { ...marked };
+      delete newMarked[studentId];
+      setMarked(newMarked);
+      
+      if (reasons[studentId]) {
+        setReasons(prev => {
+          const next = { ...prev };
+          delete next[studentId];
+          return next;
+        });
+      }
+      setUnsavedChanges(true);
+      return;
     }
 
     if (status === AttendanceStatus.ABSENT_EXCUSED) {
-        setSelectedStudentForReason(studentId);
-        setTempReason(reasons[studentId] || "");
-        setShowReasonModal(true);
+      setSelectedStudentForReason(studentId);
+      setTempReason(reasons[studentId] || "");
+      setShowReasonModal(true);
     } else {
-        setMarked(prev => ({ ...prev, [studentId]: status }));
-        // If we switched away from Excused, clear the reason
-        setReasons(prev => {
-            const next = { ...prev };
-            delete next[studentId];
-            return next;
-        });
-        setUnsavedChanges(true);
+      setMarked(prev => ({ ...prev, [studentId]: status }));
+      setReasons(prev => {
+        const next = { ...prev };
+        delete next[studentId];
+        return next;
+      });
+      setUnsavedChanges(true);
     }
   };
-  
+
   const handleSaveReason = () => {
-      if (selectedStudentForReason) {
-          setMarked(prev => ({ ...prev, [selectedStudentForReason]: AttendanceStatus.ABSENT_EXCUSED }));
-          if (tempReason.trim()) {
-            setReasons(prev => ({ ...prev, [selectedStudentForReason]: tempReason }));
-          } else {
-             setReasons(prev => {
-                const next = { ...prev };
-                delete next[selectedStudentForReason];
-                return next;
-             });
-          }
-          setUnsavedChanges(true);
+    if (selectedStudentForReason) {
+      setMarked(prev => ({ ...prev, [selectedStudentForReason]: AttendanceStatus.ABSENT_EXCUSED }));
+      if (tempReason.trim()) {
+        setReasons(prev => ({ ...prev, [selectedStudentForReason]: tempReason }));
+      } else {
+        setReasons(prev => {
+          const next = { ...prev };
+          delete next[selectedStudentForReason];
+          return next;
+        });
       }
-      setShowReasonModal(false);
-      setSelectedStudentForReason(null);
-      setTempReason("");
+      setUnsavedChanges(true);
+    }
+    setShowReasonModal(false);
+    setSelectedStudentForReason(null);
+    setTempReason("");
   };
 
   const handleBulkFill = () => {
     if (!bulkActionValue) return;
     
     const newMarks = { ...marked };
-    // Apply to filtered students (all pages) or just current page? Usually all filtered.
-    // We'll apply to all visible students in the class
     filteredStudents.forEach(s => {
-        if (!newMarks[s.id]) { // Only fill blank entries
-            newMarks[s.id] = bulkActionValue as AttendanceStatus;
-        }
+      if (!newMarks[s.id]) {
+        newMarks[s.id] = bulkActionValue as AttendanceStatus;
+      }
     });
     setMarked(newMarks);
     setUnsavedChanges(true);
-    setBulkActionValue(""); // Reset dropdown
+    setBulkActionValue("");
   };
 
   const handleClearAll = () => {
-      if (Object.keys(marked).length === 0) return;
+    if (Object.keys(marked).length === 0) return;
+    
+    if (window.confirm(t.confirmClear || 'Are you sure you want to clear all marks?')) {
+      const newMarked = { ...marked };
+      const newReasons = { ...reasons };
       
-      if (window.confirm(t.confirmClear)) {
-          const newMarked = { ...marked };
-          const newReasons = { ...reasons };
-          
-          filteredStudents.forEach(s => {
-              delete newMarked[s.id];
-              delete newReasons[s.id];
-          });
-          
-          setMarked(newMarked);
-          setReasons(newReasons);
-          setUnsavedChanges(true);
-      }
+      filteredStudents.forEach(s => {
+        delete newMarked[s.id];
+        delete newReasons[s.id];
+      });
+      
+      setMarked(newMarked);
+      setReasons(newReasons);
+      setUnsavedChanges(true);
+    }
   };
 
   const handleSubmitAttendance = async () => {
     setIsSubmitting(true);
     
-    // 1. Save all positive marks
     const updates = Object.entries(marked).map(([studentId, status]) => {
-        return store.markAttendance({
-            studentId,
-            date: selectedDate,
-            period: selectedPeriod,
-            status,
-            reason: reasons[studentId]
-        });
+      return store.markAttendance({
+        studentId,
+        date: selectedDate,
+        period: selectedPeriod,
+        status,
+        reason: reasons[studentId]
+      });
     });
 
-    // 2. Handle deletions (Unmarking)
     const deletions = filteredStudents.filter(s => !marked[s.id]).map(s => {
-        return store.deleteAttendance(s.id, selectedDate, selectedPeriod);
+      return store.deleteAttendance(s.id, selectedDate, selectedPeriod);
     });
 
     try {
-        await Promise.all([...updates, ...deletions]);
-        setUnsavedChanges(false);
-        alert(t.attendanceSaved);
+      await Promise.all([...updates, ...deletions]);
+      setUnsavedChanges(false);
+      alert(t.attendanceSaved || 'Attendance saved successfully!');
     } catch (error) {
-        console.error("Failed to save attendance", error);
-        alert("Error saving attendance");
+      console.error("Failed to save attendance", error);
+      alert("Error saving attendance");
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   const currentPeriodInfo = availablePeriods.find(p => p.id === selectedPeriod);
   const currentStudent = students.find(s => s.id === selectedStudentForReason);
   
-  // Validation: Check if all filtered students have a mark
   const allStudentsMarked = filteredStudents.length > 0 && filteredStudents.every(s => marked[s.id]);
 
   return (
