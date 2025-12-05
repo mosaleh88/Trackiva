@@ -26,7 +26,7 @@ const TABS = [
   { id: 'daily', labelKey: 'dailySummary', icon: LayoutDashboard },
   { id: 'attendance', labelKey: 'attendanceReport', icon: BarChart3 },
   { id: 'clinic', labelKey: 'clinicReport', icon: Stethoscope },
-  { id: 'epass', labelKey: 'epassReport', icon: Ticket },
+  { id: 'epass', labelKey: 'epass', icon: Ticket },
   { id: 'reception', labelKey: 'receptionReport', icon: DoorOpen },
   { id: 'student360', labelKey: 'student360', icon: UserIcon },
 ];
