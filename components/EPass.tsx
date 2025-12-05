@@ -6,7 +6,7 @@ import { Language, EPass as EPassType, Student, EPassDestination, UserRole, User
 import { TRANSLATIONS } from '../constants';
 // CHANGED: Replaced 'XIcon' with 'X' as XIcon is not a standard export
 import { Search, Filter, Ticket, Library, Stethoscope, Armchair, Briefcase, Coffee, Gamepad2, Music, Dumbbell, Beaker, BookOpen, Users, Ban, AlertOctagon, LayoutDashboard, AlertTriangle, Clock, ArrowUp, ArrowDown, ArrowUpDown, X } from 'lucide-react';
-import { sendUnauthorizedAlert, sendPassCreatedAlert } from '../services/telegramService';
+// import { sendUnauthorizedAlert, sendPassCreatedAlert } from '../services/telegramService';
 
 interface EPassProps {
   lang: Language;

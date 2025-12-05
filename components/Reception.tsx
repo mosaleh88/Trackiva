@@ -8,7 +8,7 @@ import {
   Search, ArrowRight, UserCheck, LogOut, Clock, MapPin, Bus, User as UserIcon, X, Filter, AlertTriangle, CheckCircle2, Info, Users,
   Stethoscope, Home, Thermometer, FileText, Plane, MoreHorizontal 
 } from 'lucide-react';
-import { sendEarlyLeaveAlert } from '../services/telegramService';
+// import { sendEarlyLeaveAlert } from '../services/telegramService';
 
 interface ReceptionProps {
   lang: Language;
