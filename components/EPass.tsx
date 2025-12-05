@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// 1. FIXED: Removed 'Modal' from the import as it likely wasn't exported by your ui library.
 import { Card, Button, Select, Badge, Input, Pagination } from './ui'; 
 import { useStore } from '../services/store';
 import { Language, EPass as EPassType, Student, EPassDestination, UserRole, User } from '../types';
@@ -481,13 +480,7 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
     try {
         await store.createEPass({ studentId, type, teacherId: currentUser?.id });
         const student = students.find(s => s.id === studentId);
-        if (student) {
-            if (type === UNAUTHORIZED_TYPE) sendUnauthorizedAlert(student);
-            else {
-                const dest = destinations.find(d => d.id === type);
-                if (dest) sendPassCreatedAlert(student, dest);
-            }
-        }
+        if (student) store.sendEPassAlert(student, type, destinations);
         if (overrideMap[studentId]) {
             setOverrideMap(prev => { const newMap = { ...prev }; delete newMap[studentId]; return newMap; });
         }

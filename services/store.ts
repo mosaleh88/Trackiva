@@ -791,6 +791,27 @@ class SupabaseStore {
     }
   }
 
+  async sendEarlyLeaveAlert(student: Student, reason: string, pickupBy: string, pickupId: string) {
+    try {
+      const { sendEarlyLeaveAlert } = await import('./telegramService');
+      await sendEarlyLeaveAlert(student, reason, pickupBy, pickupId);
+    } catch (e) {
+      console.error("Failed to send early leave alert:", e);
+    }
+  }
+
+  async sendEPassAlert(student: Student, type: string, destinations: EPassDestination[]) {
+    try {
+      const { sendUnauthorizedAlert, sendPassCreatedAlert } = await import('./telegramService');
+      if (type === 'UNAUTHORIZED') {
+        await sendUnauthorizedAlert(student);
+      } else {
+        const dest = destinations.find(d => d.id === type);
+        if (dest) await sendPassCreatedAlert(student, dest);
+      }
+    } catch (e) { console.error("Failed to send e-pass alert:", e); }
+  }
+  
   async checkAttendanceAlert(studentId: string, triggerRecordId?: string) {
     const student = this.data.students.find(s => s.id === studentId);
     if (!student) return;

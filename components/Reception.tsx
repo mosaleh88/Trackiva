@@ -94,7 +94,7 @@ export const Reception: React.FC<ReceptionProps> = ({ lang, currentUser }) => {
         });
         
         if (mode === 'EarlyLeave' && currentStudent) {
-            sendEarlyLeaveAlert(currentStudent, finalReason, pickedBy, pickerId);
+            store.sendEarlyLeaveAlert(currentStudent, finalReason, pickedBy, pickerId);
         }
         
         setLastLog(log); 
