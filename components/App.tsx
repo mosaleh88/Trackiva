@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserRole, Language, User } from './types';
-import { ROLES_LIST, NAV_ITEMS, TRANSLATIONS } from './constants';
-import { store } from './services/store';
-import { Dashboard } from './components/Dashboard';
-import { Attendance } from './components/Attendance';
-import { Reception } from './components/Reception';
-import { EPass } from './components/EPass';
-import { Management } from './components/Management';
-import { Clinic } from './components/Clinic';
-import { Reports } from './components/Reports';
-import { Login } from './components/Login';
+import { UserRole, Language, User } from '../types';
+import { ROLES_LIST, NAV_ITEMS, TRANSLATIONS } from '../constants';
+import { store } from '../services/store';
+import { Dashboard } from './Dashboard';
+import { Attendance } from './Attendance';
+import { Reception } from './Reception';
+import { EPass } from './EPass';
+import { Management } from './Management';
+import { Clinic } from './Clinic';
+import { Reports } from './Reports';
+import { Login } from './Login';
 import { Menu, Globe, LogOut, UserCircle, Loader2, ChevronLeft, ChevronRight, Moon, Sun, LayoutGrid } from 'lucide-react';
-import { supabase } from './services/supabase';
+import { supabase } from '../services/supabase';
 
 const App = () => {
   // App State
@@ -80,7 +80,7 @@ const App = () => {
               // 4. Restore User Session
               if (session?.user?.email) {
                   const users = store.getUsers();
-                  const userProfile = users.find(u => u.email.toLowerCase() === session.user.email!.toLowerCase());
+                  const userProfile = users.find((u: User) => u.email.toLowerCase() === session.user.email!.toLowerCase());
                   if (userProfile) {
                       setCurrentUser(userProfile);
                   }
@@ -99,7 +99,7 @@ const App = () => {
                           await store.refreshData();
                           users = store.getUsers();
                       }
-                      const userProfile = users.find(u => u.email.toLowerCase() === session.user.email!.toLowerCase());
+                      const userProfile = users.find((u: User) => u.email.toLowerCase() === session.user.email!.toLowerCase());
                       if (userProfile) {
                           setCurrentUser(userProfile);
                       }

@@ -241,7 +241,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
     const newMarks = { ...marked };
     filteredStudents.forEach(s => {
       if (!newMarks[s.id]) {
-        newMarks[s.id] = bulkActionValue as any;
+        newMarks[s.id] = bulkActionValue as AttendanceStatus;
       }
     });
     setMarked(newMarks);
