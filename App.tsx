@@ -213,11 +213,10 @@ const App = () => {
                 
                 {/* User Profile Mini Card */}
                 <div className={`
-                    mx-2
                     bg-gradient-to-br from-slate-100/80 to-slate-200/50 dark:from-slate-800/80 dark:to-slate-900/50 
                     rounded-2xl border border-white/50 dark:border-white/5 shadow-inner
                     flex items-center transition-all duration-300 ease-in-out
-                    ${isCollapsed ? 'justify-center p-1 w-12 h-12 mx-auto' : 'p-3 gap-3'}
+                    ${isCollapsed ? 'mx-auto justify-center p-1 w-12 h-12' : 'mx-0 p-3 gap-3'}
                 `}>
                     <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 text-primary flex items-center justify-center font-bold shadow-sm shrink-0 border-2 border-white dark:border-slate-600">
                         {currentUser.name.charAt(0)}
