@@ -14,7 +14,6 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend 
 } from 'recharts';
-import * as XLSX from 'xlsx';
 
 interface ReportsProps {
   lang: Language;
@@ -211,7 +210,8 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
     }
   };
 
-  const handleExport = (dataToExport: any[], filename: string) => {
+  const handleExport = async (dataToExport: any[], filename: string) => {
+    const XLSX = await import('xlsx');
     const ws = XLSX.utils.json_to_sheet(dataToExport);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Report");
