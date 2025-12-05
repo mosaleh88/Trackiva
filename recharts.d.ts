@@ -3,3 +3,4 @@
 // we are telling TypeScript to treat it as a valid module, which
 // resolves the TS7016 build error.
 declare module 'recharts/lib';
+declare module 'recharts';

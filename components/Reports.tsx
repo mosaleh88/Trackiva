@@ -8,7 +8,7 @@ import {
   BarChart3, Calendar, Download, Filter, Search, User as UserIcon, LayoutDashboard, 
   Activity, Ticket, DoorOpen, ChevronDown, ChevronRight, Printer, Stethoscope, 
   Clock, AlertTriangle, CheckCircle2, ArrowRight, BrainCircuit, Loader2, 
-  MousePointerClick, ArrowUpDown 
+  MousePointerClick, ArrowUpDown, FileText
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -48,6 +48,10 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   const [student360Data, setStudent360Data] = useState<any>(null);
   const [isGenerating360, setIsGenerating360] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+
+  // Clinic Report Specific State
+  const [clinicSearchTerm, setClinicSearchTerm] = useState("");
+  const [selectedClinicStudent, setSelectedClinicStudent] = useState<Student | null>(null);
 
   // Report Filters State
   const defaultFilters = {
@@ -107,6 +111,24 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
     };
     loadTerms();
   }, [currentUser]);
+
+  // Clinic Student Search Logic (Moved to top level)
+  const filteredClinicStudents = useMemo(() => {
+      if (!clinicSearchTerm) return [];
+      const lower = clinicSearchTerm.toLowerCase();
+      return students.filter(s =>
+          s.name_en.toLowerCase().includes(lower) ||
+          s.name_ar.includes(lower) ||
+          s.studentNumber.includes(lower)
+      ).slice(0, 5);
+  }, [students, clinicSearchTerm]);
+
+  const clinicStudentVisits = useMemo(() => {
+      if (!selectedClinicStudent) return [];
+      // We get ALL visits for this student from the store, not just the filtered report range
+      const allVisits = store.getClinicVisits();
+      return allVisits.filter(v => v.studentId === selectedClinicStudent.id).sort((a,b) => b.timestamp - a.timestamp);
+  }, [selectedClinicStudent, store.getClinicVisits()]); // Added store.getClinicVisits() dependency
 
   // Handlers
   const handleFilterChange = (tab: string, key: string, value: string) => {
@@ -334,7 +356,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
     const uniqueSections = Array.from(new Set(students.map(s => s.section))).sort();
 
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+      <Card>
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-2">{t.startDate}</label>
@@ -346,14 +368,14 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
           </div>
 
           <Button onClick={() => generateReport(tabName)} disabled={state.loading} className="h-12 px-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg">
-            {state.loading ? <Loader2 className="animate-spin mr-2" size={20} /> : null}
+            {state.loading ? <Loader2 className="animate-spin mr-2" size={20} /> : <Filter size={18} className="mr-2"/>}
             {t.generate}
           </Button>
 
           <div className="flex-1" />
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+            <div className="hidden lg:flex items-center gap-2 text-slate-500 dark:text-slate-400">
               <Filter size={18} />
               <span className="text-sm font-bold">{t.filterBy}:</span>
             </div>
@@ -372,18 +394,18 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
             </Select>
           </div>
         </div>
-      </div>
+      </Card>
     );
   };
 
   const renderAiCard = () => (
-    <Card className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white border-none shadow-2xl animate-in fade-in mb-8 no-print">
+    <Card className="bg-gradient-to-br from-ai-purple/80 to-violet-600/70 text-white border-purple-400/30 shadow-2xl shadow-purple-500/10 animate-in fade-in mb-8 no-print">
       <div className="flex items-start gap-5 p-6">
         <div className="p-4 bg-white/20 backdrop-blur rounded-2xl shrink-0">
           <BrainCircuit size={32} className="text-white" />
         </div>
         <div className="flex-1">
-          <div className="flex justify-between items-start mb-3">
+          <div className="flex flex-wrap justify-between items-start mb-3 gap-3">
             <h3 className="text-2xl font-bold">{t.askAi || 'AI Analyst'}</h3>
             {!aiInsight && (
               <Button onClick={handleAskAi} disabled={loadingAi} className="bg-white/20 hover:bg-white/30 text-white border-none">
@@ -392,7 +414,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
               </Button>
             )}
           </div>
-          {aiInsight ? (
+          {loadingAi ? ( <div className="bg-white/10 backdrop-blur rounded-2xl p-6 text-base leading-relaxed animate-pulse">Thinking...</div> ) : aiInsight ? (
             <div className="bg-white/10 backdrop-blur rounded-2xl p-6 text-base leading-relaxed animate-in slide-in-from-top-4">
               {aiInsight}
             </div>
@@ -410,7 +432,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       <div className="space-y-8 animate-in fade-in">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {termSummaries.length > 0 ? termSummaries.map((term: any) => (
-            <Card key={term.id} className="text-center p-8 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800 hover:shadow-xl transition-all">
+            <Card key={term.id} className="text-center p-8 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800 hover:shadow-xl">
               <p className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">{term.name}</p>
               <p className="text-5xl font-bold text-slate-800 dark:text-white">{term.percentage}%</p>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">{term.startDate} - {term.endDate}</p>
@@ -442,14 +464,14 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
     if (loading) return (
       <div className="space-y-6 animate-in fade-in">
         <FilterBar tabName="attendance" />
-        <div className="h-96 flex items-center justify-center"><Loader2 className="animate-spin text-blue-500" size={48} /></div>
+        <Card className="h-96 flex items-center justify-center"><Loader2 className="animate-spin text-blue-500" size={48} /></Card>
       </div>
     );
     if (!data) return (
       <div className="space-y-6 animate-in fade-in">
         <FilterBar tabName="attendance" />
-        <div className="h-96 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
-          <MousePointerClick size={64} className="mb-4 opacity-30" />
+        <div className="h-96 flex flex-col items-center justify-center text-slate-400 bg-white/40 dark:bg-slate-900/40 rounded-[2rem] border-2 border-dashed border-slate-300 dark:border-slate-700">
+          <MousePointerClick size={48} className="mb-4 opacity-30" />
           <p className="text-xl font-medium">{t.clickToGenerate}</p>
         </div>
       </div>
@@ -660,8 +682,8 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                     <XAxis dataKey="name" fontSize={12} />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="Unexcused" fill="#ef4444" name="Unexcused" />
-                    <Bar dataKey="Excused" fill="#3b82f6" name="Excused" />
+                    <Bar dataKey="Unexcused" fill="#ef4444" name="Unexcused" isAnimationActive={false} />
+                    <Bar dataKey="Excused" fill="#3b82f6" name="Excused" isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -736,19 +758,33 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
     const { data, loading } = reportStates.clinic;
     let chartData: any[] = [];
     let gradeData: any[] = [];
+    let sectionData: any[] = [];
+    let genderData: any[] = [];
+    
     if (data) {
       const symptoms: Record<string, number> = {};
       const grades: Record<string, number> = {};
+      const sections: Record<string, number> = {};
+      const genders: Record<string, number> = {};
+
       data.clinic.forEach((v: any) => {
         symptoms[v.symptom] = (symptoms[v.symptom] || 0) + 1;
         const s = students.find(stu => stu.id === v.studentId);
-        if (s) grades[s.grade] = (grades[s.grade] || 0) + 1;
+        if (s) {
+            grades[s.grade] = (grades[s.grade] || 0) + 1;
+            const sectionKey = `${s.grade}-${s.section}`;
+            sections[sectionKey] = (sections[sectionKey] || 0) + 1;
+            genders[s.gender] = (genders[s.gender] || 0) + 1;
+        }
       });
       chartData = Object.entries(symptoms).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value);
       gradeData = Object.entries(grades).map(([name, value]) => ({ name, value })).sort((a,b) => a.name.localeCompare(b.name));
+      sectionData = Object.entries(sections).map(([name, value]) => ({ name, value })).sort((a,b) => a.name.localeCompare(b.name));
+      genderData = Object.entries(genders).map(([name, value]) => ({ name, value }));
     }
+
     return (
-      <div className="space-y-6 animate-in fade-in">
+      <div className="space-y-8 animate-in fade-in">
         <FilterBar tabName="clinic" />
         {loading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -756,36 +792,152 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
             <Card className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-slate-300" size={32} /></Card>
           </div>
         ) : data ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <h3 className="font-bold text-xl mb-4 p-6">{t.topComplaints}</h3>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" />
-                    <YAxis dataKey="name" type="category" width={150} fontSize={13} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#8b5cf6" radius={[0, 8, 8, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                <h3 className="font-bold text-xl mb-4 p-6">{t.topComplaints}</h3>
+                <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                        <XAxis type="number" />
+                        <YAxis dataKey="name" type="category" width={150} fontSize={13} />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#8b5cf6" radius={[0, 8, 8, 0]} isAnimationActive={false} />
+                    </BarChart>
+                    </ResponsiveContainer>
+                </div>
+                </Card>
+                <Card>
+                <h3 className="font-bold text-xl mb-4 p-6">{t.visitsByGrade}</h3>
+                <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={gradeData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" fontSize={13} />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#f59e0b" radius={[8, 8, 0, 0]} isAnimationActive={false} />
+                    </BarChart>
+                    </ResponsiveContainer>
+                </div>
+                </Card>
+                <Card>
+                <h3 className="font-bold text-xl mb-4 p-6">{t.visitsBySection}</h3>
+                <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={sectionData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" fontSize={12} />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#10b981" radius={[8, 8, 0, 0]} isAnimationActive={false} />
+                    </BarChart>
+                    </ResponsiveContainer>
+                </div>
+                </Card>
+                <Card>
+                <h3 className="font-bold text-xl mb-4 p-6">{t.visitsByGender}</h3>
+                <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={genderData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="name" fontSize={13} />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#ec4899" radius={[8, 8, 0, 0]} barSize={60} isAnimationActive={false} />
+                    </BarChart>
+                    </ResponsiveContainer>
+                </div>
+                </Card>
+            </div>
+
+            {/* Individual Student Report Section */}
+            <Card className="!overflow-visible mt-8 p-6 border-t-4 border-t-blue-500">
+                <h3 className="font-bold text-2xl text-slate-800 dark:text-white mb-6 flex items-center gap-3">
+                    <FileText size={28} className="text-blue-500" />
+                    {t.studentReport}
+                </h3>
+                
+                <div className="relative max-w-xl mb-8">
+                    <Search className={`absolute top-3.5 text-slate-400 ${lang === 'ar' ? 'right-4' : 'left-4'}`} size={20} />
+                    <Input 
+                        placeholder={t.searchReportPlaceholder} 
+                        value={clinicSearchTerm} 
+                        onChange={(e) => { setClinicSearchTerm(e.target.value); setSelectedClinicStudent(null); }} 
+                        className={`${lang === 'ar' ? 'pr-12' : 'pl-12'} py-3 text-lg rounded-2xl`} 
+                    />
+                    {clinicSearchTerm && !selectedClinicStudent && (
+                        <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-b-2xl shadow-2xl mt-1 overflow-y-auto max-h-60 z-[100]">
+                            {filteredClinicStudents.map(s => (
+                                <button key={s.id} onClick={() => { setSelectedClinicStudent(s); setClinicSearchTerm(lang === 'en' ? s.name_en : s.name_ar); }} className="w-full text-left text-start px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-100/50 dark:border-slate-800 last:border-0 transition-colors group">
+                                    <p className="font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">{lang === 'en' ? s.name_en : s.name_ar}</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{s.studentNumber} - {s.grade}-{s.section}</p>
+                                </button>
+                            ))}
+                            {filteredClinicStudents.length === 0 && <div className="p-4 text-center text-slate-500 dark:text-slate-400">No matches found</div>}
+                        </div>
+                    )}
+                </div>
+
+                {selectedClinicStudent && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="md:col-span-2 flex items-center gap-6 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+                                <div className="w-20 h-20 bg-white dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shadow-sm"><UserIcon size={40} /></div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{lang === 'en' ? selectedClinicStudent.name_en : selectedClinicStudent.name_ar}</h2>
+                                    <div className="flex gap-2 mt-2">
+                                        <Badge color="gray">#{selectedClinicStudent.studentNumber}</Badge>
+                                        <Badge color="blue">{selectedClinicStudent.grade}-{selectedClinicStudent.section}</Badge>
+                                        <Badge color="gray">{selectedClinicStudent.gender}</Badge>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex flex-col justify-center items-center text-center bg-blue-50/50 dark:bg-blue-900/20 border border-blue-100/50 dark:border-blue-800/50 rounded-2xl p-6">
+                                <p className="text-slate-500 dark:text-slate-400 font-bold uppercase text-xs tracking-wider">{t.totalVisits}</p>
+                                <h3 className="text-5xl font-bold text-blue-600 dark:text-blue-400 mt-2">{clinicStudentVisits.length}</h3>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white px-2">{t.medicalHistory} (Full Record)</h3>
+                            {clinicStudentVisits.length === 0 ? <div className="text-center py-12 text-slate-400 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700">{t.noVisitsFound}</div> : (
+                                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm border-b border-slate-200 dark:border-slate-700">
+                                                <th className="p-4 text-start">{t.date}</th>
+                                                <th className="p-4 text-start">{t.symptom}</th>
+                                                <th className="p-4 text-start">{t.diagnosis}</th>
+                                                <th className="p-4 text-start">{t.treatment}</th>
+                                                <th className="p-4 text-start">{t.severity}</th>
+                                                <th className="p-4 text-start">{t.outcome}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                            {clinicStudentVisits.map(v => (
+                                                <tr key={v.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                                    <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
+                                                        <div className="font-bold">{new Date(v.timestamp).toLocaleDateString()}</div>
+                                                        <div className="text-xs text-slate-400">{new Date(v.timestamp).toLocaleTimeString()}</div>
+                                                    </td>
+                                                    <td className="p-4 font-medium text-slate-700 dark:text-slate-300">{v.symptom}</td>
+                                                    <td className="p-4 text-sm text-slate-600 dark:text-slate-400">{v.diagnosis || '-'}</td>
+                                                    <td className="p-4 text-sm text-slate-600 dark:text-slate-400">{v.treatment || '-'}</td>
+                                                    <td className="p-4"><Badge color={v.severity === 'Emergency' ? 'red' : v.severity === 'High' ? 'orange' : 'blue'}>{v.severity}</Badge></td>
+                                                    <td className="p-4 text-sm text-slate-700 dark:text-slate-300">{v.outcome}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </Card>
-            <Card>
-              <h3 className="font-bold text-xl mb-4 p-6">{t.visitsByGrade}</h3>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={gradeData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" fontSize={13} />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#f59e0b" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          </div>
+          </>
         ) : (
           <div className="h-80 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
             <MousePointerClick size={64} className="mb-4 opacity-30" />
@@ -803,8 +955,8 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
         <FilterBar tabName="epass" />
         {loading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-slate-300" size={32} /></Card>
-            <Card className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-slate-300" size={32} /></Card>
+            <Card className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-blue-500" size={32} /></Card>
+            <Card className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-blue-500" size={32} /></Card>
           </div>
         ) : data ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -905,19 +1057,19 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   const renderStudent360 = () => {
     const locale = lang === 'ar' ? 'ar-EG' : 'en-US';
     const filteredSearchStudents = students.filter(s => 
-      s.name_en.toLowerCase().includes(search360.toLowerCase()) || 
+      (s.name_en && s.name_en.toLowerCase().includes(search360.toLowerCase())) || 
       s.studentNumber.includes(search360)
     ).slice(0, 10);
 
     return (
       <div className="space-y-8">
         {/* Search & Date Range */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
-          <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center">
+        <Card>
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
             <div className="flex-1 relative z-30 w-full">
-              <div className={`relative border-2 rounded-2xl shadow-sm transition-all ${isSearchDropdownOpen ? 'ring-4 ring-blue-500/30 border-blue-500' : 'border-slate-200 dark:border-slate-700'}`}>
+              <div className={`relative transition-all ${isSearchDropdownOpen ? 'shadow-2xl rounded-2xl' : ''}`}>
                 <Search className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${lang === 'ar' ? 'right-4' : 'left-4'}`} size={22} />
-                <input
+                <Input
                   type="text"
                   placeholder={t.searchStudent || "Search student..."}
                   className={`w-full h-16 bg-transparent outline-none text-lg font-medium text-slate-800 dark:text-white ${lang === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'}`}
@@ -930,7 +1082,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   onFocus={() => setIsSearchDropdownOpen(true)}
                   onBlur={() => setTimeout(() => setIsSearchDropdownOpen(false), 200)}
                 />
-                {isSearchDropdownOpen && search360 && !selectedSearchStudent && (
+                {isSearchDropdownOpen && search360 && (
                   <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-b-2xl shadow-2xl mt-1 z-40 max-h-80 overflow-y-auto">
                     {filteredSearchStudents.map(s => (
                       <button
@@ -955,30 +1107,30 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 flex items-center gap-4 h-16">
+            <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto items-center">
+              <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-lg border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-2 flex items-center gap-2 h-16">
                 <Calendar size={20} className="text-slate-400" />
-                <input type="date" value={student360StartDate} onChange={e => setStudent360StartDate(e.target.value)} className="text-sm font-medium bg-transparent border-none outline-none text-slate-700 dark:text-slate-200" />
+                <input type="date" value={student360StartDate} onChange={e => setStudent360StartDate(e.target.value)} className="text-sm font-medium bg-transparent border-none outline-none text-slate-700 dark:text-slate-200 w-32" />
                 <span className="text-slate-400">—</span>
-                <input type="date" value={student360EndDate} onChange={e => setStudent360EndDate(e.target.value)} className="text-sm font-medium bg-transparent border-none outline-none text-slate-700 dark:text-slate-200" />
+                <input type="date" value={student360EndDate} onChange={e => setStudent360EndDate(e.target.value)} className="text-sm font-medium bg-transparent border-none outline-none text-slate-700 dark:text-slate-200 w-32" />
               </div>
 
               <Button
                 onClick={handleGenerate360}
                 disabled={!selectedSearchStudent || isGenerating360}
-                className="h-16 px-10 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-xl text-lg font-bold"
+                className="h-16 px-10 text-lg font-bold w-full lg:w-auto"
               >
                 {isGenerating360 ? <Loader2 className="animate-spin mr-3" size={24} /> : <MousePointerClick className="mr-3" size={24} />}
                 {t.generate}
               </Button>
             </div>
           </div>
-        </div>
+        </Card>
 
         {student360 && student360Data && (
           <div className="space-y-8">
             {/* Profile Header */}
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl shadow-2xl p-8 text-white">
+            <Card className="bg-gradient-to-br from-blue-600/80 to-indigo-700/70 !p-8 text-white border-blue-400/30 shadow-2xl shadow-blue-500/10">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div className="flex items-center gap-8">
                   <div className="w-32 h-32 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
@@ -987,13 +1139,13 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   <div>
                     <h2 className="text-4xl font-bold">{lang === 'en' ? student360.name_en : student360.name_ar}</h2>
                     <div className="flex flex-wrap gap-3 mt-4">
-  <Badge color="gray" className="bg-white/20 text-white text-lg px-5 py-2.5 font-medium backdrop-blur-sm border border-white/30">
+  <Badge color="gray" className="bg-white/20 text-white text-base px-4 py-2 font-medium backdrop-blur-sm border border-white/30">
     {student360.grade}-{student360.section}
   </Badge>
-  <Badge color="gray" className="bg-white/20 text-white text-lg px-5 py-2.5 font-mono backdrop-blur-sm border border-white/30">
+  <Badge color="gray" className="bg-white/20 text-white text-base px-4 py-2 font-mono backdrop-blur-sm border border-white/30">
     #{student360.studentNumber}
   </Badge>
-  <Badge color="gray" className="bg-white/20 text-white text-lg px-5 py-2.5 backdrop-blur-sm border border-white/30">
+  <Badge color="gray" className="bg-white/20 text-white text-base px-4 py-2 backdrop-blur-sm border border-white/30">
     {student360.gender}
   </Badge>
   {student360.isWatchlisted && (
@@ -1009,7 +1161,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   Print Profile
                 </Button>
               </div>
-            </div>
+            </Card>
 
             {/* Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1045,7 +1197,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
             <Card className="p-8">
               <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-6">Attendance Breakdown</h3>
               <div className="h-96 relative">
-                <ResponsiveContainer width="100%" height="100%">
+                <div className="w-full h-full">
                   <PieChart>
                     <Pie
                       data={pieData}
@@ -1055,6 +1207,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                       outerRadius={120}
                       paddingAngle={5}
                       dataKey="value"
+                      isAnimationActive={false}
                     >
                       {pieData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.name === t.absent ? '#ef4444' : entry.name === t.excused ? '#3b82f6' : '#22c55e'} />
@@ -1071,7 +1224,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                       )}
                     />
                   </PieChart>
-                </ResponsiveContainer>
+                </div>
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
       <p className="text-6xl font-bold text-slate-800 dark:text-white">
         {presentPct}%
@@ -1279,21 +1432,21 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
 
   return (
     <div className="space-y-8 pb-12">
-      <Card className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-2xl">
-        <div className="p-2 rounded-2xl bg-white/10 backdrop-blur">
-          <div className="flex flex-wrap gap-3 p-3">
+      <Card className="!p-2">
+        <div className="p-2 rounded-2xl bg-slate-100/50 dark:bg-slate-900/50">
+          <div className="flex flex-wrap gap-2">
             {TABS.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-3 px-8 py-5 rounded-2xl text-lg font-bold transition-all duration-300 ${
+                className={`flex-1 flex items-center justify-center gap-3 px-4 py-4 rounded-xl text-base font-bold transition-all duration-300 ${
                   activeTab === tab.id 
-                    ? 'bg-white text-blue-600 shadow-2xl' 
-                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                    ? 'bg-white dark:bg-slate-800 text-primary shadow-lg' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:backdrop-blur-md'
                 }`}
               >
-                <tab.icon size={26} />
-                {t[tab.labelKey as keyof typeof t] || tab.labelKey}
+                <tab.icon size={20} />
+                <span className="hidden sm:inline">{t[tab.labelKey as keyof typeof t] || tab.labelKey}</span>
               </button>
             ))}
           </div>

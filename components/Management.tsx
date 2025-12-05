@@ -14,6 +14,17 @@ interface ManagementProps {
 
 type Tab = 'users' | 'students' | 'timetable' | 'epass' | 'access' | 'notifications' | 'attendance_rules' | 'calendar';
 
+const TABS = [
+  { id: 'users', labelKey: 'users', icon: Users },
+  { id: 'students', labelKey: 'students', icon: GraduationCap },
+  { id: 'timetable', labelKey: 'timetable', icon: Clock },
+  { id: 'calendar', labelKey: 'calendar', icon: Calendar },
+  { id: 'epass', labelKey: 'destinations', icon: Ticket },
+  { id: 'access', labelKey: 'access', icon: Shield },
+  { id: 'notifications', labelKey: 'notifications', icon: Bell },
+  { id: 'attendance_rules', labelKey: 'attendance_rules', icon: ListChecks },
+];
+
 const STUDENTS_PER_PAGE = 10;
 const USERS_PER_PAGE = 10;
 
@@ -767,54 +778,54 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     if (!viewingCard) return null;
     
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 no-print">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-800">
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">{t.generateId}</h3>
-                    <button onClick={() => setViewingCard(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400">
-                        <X size={20} />
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 no-print backdrop-blur-sm">
+            <div className="bg-white/90 dark:bg-slate-900/90 rounded-[2rem] shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh] border border-white/20 dark:border-slate-700 backdrop-blur-xl animate-in zoom-in-95">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center">
+                    <h3 className="font-bold text-xl text-slate-800 dark:text-white">{t.generateId}</h3>
+                    <button onClick={() => setViewingCard(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400 transition-colors">
+                        <X size={24} />
                     </button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-8 bg-slate-100 dark:bg-slate-950 flex justify-center">
+                <div className="flex-1 overflow-y-auto p-8 bg-slate-50/50 dark:bg-slate-950/50 flex justify-center">
                     <div id="id-card-container">
-                        <div className="w-[480px] bg-white rounded-xl overflow-hidden shadow-xl border border-slate-200 relative flex flex-col print:shadow-none print:border" 
-                             style={{ borderTop: '12px solid #458489' }}>
+                        <div className="w-[480px] bg-white rounded-2xl overflow-hidden shadow-xl border border-slate-200 relative flex flex-col print:shadow-none print:border" 
+                             style={{ borderTop: '12px solid #3b82f6' }}>
                             
                             <div className="p-8">
                                 <div className="mb-6">
                                     <div className="flex justify-between items-start">
-                                        <h1 className="text-3xl font-bold text-slate-900">{lang === 'en' ? viewingCard.name_en : viewingCard.name_ar}</h1>
+                                        <h1 className="text-3xl font-extrabold text-slate-900">{lang === 'en' ? viewingCard.name_en : viewingCard.name_ar}</h1>
                                         {viewingCard.isWatchlisted && (
-                                            <Eye className="text-red-500 animate-pulse" />
+                                            <Eye className="text-red-500 animate-pulse" size={28} />
                                         )}
                                     </div>
-                                    {lang === 'en' && viewingCard.name_ar && <h2 className="text-lg text-slate-500 font-medium">{viewingCard.name_ar}</h2>}
-                                    {lang === 'ar' && viewingCard.name_en && <h2 className="text-lg text-slate-500 font-medium">{viewingCard.name_en}</h2>}
+                                    {lang === 'en' && viewingCard.name_ar && <h2 className="text-xl text-slate-500 font-medium mt-1">{viewingCard.name_ar}</h2>}
+                                    {lang === 'ar' && viewingCard.name_en && <h2 className="text-xl text-slate-500 font-medium mt-1">{viewingCard.name_en}</h2>}
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600 mb-8">
-                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                                        <span className="text-[10px] text-slate-400 uppercase font-bold">{t.grade}</span>
-                                        <span className="font-bold text-slate-800">{viewingCard.grade} - {viewingCard.section}</span>
+                                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wide">{t.grade}</span>
+                                        <span className="font-bold text-slate-800 text-lg">{viewingCard.grade} - {viewingCard.section}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                                        <span className="text-[10px] text-slate-400 uppercase font-bold">ID</span>
-                                        <span className="font-mono font-bold text-slate-800">{viewingCard.studentNumber}</span>
+                                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wide">ID</span>
+                                        <span className="font-mono font-bold text-slate-800 text-lg">{viewingCard.studentNumber}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                                        <span className="text-[10px] text-slate-400 uppercase font-bold">{t.transport}</span>
-                                        <span className="font-bold text-slate-800">{viewingCard.transportMode} {viewingCard.busRoute ? `(${viewingCard.busRoute})` : ''}</span>
+                                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                                        <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wide">{t.transport}</span>
+                                        <span className="font-bold text-slate-800 text-lg">{viewingCard.transportMode} {viewingCard.busRoute ? `(${viewingCard.busRoute})` : ''}</span>
                                     </div>
                                 </div>
 
-                                <div className="flex justify-between items-end border-t border-slate-100 pt-4">
+                                <div className="flex justify-between items-end border-t border-slate-100 pt-6">
                                     <div>
-                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">{t.trackivaAcademy}</p>
-                                        <p className="text-[10px] text-slate-400">{t.academicYear}</p>
+                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-1">{t.trackivaAcademy}</p>
+                                        <p className="text-[10px] text-slate-400 font-medium">{t.academicYear}</p>
                                     </div>
                                     {qrDataUrl && (
-                                        <img src={qrDataUrl} alt="QR Code" className="w-20 h-20 rounded-lg border border-slate-200 p-1" />
+                                        <img src={qrDataUrl} alt="QR Code" className="w-24 h-24 rounded-xl border border-slate-200 p-1" />
                                     )}
                                 </div>
                             </div>
@@ -822,10 +833,10 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2 bg-white dark:bg-slate-900 rounded-b-2xl">
+                <div className="p-6 border-t border-slate-100 dark:border-slate-800/50 flex justify-end gap-3 bg-white/50 dark:bg-slate-900/50 rounded-b-[2rem] backdrop-blur-md">
                     <Button variant="secondary" onClick={() => setViewingCard(null)}>{t.cancel}</Button>
-                    <Button onClick={handlePrintCard}>
-                        <Printer size={16} /> {t.printCard}
+                    <Button onClick={handlePrintCard} className="shadow-lg">
+                        <Printer size={18} className="mr-2" /> {t.printCard}
                     </Button>
                 </div>
             </div>
@@ -834,15 +845,15 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   }
 
   const renderStudentForm = () => (
-    <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700 mb-6 animate-in fade-in shadow-sm">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg text-slate-800 dark:text-white">{editingStudent ? t.actions : t.addStudent}</h3>
+    <div className="bg-slate-50/50 dark:bg-slate-800/50 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 mb-8 animate-in fade-in shadow-sm backdrop-blur-sm">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="font-bold text-xl text-slate-800 dark:text-white">{editingStudent ? t.actions : t.addStudent}</h3>
         <Button variant="ghost" onClick={() => { setEditingStudent(null); setIsAddingStudent(false); setFormData({}); }}>{t.cancel}</Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="col-span-1">
-             <label htmlFor="studentNumber" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.studentNumber} *</label>
+             <label htmlFor="studentNumber" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.studentNumber} *</label>
              <Input 
                 id="studentNumber"
                 placeholder="2024XXX" 
@@ -851,7 +862,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             />
         </div>
         <div className="col-span-1">
-            <label htmlFor="gender" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.gender} *</label>
+            <label htmlFor="gender" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.gender} *</label>
             <Select 
                 id="gender"
                 value={formData.gender || 'Male'} 
@@ -862,7 +873,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             </Select>
         </div>
         <div className="col-span-1 md:col-span-2 lg:col-span-1">
-             <label htmlFor="transportMode" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.transport}</label>
+             <label htmlFor="transportMode" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.transport}</label>
              <Select 
                 id="transportMode"
                 value={formData.transportMode || 'Bus'} 
@@ -875,7 +886,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         </div>
 
         <div className="col-span-1">
-            <label htmlFor="name_en" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.labelEn} *</label>
+            <label htmlFor="name_en" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.labelEn} *</label>
             <Input 
                 id="name_en"
                 placeholder="John Doe" 
@@ -884,7 +895,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             />
         </div>
         <div className="col-span-1">
-            <label htmlFor="name_ar" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.labelAr}</label>
+            <label htmlFor="name_ar" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.labelAr}</label>
             <Input 
                 id="name_ar"
                 placeholder="جون دو" 
@@ -893,7 +904,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             />
         </div>
         <div className="col-span-1">
-             <label htmlFor="watchlist" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.watchlist}</label>
+             <label htmlFor="watchlist" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.watchlist}</label>
              <Select 
                 id="watchlist"
                 value={formData.isWatchlisted ? 'true' : 'false'}
@@ -905,7 +916,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
         </div>
 
         <div className="col-span-1">
-            <label htmlFor="grade" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.grade} *</label>
+            <label htmlFor="grade" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.grade} *</label>
             <Select 
                 id="grade"
                 value={formData.grade || ''} 
@@ -918,7 +929,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             </Select>
         </div>
         <div className="col-span-1">
-            <label htmlFor="section" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.section} *</label>
+            <label htmlFor="section" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.section} *</label>
             <Input 
                 id="section"
                 placeholder="A, B, C..." 
@@ -927,7 +938,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             />
         </div>
         <div className="col-span-1">
-            <label htmlFor="busRoute" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Bus Route</label>
+            <label htmlFor="busRoute" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Bus Route</label>
             <Input 
                 id="busRoute"
                 placeholder="e.g. R-101" 
@@ -936,7 +947,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             />
         </div>
         <div className="col-span-1">
-            <label htmlFor="familyId" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.familyId}</label>
+            <label htmlFor="familyId" className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.familyId}</label>
             <Input 
                 id="familyId"
                 placeholder="Shared ID for siblings" 
@@ -945,125 +956,122 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
             />
         </div>
       </div>
-      <div className="mt-6 flex justify-end gap-2">
-        <Button disabled={isLoading} onClick={handleSaveStudent}>{t.save}</Button>
+      <div className="mt-8 flex justify-end gap-3">
+        <Button disabled={isLoading} onClick={handleSaveStudent} size="lg" className="shadow-lg">{t.save}</Button>
       </div>
     </div>
   );
 
   return (
-      <div className="space-y-6">
-          {renderIdCardModal()}
-          
-          {/* Top Tabs */}
-          <div className="bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 inline-flex flex-wrap gap-1">
-              <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                  {t.users}
-              </button>
-              <button onClick={() => setActiveTab('students')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'students' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                  {t.students}
-              </button>
-              <button onClick={() => setActiveTab('timetable')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'timetable' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                  {t.timetable}
-              </button>
-              <button onClick={() => setActiveTab('calendar')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'calendar' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                  <div className="flex items-center gap-2"><Calendar size={16} /> Calendar</div>
-              </button>
-              <button onClick={() => setActiveTab('epass')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'epass' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                  {t.destinations}
-              </button>
-              <button onClick={() => setActiveTab('access')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'access' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                  {t.accessControl}
-              </button>
-              <button onClick={() => setActiveTab('notifications')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'notifications' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                  {t.notifications}
-              </button>
-              <button onClick={() => setActiveTab('attendance_rules')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'attendance_rules' ? 'bg-primary text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                  {t.attendanceRules}
-              </button>
-          </div>
+      <div className="space-y-8 pb-12">
+          {renderIdCardModal()} 
+          <Card className="!p-2">
+            <div className="p-2 rounded-2xl bg-slate-100/50 dark:bg-slate-900/50">
+              <div className="flex flex-wrap gap-2">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as Tab)}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
+                      activeTab === tab.id
+                        ? 'bg-white dark:bg-slate-800 text-primary shadow-lg'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:backdrop-blur-md'
+                    }`}
+                  >
+                    <tab.icon size={18} />
+                    <span className="hidden sm:inline">{t[tab.labelKey as keyof typeof t]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Card>
 
           {/* Students Management */}
           {activeTab === 'students' && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                   {(isAddingStudent || editingStudent) && renderStudentForm()}
                   
                   {/* Toolbar */}
-                  <Card className="flex flex-col md:flex-row gap-4 justify-between items-end">
-                      <div className="flex flex-wrap items-end gap-2 w-full md:w-auto">
-                           <div className="relative group w-full md:w-64">
-                               <Search className="absolute left-3 top-2.5 text-slate-400 group-focus-within:text-primary transition-colors" size={18} />
-                               <Input placeholder={t.searchPlaceholder} className="pl-10" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                  <Card className="flex flex-col md:flex-row gap-4 justify-between items-center p-6 !bg-transparent">
+                      <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                           <div className="relative group w-full sm:w-64">
+                               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={20} />
+                               <Input placeholder={t.searchPlaceholder} className="pl-12 h-12" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                            </div>
-                           <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="w-28">
-                               <option value="All">{t.allGrades}</option>
-                               {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
-                           </Select>
-                           <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="w-28">
-                               <option value="All">{t.allSections}</option>
-                               {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
-                           </Select>
-                           <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="w-28">
-                               <option value="All">{t.allGenders}</option>
-                               <option value="Male">{t.male}</option>
-                               <option value="Female">{t.female}</option>
-                           </Select>
-                           <button 
-                               onClick={() => {
-                                   const next = sortBy === 'name' ? 'grade' : sortBy === 'grade' ? 'number' : 'name';
-                                   setSortBy(next);
-                               }}
-                               className="px-3 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 text-sm font-bold flex items-center gap-2 transition-colors"
-                           >
-                               <ArrowUpDown size={16} /> {t.sortBy}: {sortBy.toUpperCase()}
-                           </button>
+                           <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-900/50 p-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-lg">
+                               <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="w-28 h-10 bg-transparent border-none focus:ring-0">
+                                   <option value="All">{t.allGrades}</option>
+                                   {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
+                               </Select>
+                               <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="w-28 h-10 bg-transparent border-none focus:ring-0">
+                                   <option value="All">{t.allSections}</option>
+                                   {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
+                               </Select>
+                               <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="w-28 h-10 bg-transparent border-none focus:ring-0">
+                                   <option value="All">{t.allGenders}</option>
+                                   <option value="Male">{t.male}</option>
+                                   <option value="Female">{t.female}</option>
+                               </Select>
+                           </div>
                       </div>
                       
-                      <div className="flex gap-2 w-full md:w-auto">
-                          <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors shadow-sm">
+                      <div className="flex gap-3 w-full md:w-auto justify-end">
+                          <label className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors shadow-sm h-11">
                               <Upload size={18} />
                               <span className="text-sm font-bold">{isUploading ? t.uploading : t.upload}</span>
                               <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleBulkUpload} disabled={isUploading} />
                           </label>
-                          <Button onClick={handleDownloadTemplate} variant="secondary" className="px-3">
+                          <Button onClick={handleDownloadTemplate} variant="secondary" className="px-4 h-11 rounded-xl">
                               <Download size={18} />
                           </Button>
-                          <Button onClick={() => { setIsAddingStudent(true); setFormData({}); }}>
-                              <Plus size={18} /> {t.addStudent}
+                          <Button onClick={() => { setIsAddingStudent(true); setFormData({}); }} className="h-11 w-11 p-0 rounded-xl shadow-md" title={t.addStudent}>
+                              <Plus size={20} />
                           </Button>
                       </div>
                   </Card>
 
                   {/* Table */}
-                  <Card className="p-0 overflow-hidden">
+                  <Card className="p-0 overflow-hidden !bg-transparent">
                       <div className="overflow-x-auto">
-                          <table className="w-full text-left">
-                              <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-xs uppercase border-b border-slate-100 dark:border-slate-800">
-                                  <tr>
-                                      <th className="p-4">ID</th>
-                                      <th className="p-4">{t.studentName}</th>
-                                      <th className="p-4">{t.grade}</th>
-                                      <th className="p-4">{t.transport}</th>
-                                      <th className="p-4 text-center">{t.actions}</th>
+                          <table className="w-full text-left border-collapse">
+                              <thead className="bg-slate-50/50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs uppercase border-b border-slate-100 dark:border-slate-800/50">
+                                  <tr className="[&>th]:p-5 [&>th]:font-bold [&>th]:cursor-pointer [&>th]:select-none [&>th:hover]:bg-slate-100/50 dark:[&>th:hover]:bg-slate-800/50">
+                                      <th onClick={() => setSortBy('number')}>
+                                          <div className="flex items-center gap-2">
+                                              ID {sortBy === 'number' && <ArrowUpDown size={14} />}
+                                          </div>
+                                      </th>
+                                      <th onClick={() => setSortBy('name')}>
+                                          <div className="flex items-center gap-2">
+                                              {t.studentName} {sortBy === 'name' && <ArrowUpDown size={14} />}
+                                          </div>
+                                      </th>
+                                      <th onClick={() => setSortBy('grade')}>
+                                          <div className="flex items-center gap-2">
+                                              {t.grade} {sortBy === 'grade' && <ArrowUpDown size={14} />}
+                                          </div>
+                                      </th>
+                                      <th className="p-5 font-bold">{t.transport}</th>
+                                      <th className="p-5 font-bold text-center">{t.actions}</th>
                                   </tr>
                               </thead>
-                              <tbody className="divide-y divide-slate-50 dark:divide-slate-800 text-sm">
+                              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 text-sm">
                                   {paginatedStudents.length === 0 ? (
-                                      <tr><td colSpan={5} className="p-8 text-center text-slate-400">No students found</td></tr>
+                                      <tr><td colSpan={5} className="p-12 text-center text-slate-400 italic">No students found</td></tr>
                                   ) : (
                                       paginatedStudents.map(student => (
-                                          <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                              <td className="p-4 font-mono text-slate-500 dark:text-slate-400">{student.studentNumber}</td>
-                                              <td className="p-4 font-bold text-slate-700 dark:text-slate-200">
+                                          <tr key={student.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                              <td className="p-5 font-mono text-slate-500 dark:text-slate-400">{student.studentNumber}</td>
+                                              <td className="p-5 font-bold text-slate-700 dark:text-slate-200">
                                                   {lang === 'en' ? student.name_en : student.name_ar}
-                                                  {student.isWatchlisted && <Eye className="inline ml-2 text-red-500 w-4 h-4" />}
+                                                  {student.isWatchlisted && <Eye className="inline ml-2 text-red-500 w-4 h-4 animate-pulse" />}
                                               </td>
-                                              <td className="p-4"><Badge color="blue">{student.grade} - {student.section}</Badge></td>
-                                              <td className="p-4 text-slate-600 dark:text-slate-300">{student.transportMode}</td>
-                                              <td className="p-4 flex justify-center gap-2">
-                                                  <button onClick={() => setViewingCard(student)} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg" title="ID Card"><CreditCard size={16} /></button>
-                                                  <button onClick={() => { setEditingStudent(student); setFormData(student); setIsAddingStudent(false); }} className="p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-lg"><Edit2 size={16} /></button>
-                                                  <button onClick={() => handleDeleteStudent(student.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg"><Trash2 size={16} /></button>
+                                              <td className="p-5"><Badge color="blue">{student.grade} - {student.section}</Badge></td>
+                                              <td className="p-5 text-slate-600 dark:text-slate-300 font-medium">{student.transportMode}</td>
+                                              <td className="p-5 flex justify-center gap-2">
+                                                  <button onClick={() => setViewingCard(student)} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg transition-colors" title="ID Card"><CreditCard size={18} /></button>
+                                                  <button onClick={() => { setEditingStudent(student); setFormData(student); setIsAddingStudent(false); }} className="p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-lg transition-colors"><Edit2 size={18} /></button>
+                                                  <button onClick={() => handleDeleteStudent(student.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg transition-colors"><Trash2 size={18} /></button>
                                               </td>
                                           </tr>
                                       ))
@@ -1076,7 +1084,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                           currentPage={studentPage}
                           totalPages={totalStudentPages}
                           onPageChange={setStudentPage}
-                          className="p-4 border-t border-slate-100 dark:border-slate-800"
+                          className="p-5 border-t border-slate-100 dark:border-slate-800/50"
                       />
                   </Card>
               </div>
@@ -1084,73 +1092,88 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
           {/* User Management */}
           {activeTab === 'users' && (
-              <div className="space-y-4">
-                  {/* ... User Add/Edit Form ... */}
+              <div className="space-y-6">
+
                   {(isAddingUser || editingUser) && (
-                       <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700 mb-6 animate-in fade-in shadow-sm">
-                          <div className="flex justify-between items-center mb-4">
-                              <h3 className="font-bold text-lg text-slate-800 dark:text-white">{editingUser ? t.actions : t.addUser}</h3>
+                       <div className="bg-slate-50/50 dark:bg-slate-800/50 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 mb-8 animate-in fade-in shadow-sm backdrop-blur-sm">
+                          <div className="flex justify-between items-center mb-6">
+                              <h3 className="font-bold text-xl text-slate-800 dark:text-white">{editingUser ? t.actions : t.addUser}</h3>
                               <Button variant="ghost" onClick={() => { setEditingUser(null); setIsAddingUser(false); setFormData({}); }}>{t.cancel}</Button>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.studentName}</label><Input value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Full Name" /></div>
-                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.email}</label><Input value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="email@school.com" /></div>
-                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.role}</label><Select value={formData.role || UserRole.TEACHER} onChange={e => setFormData({...formData, role: e.target.value})}>{ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}</Select></div>
-                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.userChatId}</label><Input value={formData.telegramChatId || ''} onChange={e => setFormData({...formData, telegramChatId: e.target.value})} placeholder="Optional: For Notifications" /></div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.studentName}</label><Input value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Full Name" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.email}</label><Input value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="email@school.com" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.role}</label><Select value={formData.role || UserRole.TEACHER} onChange={e => setFormData({...formData, role: e.target.value})}>{ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}</Select></div>
+                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.userChatId}</label><Input value={formData.telegramChatId || ''} onChange={e => setFormData({...formData, telegramChatId: e.target.value})} placeholder="Optional: For Notifications" /></div>
                           </div>
-                          <div className="mt-4 border-t border-slate-200 dark:border-slate-700 pt-4">
-                              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.assignedClasses}</label>
-                              <div className="flex gap-2 mb-2">
-                                  <Select value={assignedClassGrade} onChange={e => setAssignedClassGrade(e.target.value)} className="w-32"><option value="">{t.grade}</option>{uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}</Select>
-                                  <Select value={assignedClassSection} onChange={e => setAssignedClassSection(e.target.value)} disabled={!assignedClassGrade} className="w-32"><option value="">{t.section}</option>{availableAssignedClassSections.map(s => <option key={s} value={s}>{s}</option>)}</Select>
+                          <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-6">
+                              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-3">{t.assignedClasses}</label>
+                              <div className="flex gap-3 mb-3">
+                                  <Select value={assignedClassGrade} onChange={e => setAssignedClassGrade(e.target.value)} className="w-36"><option value="">{t.grade}</option>{uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}</Select>
+                                  <Select value={assignedClassSection} onChange={e => setAssignedClassSection(e.target.value)} disabled={!assignedClassGrade} className="w-36"><option value="">{t.section}</option>{availableAssignedClassSections.map(s => <option key={s} value={s}>{s}</option>)}</Select>
                                   <Button onClick={handleAddAssignedClass} variant="secondary"><Plus size={16} /> {t.assignClass}</Button>
                               </div>
                               <div className="flex flex-wrap gap-2">
                                   {formData.assignedClasses?.map((c: AssignedClass, i: number) => (
-                                      <Badge key={i} color="blue" className="flex items-center gap-1 pl-2 pr-1 py-1">{c.grade} - {c.section} <button onClick={() => handleRemoveAssignedClass(i)} className="hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5"><X size={12} /></button></Badge>
+                                      <Badge key={i} color="blue" className="flex items-center gap-2 pl-3 pr-2 py-1.5 text-sm">{c.grade} - {c.section} <button onClick={() => handleRemoveAssignedClass(i)} className="hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5 transition-colors"><X size={14} /></button></Badge>
                                   ))}
                               </div>
                           </div>
-                          <div className="mt-6 flex justify-end gap-2"><Button disabled={isLoading} onClick={handleSaveUser}>{t.save}</Button></div>
+                          <div className="mt-8 flex justify-end gap-3"><Button disabled={isLoading} onClick={handleSaveUser} size="lg" className="shadow-lg">{t.save}</Button></div>
                        </div>
                   )}
 
-                  <Card className="flex justify-between items-center">
-                      <div className="flex gap-4 items-center flex-1">
-                           <div className="relative group w-full md:w-64">
-                               <Search className="absolute left-3 top-2.5 text-slate-400 group-focus-within:text-primary transition-colors" size={18} />
-                               <Input placeholder="Search Users..." className="pl-10" value={userSearchTerm} onChange={e => setUserSearchTerm(e.target.value)} />
-                           </div>
-                           <Select value={userRoleFilter} onChange={e => setUserRoleFilter(e.target.value)} className="w-40">
-                               <option value="All">All Roles</option>
-                               {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
-                           </Select>
+                  <Card className="p-6 !bg-transparent">
+                      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                          <div className="flex gap-4 items-center w-full md:w-auto">
+                               <div className="relative group flex-1 md:flex-none md:w-72">
+                                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={20} />
+                                   <Input placeholder="Search Users..." className="pl-12 h-12" value={userSearchTerm} onChange={e => setUserSearchTerm(e.target.value)} />
+                               </div>
+                               <Select value={userRoleFilter} onChange={e => setUserRoleFilter(e.target.value)} className="w-48 h-12">
+                                   <option value="All">All Roles</option>
+                                   {ROLES_LIST.map(r => <option key={r} value={r}>{r}</option>)}
+                               </Select>
+                          </div>
+                          <Button onClick={() => { setIsAddingUser(true); setFormData({}); }} className="h-12 px-6 rounded-xl shadow-md w-full md:w-auto"><Plus size={20} className="mr-2" /> {t.addUser}</Button>
                       </div>
-                      <Button onClick={() => { setIsAddingUser(true); setFormData({}); }}><Plus size={18} /> {t.addUser}</Button>
                   </Card>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {paginatedUsers.map(user => (
-                          <div key={user.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                              <div className="flex justify-between items-start mb-2">
-                                  <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-300">{user.name.charAt(0)}</div>
-                                      <div><h4 className="font-bold text-slate-800 dark:text-white">{user.name}</h4><p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p></div>
-                                  </div>
-                                  <Badge color="blue">{user.role}</Badge>
-                              </div>
-                              {user.assignedClasses && user.assignedClasses.length > 0 && (
-                                  <div className="mt-3 flex flex-wrap gap-1">
-                                      {user.assignedClasses.map((ac, i) => <span key={i} className="text-[10px] bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">{ac.grade}-{ac.section}</span>)}
-                                  </div>
-                              )}
-                              <div className="mt-4 pt-3 border-t border-slate-50 dark:border-slate-700 flex justify-end gap-2">
-                                  <button onClick={() => { setEditingUser(user); setFormData(user); setIsAddingUser(false); }} className="p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-lg"><Edit2 size={16} /></button>
-                                  <button onClick={() => handleDeleteUser(user.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg"><Trash2 size={16} /></button>
-                              </div>
-                          </div>
-                      ))}
-                  </div>
+                  <Card className="p-0 overflow-hidden !bg-transparent">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-slate-50/50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs uppercase border-b border-slate-100 dark:border-slate-800/50">
+                                <tr>
+                                    <th className="p-5 font-bold">{t.studentName}</th>
+                                    <th className="p-5 font-bold">{t.email}</th>
+                                    <th className="p-5 font-bold">{t.role}</th>
+                                    <th className="p-5 font-bold">{t.assignedClasses}</th>
+                                    <th className="p-5 font-bold text-center">{t.actions}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 text-sm">
+                                {paginatedUsers.map(user => (
+                                    <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td className="p-5 font-bold text-slate-700 dark:text-slate-200">{user.name}</td>
+                                        <td className="p-5 text-slate-600 dark:text-slate-300">{user.email}</td>
+                                        <td className="p-5"><Badge color="blue">{user.role}</Badge></td>
+                                        <td className="p-5">
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {user.assignedClasses?.map((ac, i) => (
+                                                    <span key={i} className="text-[10px] font-bold bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600/50 px-2 py-1 rounded-md text-slate-600 dark:text-slate-300">{ac.grade}-{ac.section}</span>
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td className="p-5 flex justify-center gap-2">
+                                            <button onClick={() => { setEditingUser(user); setFormData(user); setIsAddingUser(false); }} className="p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-lg transition-colors"><Edit2 size={18} /></button>
+                                            <button onClick={() => handleDeleteUser(user.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg transition-colors"><Trash2 size={18} /></button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                  </Card>
                   <Pagination 
                       currentPage={userPage}
                       totalPages={totalUserPages}
@@ -1161,34 +1184,36 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
           {/* Access Control */}
           {activeTab === 'access' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card className="col-span-1 h-fit">
-                      <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">{t.selectRole}</h3>
-                      <div className="space-y-1">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <Card className="col-span-1 h-fit p-6">
+                      <h3 className="font-bold text-xl mb-6 text-slate-800 dark:text-white">{t.selectRole}</h3>
+                      <div className="space-y-2">
                           {ROLES_LIST.map(role => (
-                              <button key={role} onClick={() => setSelectedRoleForAccess(role)} className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex justify-between items-center ${selectedRoleForAccess === role ? 'bg-primary text-white shadow-md' : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
-                                  <span className="font-medium">{role}</span>
-                                  {selectedRoleForAccess === role && <Check size={16} />}
+                              <button key={role} onClick={() => setSelectedRoleForAccess(role)} className={`w-full text-left px-5 py-4 rounded-2xl transition-all flex justify-between items-center ${selectedRoleForAccess === role ? 'bg-primary text-white shadow-lg scale-105' : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                                  <span className="font-bold">{role}</span>
+                                  {selectedRoleForAccess === role && <Check size={18} />}
                               </button>
                           ))}
                       </div>
                   </Card>
-                  <Card className="col-span-1 md:col-span-2">
-                      <div className="flex justify-between items-center mb-6">
+                  <Card className="col-span-1 md:col-span-2 p-8">
+                      <div className="flex justify-between items-center mb-8">
                            <div>
-                               <h3 className="font-bold text-lg text-slate-800 dark:text-white">{selectedRoleForAccess} Permissions</h3>
-                               <p className="text-sm text-slate-500 dark:text-slate-400">Select which modules this role can access.</p>
+                               <h3 className="font-bold text-2xl text-slate-800 dark:text-white">{selectedRoleForAccess} Permissions</h3>
+                               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">Select which modules this role can access.</p>
                            </div>
-                           <Shield className="text-slate-200 dark:text-slate-700" size={48} />
+                           <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-full">
+                                <Shield className="text-slate-300 dark:text-slate-600" size={40} />
+                           </div>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {NAV_ITEMS.map(item => {
                               const isAllowed = rolePermissions?.[selectedRoleForAccess]?.includes(item.id);
                               const Icon = item.icon;
                               return (
-                                  <div key={item.id} onClick={() => handleToggleAccess(item.id)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-4 ${isAllowed ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600'}`}>
-                                      <div className={`p-2 rounded-lg ${isAllowed ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`}><Icon size={24} /></div>
-                                      <div><h4 className={`font-bold ${isAllowed ? 'text-green-800 dark:text-green-300' : 'text-slate-500 dark:text-slate-400'}`}>{lang === 'en' ? item.label_en : item.label_ar}</h4><p className="text-xs text-slate-400 dark:text-slate-500 uppercase font-bold">{isAllowed ? 'Access Granted' : 'Access Denied'}</p></div>
+                                  <div key={item.id} onClick={() => handleToggleAccess(item.id)} className={`p-5 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-5 group hover:scale-[1.02] ${isAllowed ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600'}`}>
+                                      <div className={`p-3 rounded-xl transition-colors ${isAllowed ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`}><Icon size={28} /></div>
+                                      <div><h4 className={`font-bold text-lg ${isAllowed ? 'text-green-800 dark:text-green-300' : 'text-slate-500 dark:text-slate-400'}`}>{lang === 'en' ? item.label_en : item.label_ar}</h4><p className="text-xs text-slate-400 dark:text-slate-500 uppercase font-bold tracking-wider mt-1">{isAllowed ? 'Access Granted' : 'Access Denied'}</p></div>
                                   </div>
                               );
                           })}
@@ -1197,25 +1222,24 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
               </div>
           )}
           
-          {/* ... (Notifications, Attendance Rules, E-Pass Destinations, Timetable tabs remain similar, no major tables to paginate here except maybe Destinations if huge, but usually not needed) ... */}
           {/* Notifications Tab */}
           {activeTab === 'notifications' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                   {/* Parent Notification Section */}
-                  <Card>
-                      <div className="flex items-start gap-4 mb-6">
-                           <div className="p-3 bg-purple-100 text-purple-600 rounded-full"><MessageCircle size={24} /></div>
-                           <div><h3 className="font-bold text-lg text-slate-800 dark:text-white">{t.parentNotifications}</h3><p className="text-slate-500 dark:text-slate-400 text-sm">{t.parentNotificationsDesc}</p></div>
+                  <Card className="p-8 !bg-transparent">
+                      <div className="flex items-start gap-5 mb-8">
+                           <div className="p-4 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl shadow-sm"><MessageCircle size={32} /></div>
+                           <div><h3 className="font-bold text-2xl text-slate-800 dark:text-white">{t.parentNotifications}</h3><p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{t.parentNotificationsDesc}</p></div>
                       </div>
-                      <div className="relative max-w-xl mb-6">
-                           <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-                           <Input placeholder={t.searchStudent} className="pl-10" value={parentSearch} onChange={e => setParentSearch(e.target.value)} />
+                      <div className="relative max-w-xl mb-8">
+                           <Search className="absolute left-4 top-3.5 text-slate-400" size={20} />
+                           <Input placeholder={t.searchStudent} className="pl-12 h-12 text-lg rounded-xl" value={parentSearch} onChange={e => setParentSearch(e.target.value)} />
                            {parentSearch && (
-                               <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg mt-1 z-10 max-h-60 overflow-y-auto">
+                               <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl mt-2 z-20 max-h-60 overflow-y-auto">
                                    {filteredParentSearch.map(s => (
-                                       <button key={s.id} onClick={() => handleParentSearchSelect(s)} className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-50 dark:border-slate-700 last:border-0">
+                                       <button key={s.id} onClick={() => handleParentSearchSelect(s)} className="w-full text-left px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700/50 last:border-0 transition-colors">
                                             <p className="font-bold text-slate-700 dark:text-slate-200">{lang === 'en' ? s.name_en : s.name_ar}</p>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">{s.studentNumber} - {s.grade}-{s.section}</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">{s.studentNumber} - {s.grade}-{s.section}</p>
                                        </button>
                                    ))}
                                </div>
@@ -1223,147 +1247,147 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       </div>
                       
                       {selectedStudentForParent && (
-                          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-6 border border-purple-100 dark:border-purple-800 animate-in fade-in">
-                              <div className="flex justify-between items-start mb-4">
-                                  <div><h4 className="font-bold text-purple-900 dark:text-purple-100">{lang === 'en' ? selectedStudentForParent.name_en : selectedStudentForParent.name_ar}</h4><p className="text-sm text-purple-700 dark:text-purple-300">Configure Parent Alerts</p></div>
-                                  <Button variant="ghost" onClick={() => setSelectedStudentForParent(null)} size="sm"><X size={16} /></Button>
+                          <div className="bg-purple-50/50 dark:bg-purple-900/10 rounded-3xl p-8 border border-purple-100 dark:border-purple-800/50 animate-in fade-in backdrop-blur-sm">
+                              <div className="flex justify-between items-start mb-6">
+                                  <div><h4 className="font-bold text-xl text-purple-900 dark:text-purple-100">{lang === 'en' ? selectedStudentForParent.name_en : selectedStudentForParent.name_ar}</h4><p className="text-sm text-purple-700 dark:text-purple-300 font-medium">Configure Parent Alerts</p></div>
+                                  <Button variant="ghost" onClick={() => setSelectedStudentForParent(null)} size="sm" className="hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-300"><X size={20} /></Button>
                               </div>
-                              <div className="mb-4">
-                                  <label className="block text-xs font-bold text-purple-800 dark:text-purple-200 mb-1">{t.parentChatId}</label>
-                                  <Input value={parentChatId} onChange={e => setParentChatId(e.target.value)} placeholder="Enter numeric Chat ID" className="bg-white dark:bg-slate-900" />
+                              <div className="mb-6">
+                                  <label className="block text-xs font-bold text-purple-800 dark:text-purple-200 mb-2 uppercase tracking-wide">{t.parentChatId}</label>
+                                  <Input value={parentChatId} onChange={e => setParentChatId(e.target.value)} placeholder="Enter numeric Chat ID" className="bg-white/80 dark:bg-slate-900/80 border-purple-200 dark:border-purple-800 focus:border-purple-500 focus:ring-purple-500/20" />
                               </div>
-                              <div className="mb-4"><label className="block text-xs font-bold text-purple-800 dark:text-purple-200 mb-2">{t.selectEvents}</label>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="mb-6"><label className="block text-xs font-bold text-purple-800 dark:text-purple-200 mb-3 uppercase tracking-wide">{t.selectEvents}</label>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                       {['UNAUTHORIZED', 'EARLY_LEAVE', ...destinations.map(d => d.id)].map(key => (
-                                          <label key={key} className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-purple-100 dark:border-slate-700 cursor-pointer hover:bg-purple-50/50 dark:hover:bg-slate-700">
-                                              <input type="checkbox" checked={!!parentRules[key]} onChange={() => toggleParentRule(key)} className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500" />
-                                              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{key === 'UNAUTHORIZED' ? 'Unauthorized Exit' : key === 'EARLY_LEAVE' ? 'Early Leave' : destinations.find(d => d.id === key)?.label_en || key}</span>
+                                          <label key={key} className="flex items-center gap-4 p-4 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-purple-100 dark:border-slate-700 cursor-pointer hover:bg-purple-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
+                                              <input type="checkbox" checked={!!parentRules[key]} onChange={() => toggleParentRule(key)} className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500" />
+                                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{key === 'UNAUTHORIZED' ? 'Unauthorized Exit' : key === 'EARLY_LEAVE' ? 'Early Leave' : destinations.find(d => d.id === key)?.label_en || key}</span>
                                           </label>
                                       ))}
                                   </div>
                               </div>
-                              <div className="flex justify-end"><Button onClick={handleSaveParentSettings} disabled={isLoading}>{t.saveParentSettings}</Button></div>
+                              <div className="flex justify-end"><Button onClick={handleSaveParentSettings} disabled={isLoading} className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/30 px-8 h-12 rounded-xl text-lg font-bold">{t.saveParentSettings}</Button></div>
                           </div>
                       )}
                   </Card>
 
                   {/* General Notification Settings */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <Card>
-                           <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><ShieldAlert size={20} className="text-blue-500" /> {t.securityAlerts}</h3>
-                           <div className="space-y-3">
-                               <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.botToken}</label><Input type="password" value={telegramToken} onChange={e => setTelegramToken(e.target.value)} /></div>
-                               <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.chatId} (Security Channel)</label><Input value={telegramChatId} onChange={e => setTelegramChatId(e.target.value)} /></div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 !bg-transparent">
+                      <Card className="p-8">
+                           <h3 className="font-bold text-xl mb-6 flex items-center gap-3 text-slate-800 dark:text-white"><ShieldAlert size={24} className="text-blue-500" /> {t.securityAlerts}</h3>
+                           <div className="space-y-5">
+                               <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.botToken}</label><Input type="password" value={telegramToken} onChange={e => setTelegramToken(e.target.value)} className="font-mono text-sm" /></div>
+                               <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.chatId} (Security Channel)</label><Input value={telegramChatId} onChange={e => setTelegramChatId(e.target.value)} className="font-mono text-sm" /></div>
                            </div>
-                           <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300 mt-6 mb-3">{t.enableNotificationsFor}</h4>
-                           <div className="space-y-2">
+                           <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300 mt-8 mb-4 uppercase tracking-wide">{t.enableNotificationsFor}</h4>
+                           <div className="space-y-3">
                                {['UNAUTHORIZED', ...destinations.map(d => d.id)].map(key => (
-                                   <label key={key} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded transition-colors">
-                                       <input type="checkbox" checked={!!notificationRules[key]} onChange={() => toggleNotificationRule(key)} className="rounded text-primary focus:ring-primary" />
-                                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{key === 'UNAUTHORIZED' ? t.unauthorized : destinations.find(d => d.id === key)?.label_en || key}</span>
+                                   <label key={key} className="flex items-center gap-3 cursor-pointer p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors border border-transparent hover:border-slate-100 dark:hover:border-slate-700">
+                                       <input type="checkbox" checked={!!notificationRules[key]} onChange={() => toggleNotificationRule(key)} className="rounded text-primary focus:ring-primary w-5 h-5" />
+                                       <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{key === 'UNAUTHORIZED' ? t.unauthorized : destinations.find(d => d.id === key)?.label_en || key}</span>
                                    </label>
                                ))}
                            </div>
                       </Card>
 
-                      <div className="space-y-6">
-                           <Card>
-                               <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><LogOut size={20} className="text-orange-500" /> {t.receptionAlerts}</h3>
-                               <div className="space-y-3">
-                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.botToken}</label><Input type="password" value={elTelegramToken} onChange={e => setElTelegramToken(e.target.value)} /></div>
-                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.chatId} (Reception/Admin)</label><Input value={elTelegramChatId} onChange={e => setElTelegramChatId(e.target.value)} /></div>
+                      <div className="space-y-8">
+                           <Card className="p-8">
+                               <h3 className="font-bold text-xl mb-6 flex items-center gap-3 text-slate-800 dark:text-white"><LogOut size={24} className="text-orange-500" /> {t.receptionAlerts}</h3>
+                               <div className="space-y-5">
+                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.botToken}</label><Input type="password" value={elTelegramToken} onChange={e => setElTelegramToken(e.target.value)} className="font-mono text-sm" /></div>
+                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.chatId} (Reception/Admin)</label><Input value={elTelegramChatId} onChange={e => setElTelegramChatId(e.target.value)} className="font-mono text-sm" /></div>
                                </div>
                            </Card>
-                           <Card>
-                               <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><Users size={20} className="text-green-500" /> {t.attendanceAlerts}</h3>
-                               <div className="space-y-3">
-                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.botToken}</label><Input type="password" value={attTelegramToken} onChange={e => setAttTelegramToken(e.target.value)} /></div>
-                                   <p className="text-xs text-slate-400 italic">Chat IDs are configured per Social Worker in User Management.</p>
+                           <Card className="p-8">
+                               <h3 className="font-bold text-xl mb-6 flex items-center gap-3 text-slate-800 dark:text-white"><Users size={24} className="text-green-500" /> {t.attendanceAlerts}</h3>
+                               <div className="space-y-5">
+                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.botToken}</label><Input type="password" value={attTelegramToken} onChange={e => setAttTelegramToken(e.target.value)} className="font-mono text-sm" /></div>
+                                   <p className="text-xs text-slate-400 italic bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700">Chat IDs are configured per Social Worker in User Management.</p>
                                </div>
                            </Card>
-                            <Card>
-                               <h3 className="font-bold text-lg mb-2 flex items-center gap-2 text-slate-800 dark:text-white"><Eye size={20} className="text-red-500" /> {t.watchlistAlerts}</h3>
-                               <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t.watchlistDesc}</p>
-                               <div className="space-y-3">
-                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.botToken}</label><Input type="password" value={wlTelegramToken} onChange={e => setWlTelegramToken(e.target.value)} /></div>
-                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.chatId} (Private Channel)</label><Input value={wlTelegramChatId} onChange={e => setWlTelegramChatId(e.target.value)} /></div>
+                            <Card className="p-8">
+                               <h3 className="font-bold text-xl mb-4 flex items-center gap-3 text-slate-800 dark:text-white"><Eye size={24} className="text-red-500" /> {t.watchlistAlerts}</h3>
+                               <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">{t.watchlistDesc}</p>
+                               <div className="space-y-5">
+                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.botToken}</label><Input type="password" value={wlTelegramToken} onChange={e => setWlTelegramToken(e.target.value)} className="font-mono text-sm" /></div>
+                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.chatId} (Private Channel)</label><Input value={wlTelegramChatId} onChange={e => setWlTelegramChatId(e.target.value)} className="font-mono text-sm" /></div>
                                </div>
                            </Card>
                       </div>
                   </div>
-                  <div className="flex justify-end pt-4"><Button onClick={handleUpdateNotificationSettings}>{t.saveCredentials}</Button></div>
+                  <div className="flex justify-end pt-4"><Button onClick={handleUpdateNotificationSettings} size="lg" className="px-8 shadow-lg">{t.saveCredentials}</Button></div>
               </div>
           )}
 
           {/* Attendance Rules Tab */}
-          {activeTab === 'attendance_rules' && (
-              <Card className="max-w-2xl mx-auto">
-                  <div className="flex items-center gap-4 mb-6"><div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full"><ListChecks size={24} /></div><div><h3 className="font-bold text-lg text-slate-800 dark:text-white">{t.attendanceRules}</h3><p className="text-slate-500 dark:text-slate-400 text-sm">{t.attendanceRulesDesc}</p></div></div>
+          {activeTab === 'attendance_rules' && ( 
+              <Card className="max-w-3xl mx-auto p-8">
+                  <div className="flex items-center gap-6 mb-8"><div className="p-4 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl shadow-sm"><ListChecks size={32} /></div><div><h3 className="font-bold text-2xl text-slate-800 dark:text-white">{t.attendanceRules}</h3><p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{t.attendanceRulesDesc}</p></div></div>
                   
-                  <div className="space-y-6">
-                      <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl">
-                          <label className="block font-bold text-slate-700 dark:text-slate-200 mb-2">{t.absentThreshold}</label>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t.absentThresholdDesc}</p>
-                          <div className="flex items-center gap-3">
-                              <input type="range" min="1" max="8" value={attendanceRules.absentPeriodThreshold} onChange={e => setAttendanceRules({...attendanceRules, absentPeriodThreshold: parseInt(e.target.value)})} className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer" />
-                              <span className="font-bold text-lg text-blue-600 dark:text-blue-400 w-8 text-center">{attendanceRules.absentPeriodThreshold}</span>
+                  <div className="space-y-8">
+                      <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+                          <label className="block font-bold text-lg text-slate-800 dark:text-white mb-2">{t.absentThreshold}</label>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{t.absentThresholdDesc}</p>
+                          <div className="flex items-center gap-6">
+                              <input type="range" min="1" max="8" value={attendanceRules.absentPeriodThreshold} onChange={e => setAttendanceRules({...attendanceRules, absentPeriodThreshold: parseInt(e.target.value)})} className="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-primary" />
+                              <span className="font-bold text-3xl text-blue-600 dark:text-blue-400 w-12 text-center">{attendanceRules.absentPeriodThreshold}</span>
                           </div>
                       </div>
 
-                      <div className="flex items-start gap-3 p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800">
-                          <input type="checkbox" checked={attendanceRules.countAllExcusedAsExcusedDay} onChange={e => setAttendanceRules({...attendanceRules, countAllExcusedAsExcusedDay: e.target.checked})} className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
-                          <div><label className="block font-bold text-slate-700 dark:text-slate-200">{t.countAllExcused}</label><p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t.countAllExcusedDesc}</p></div>
+                      <div className="flex items-start gap-4 p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-800 shadow-sm transition-all hover:border-blue-200 dark:hover:border-blue-800">
+                          <input type="checkbox" checked={attendanceRules.countAllExcusedAsExcusedDay} onChange={e => setAttendanceRules({...attendanceRules, countAllExcusedAsExcusedDay: e.target.checked})} className="mt-1 w-6 h-6 text-blue-600 rounded-md focus:ring-blue-500" />
+                          <div><label className="block font-bold text-lg text-slate-800 dark:text-white mb-1">{t.countAllExcused}</label><p className="text-sm text-slate-500 dark:text-slate-400">{t.countAllExcusedDesc}</p></div>
                       </div>
 
                       {/* Double Count Friday Toggle */}
-                      <div className="flex items-start gap-3 p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800">
-                          <input type="checkbox" checked={attendanceRules.doubleCountFridays || false} onChange={e => setAttendanceRules({...attendanceRules, doubleCountFridays: e.target.checked})} className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
-                          <div><label className="block font-bold text-slate-700 dark:text-slate-200">{t.doubleCountFriday}</label><p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t.doubleCountFridayDesc}</p></div>
+                      <div className="flex items-start gap-4 p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-800 shadow-sm transition-all hover:border-blue-200 dark:hover:border-blue-800">
+                          <input type="checkbox" checked={attendanceRules.doubleCountFridays || false} onChange={e => setAttendanceRules({...attendanceRules, doubleCountFridays: e.target.checked})} className="mt-1 w-6 h-6 text-blue-600 rounded-md focus:ring-blue-500" />
+                          <div><label className="block font-bold text-lg text-slate-800 dark:text-white mb-1">{t.doubleCountFriday}</label><p className="text-sm text-slate-500 dark:text-slate-400">{t.doubleCountFridayDesc}</p></div>
                       </div>
 
                       {/* Specific Double Count Dates */}
-                      <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl">
-                           <label className="block font-bold text-slate-700 dark:text-slate-200 mb-2">{t.doubleCountDates}</label>
-                           <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t.doubleCountDatesDesc}</p>
+                      <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+                           <label className="block font-bold text-lg text-slate-800 dark:text-white mb-2">{t.doubleCountDates}</label>
+                           <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{t.doubleCountDatesDesc}</p>
                            
-                           <div className="flex gap-2 mb-3">
+                           <div className="flex gap-3 mb-6">
                                <div className="relative">
                                    <Input 
                                        type="date" 
                                        value={newDoubleDate}
                                        onChange={(e) => setNewDoubleDate(e.target.value)}
-                                       className="pl-9 w-40"
+                                       className="pl-10 w-48 h-12 rounded-xl"
                                    />
-                                   <Calendar className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                                   <Calendar className="absolute left-3.5 top-3.5 text-slate-400" size={18} />
                                </div>
-                               <Button onClick={handleAddDoubleDate} size="sm"><Plus size={16} /> {t.addDate}</Button>
+                               <Button onClick={handleAddDoubleDate} className="h-12 rounded-xl px-5"><Plus size={18} /> {t.addDate}</Button>
                            </div>
 
                            {attendanceRules.doubleCountDates && attendanceRules.doubleCountDates.length > 0 && (
-                               <div className="flex flex-wrap gap-2">
+                               <div className="flex flex-wrap gap-3">
                                    {attendanceRules.doubleCountDates.map((date) => (
-                                       <Badge key={date} color="red" className="flex items-center gap-1 pl-2 pr-1 py-1">
+                                       <Badge key={date} color="red" className="flex items-center gap-2 pl-3 pr-2 py-1.5 text-sm rounded-lg shadow-sm">
                                            {date}
-                                           <button onClick={() => handleRemoveDoubleDate(date)} className="hover:bg-red-200 dark:hover:bg-red-800 rounded-full p-0.5 text-red-800 dark:text-red-100">
-                                               <X size={12} />
+                                           <button onClick={() => handleRemoveDoubleDate(date)} className="hover:bg-red-200 dark:hover:bg-red-800 rounded-full p-0.5 text-red-800 dark:text-red-100 transition-colors">
+                                               <X size={14} />
                                            </button>
                                        </Badge>
                                    ))}
                                </div>
                            )}
                            {(!attendanceRules.doubleCountDates || attendanceRules.doubleCountDates.length === 0) && (
-                               <p className="text-xs text-slate-400 italic">No specific dates added.</p>
+                               <p className="text-sm text-slate-400 italic">No specific dates added.</p>
                            )}
                       </div>
 
-                      <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl">
-                           <label className="block font-bold text-slate-700 dark:text-slate-200 mb-2">{t.attendanceAlertThresholds}</label>
-                           <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t.attendanceAlertDesc}</p>
-                           <div className="flex flex-wrap gap-2">
+                      <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+                           <label className="block font-bold text-lg text-slate-800 dark:text-white mb-2">{t.attendanceAlertThresholds}</label>
+                           <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{t.attendanceAlertDesc}</p>
+                           <div className="flex flex-wrap gap-3">
                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20].map(num => {
                                    const active = attendanceRules.alertThresholds?.includes(num);
                                    return (
-                                       <button key={num} onClick={() => toggleAttendanceAlertThreshold(num)} className={`w-10 h-10 rounded-full font-bold text-sm transition-all ${active ? 'bg-red-500 text-white shadow-md scale-110' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                                       <button key={num} onClick={() => toggleAttendanceAlertThreshold(num)} className={`w-12 h-12 rounded-full font-bold text-base transition-all ${active ? 'bg-red-500 text-white shadow-lg scale-110 ring-4 ring-red-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
                                            {num}
                                        </button>
                                    );
@@ -1371,62 +1395,66 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                            </div>
                       </div>
                   </div>
-                  <div className="flex justify-end mt-8"><Button onClick={handleUpdateAttendanceRules} size="lg" className="px-8">{t.saveRules}</Button></div>
+                  <div className="flex justify-end mt-10"><Button onClick={handleUpdateAttendanceRules} size="lg" className="px-10 h-14 text-lg font-bold shadow-xl shadow-primary/30 rounded-2xl">{t.saveRules}</Button></div>
               </Card>
           )}
           
           {/* Calendar Tab */}
-          {activeTab === 'calendar' && (
-              <div className="space-y-6">
+          {activeTab === 'calendar' && ( 
+              <div className="space-y-8">
                   {/* Academic Year Configuration */}
-                  <Card>
-                      <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white flex items-center gap-2">
-                          <Calendar size={20} className="text-primary" />
+                  <Card className="p-8">
+                      <h3 className="font-bold text-xl mb-6 text-slate-800 dark:text-white flex items-center gap-3">
+                          <div className="p-2 bg-primary/10 rounded-lg text-primary"><Calendar size={24} /></div>
                           Academic Year Configuration
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                           <div>
-                              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Academic Year Start</label>
+                              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Academic Year Start</label>
                               <Input 
                                   type="date" 
                                   value={calendarSettings.academicYearStart} 
                                   onChange={e => setCalendarSettings({...calendarSettings, academicYearStart: e.target.value})}
+                                  className="h-12"
                               />
                           </div>
                           <div>
-                              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Academic Year End</label>
+                              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Academic Year End</label>
                               <Input 
                                   type="date" 
                                   value={calendarSettings.academicYearEnd} 
                                   onChange={e => setCalendarSettings({...calendarSettings, academicYearEnd: e.target.value})}
+                                  className="h-12"
                               />
                           </div>
                       </div>
                   </Card>
 
                   {/* Terms Configuration */}
-                  <Card>
-                      <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">Academic Terms</h3>
+                  <Card className="p-8">
+                      <h3 className="font-bold text-xl mb-6 text-slate-800 dark:text-white">Academic Terms</h3>
                       <div className="space-y-4">
                           {calendarSettings.terms.map((term, idx) => (
-                              <div key={term.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-slate-100 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                              <div key={term.id} className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 border border-slate-100 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                                   <div className="flex items-center">
-                                      <span className="font-bold text-slate-700 dark:text-slate-200">{term.name}</span>
+                                      <span className="font-bold text-lg text-slate-800 dark:text-slate-200">{term.name}</span>
                                   </div>
                                   <div>
-                                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Start Date</label>
+                                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Start Date</label>
                                       <Input 
                                           type="date" 
                                           value={term.startDate} 
                                           onChange={e => handleTermChange(idx, 'startDate', e.target.value)}
+                                          className="bg-white dark:bg-slate-900"
                                       />
                                   </div>
                                   <div>
-                                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">End Date</label>
+                                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">End Date</label>
                                       <Input 
                                           type="date" 
                                           value={term.endDate} 
                                           onChange={e => handleTermChange(idx, 'endDate', e.target.value)}
+                                          className="bg-white dark:bg-slate-900"
                                       />
                                   </div>
                               </div>
@@ -1435,26 +1463,28 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                   </Card>
 
                   {/* Events & Holidays */}
-                  <Card>
-                      <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">Events, Exams & Holidays</h3>
+                  <Card className="p-8">
+                      <h3 className="font-bold text-xl mb-6 text-slate-800 dark:text-white">Events, Exams & Holidays</h3>
                       
                       {/* Add Event Form */}
-                      <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-6">
-                          <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300 mb-3">Add New Event</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                      <div className="bg-slate-50/50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 mb-8 backdrop-blur-sm">
+                          <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wide">Add New Event</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                               <div className="md:col-span-2">
-                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Event Name</label>
+                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Event Name</label>
                                   <Input 
                                       placeholder="e.g. Winter Break, Mid-Term Exams" 
                                       value={newEvent.name} 
                                       onChange={e => setNewEvent({...newEvent, name: e.target.value})}
+                                      className="bg-white dark:bg-slate-900"
                                   />
                               </div>
                               <div>
-                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Type</label>
+                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Type</label>
                                   <Select 
                                       value={newEvent.type} 
                                       onChange={e => setNewEvent({...newEvent, type: e.target.value as any})}
+                                      className="bg-white dark:bg-slate-900"
                                   >
                                       <option value="Holiday">Holiday/Off Day</option>
                                       <option value="Exam">Exam</option>
@@ -1463,65 +1493,67 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                   </Select>
                               </div>
                               <div>
-                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Start Date</label>
+                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Start Date</label>
                                   <Input 
                                       type="date" 
                                       value={newEvent.startDate} 
                                       onChange={e => setNewEvent({...newEvent, startDate: e.target.value})}
+                                      className="bg-white dark:bg-slate-900"
                                   />
                               </div>
                               <div>
-                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">End Date</label>
+                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">End Date</label>
                                   <Input 
                                       type="date" 
                                       value={newEvent.endDate} 
                                       onChange={e => setNewEvent({...newEvent, endDate: e.target.value})}
+                                      className="bg-white dark:bg-slate-900"
                                   />
                               </div>
                           </div>
-                          <div className="mt-3 flex justify-end">
-                              <Button onClick={handleAddEvent} disabled={!newEvent.name || !newEvent.startDate || !newEvent.endDate}>
-                                  <Plus size={16} /> Add Event
+                          <div className="mt-4 flex justify-end">
+                              <Button onClick={handleAddEvent} disabled={!newEvent.name || !newEvent.startDate || !newEvent.endDate} className="shadow-md">
+                                  <Plus size={18} className="mr-2" /> Add Event
                               </Button>
                           </div>
                       </div>
 
                       {/* Events List */}
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                           {calendarSettings.events.length === 0 ? (
-                              <div className="text-center py-8 text-slate-400 italic">No events scheduled.</div>
+                              <div className="text-center py-12 text-slate-400 italic">No events scheduled.</div>
                           ) : (
                               calendarSettings.events.map(event => (
-                                  <div key={event.id} className="flex flex-wrap md:flex-nowrap items-center justify-between p-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg hover:border-slate-300 transition-colors">
-                                      <div className="flex items-center gap-3 flex-1">
-                                          <div className={`w-2 h-10 rounded-full ${
-                                              event.type === 'Exam' ? 'bg-red-500' : 
-                                              event.type === 'Break' ? 'bg-blue-500' : 
-                                              event.type === 'Holiday' ? 'bg-green-500' : 'bg-slate-400'
+                                  <div key={event.id} className="flex flex-wrap md:flex-nowrap items-center justify-between p-4 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl hover:shadow-md transition-all hover:scale-[1.01]">
+                                      <div className="flex items-center gap-4 flex-1">
+                                          <div className={`w-1.5 h-12 rounded-full ${
+                                              event.type === 'Exam' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 
+                                              event.type === 'Break' ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 
+                                              event.type === 'Holiday' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-400'
                                           }`}></div>
                                           <div>
-                                              <p className="font-bold text-slate-800 dark:text-slate-200">{event.name}</p>
+                                              <p className="font-bold text-lg text-slate-800 dark:text-slate-200">{event.name}</p>
                                               <Badge color={
                                                   event.type === 'Exam' ? 'red' : 
                                                   event.type === 'Break' ? 'blue' : 
                                                   event.type === 'Holiday' ? 'green' : 'gray'
-                                              } className="text-[10px] mt-1">{event.type}</Badge>
+                                              } className="text-[10px] mt-1 px-2 py-0.5">{event.type}</Badge>
                                           </div>
                                       </div>
-                                      <div className="flex items-center gap-4 mt-2 md:mt-0">
+                                      <div className="flex items-center gap-6 mt-3 md:mt-0">
                                           <div className="text-right">
-                                              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">From</p>
-                                              <p className="text-sm font-mono text-slate-700 dark:text-slate-300">{event.startDate}</p>
+                                              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">From</p>
+                                              <p className="text-sm font-mono text-slate-700 dark:text-slate-300 font-bold">{event.startDate}</p>
                                           </div>
                                           <div className="text-right">
-                                              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase">To</p>
-                                              <p className="text-sm font-mono text-slate-700 dark:text-slate-300">{event.endDate}</p>
+                                              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">To</p>
+                                              <p className="text-sm font-mono text-slate-700 dark:text-slate-300 font-bold">{event.endDate}</p>
                                           </div>
                                           <button 
                                               onClick={() => handleDeleteEvent(event.id)}
-                                              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ml-2"
+                                              className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors ml-4"
                                           >
-                                              <Trash2 size={16} />
+                                              <Trash2 size={18} />
                                           </button>
                                       </div>
                                   </div>
@@ -1530,83 +1562,83 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                       </div>
                   </Card>
 
-                  <div className="flex justify-end pt-4">
-                      <Button onClick={handleSaveCalendar} size="lg" className="px-8 shadow-lg">Save Calendar</Button>
+                  <div className="flex justify-end pt-6">
+                      <Button onClick={handleSaveCalendar} size="lg" className="px-10 h-14 text-lg font-bold shadow-xl rounded-2xl">Save Calendar</Button>
                   </div>
               </div>
           )}
 
           {/* E-Pass Destinations */}
           {activeTab === 'epass' && (
-               <div className="space-y-6">
+               <div className="space-y-8">
                    {(isAddingDest || editingDest) && (
-                       <Card className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 animate-in fade-in">
-                          <div className="flex justify-between items-center mb-4">
-                              <h3 className="font-bold text-lg text-slate-800 dark:text-white">{editingDest ? t.editDestination : t.addDestination}</h3>
+                       <Card className="bg-slate-50/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 animate-in fade-in p-8 backdrop-blur-sm !bg-transparent">
+                          <div className="flex justify-between items-center mb-6">
+                              <h3 className="font-bold text-xl text-slate-800 dark:text-white">{editingDest ? t.editDestination : t.addDestination}</h3>
                               <Button variant="ghost" onClick={() => { setEditingDest(null); setIsAddingDest(false); setFormData({}); }}>{t.cancel}</Button>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                              <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.labelEn}</label><Input value={formData.label_en || ''} onChange={e => setFormData({...formData, label_en: e.target.value})} placeholder="e.g. Library" /></div>
-                              <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.labelAr}</label><Input value={formData.label_ar || ''} onChange={e => setFormData({...formData, label_ar: e.target.value})} placeholder="e.g. المكتبة" /></div>
-                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.duration}</label><Input type="number" value={formData.maxDuration || ''} onChange={e => setFormData({...formData, maxDuration: e.target.value})} placeholder="10" /></div>
-                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.color}</label><Select value={formData.colorTheme || 'blue'} onChange={e => setFormData({...formData, colorTheme: e.target.value})}>{COLOR_THEMES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}</Select></div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                              <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.labelEn}</label><Input value={formData.label_en || ''} onChange={e => setFormData({...formData, label_en: e.target.value})} placeholder="e.g. Library" /></div>
+                              <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.labelAr}</label><Input value={formData.label_ar || ''} onChange={e => setFormData({...formData, label_ar: e.target.value})} placeholder="e.g. المكتبة" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.duration}</label><Input type="number" value={formData.maxDuration || ''} onChange={e => setFormData({...formData, maxDuration: e.target.value})} placeholder="10" /></div>
+                              <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.color}</label><Select value={formData.colorTheme || 'blue'} onChange={e => setFormData({...formData, colorTheme: e.target.value})}>{COLOR_THEMES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}</Select></div>
                               <div className="md:col-span-2">
-                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{t.icon}</label>
-                                  <div className="flex flex-wrap gap-2 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+                                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.icon}</label>
+                                  <div className="flex flex-wrap gap-2 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
                                       {AVAILABLE_ICONS.map(iconName => {
                                           const IconComp = LucideIcons[iconName as keyof typeof LucideIcons] as any;
                                           const isSelected = (formData.iconName || 'Ticket') === iconName;
                                           return (
-                                              <button key={iconName} onClick={() => setFormData({...formData, iconName})} className={`p-2 rounded-lg transition-all ${isSelected ? 'bg-primary text-white shadow-md scale-110' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-                                                  {IconComp && <IconComp size={20} />}
+                                              <button key={iconName} onClick={() => setFormData({...formData, iconName})} className={`p-2.5 rounded-lg transition-all ${isSelected ? 'bg-primary text-white shadow-lg scale-110' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                                  {IconComp && <IconComp size={22} />}
                                               </button>
                                           );
                                       })}
                                   </div>
                               </div>
                           </div>
-                          <div className="mt-4 flex justify-end"><Button onClick={handleSaveDest}>{t.save}</Button></div>
+                          <div className="mt-8 flex justify-end"><Button onClick={handleSaveDest} size="lg" className="px-8 shadow-md">{t.save}</Button></div>
                        </Card>
                    )}
 
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                       <Card className="md:col-span-2">
-                           <div className="flex justify-between items-center mb-6">
-                               <h3 className="font-bold text-lg text-slate-800 dark:text-white">{t.destinations}</h3>
-                               <Button onClick={() => { setIsAddingDest(true); setFormData({}); }}><Plus size={18} /> {t.addDestination}</Button>
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                       <Card className="md:col-span-2 p-8 !bg-transparent">
+                           <div className="flex justify-between items-center mb-8">
+                               <h3 className="font-bold text-2xl text-slate-800 dark:text-white">{t.destinations}</h3>
+                               <Button onClick={() => { setIsAddingDest(true); setFormData({}); }} className="shadow-md rounded-xl"><Plus size={20} className="mr-2" /> {t.addDestination}</Button>
                            </div>
-                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                {destinations.map(dest => {
                                    const IconComp = LucideIcons[dest.iconName as keyof typeof LucideIcons] as any || Ticket;
                                    const theme = COLOR_THEMES.find(c => c.name === dest.colorTheme);
                                    return (
-                                       <div key={dest.id} className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-all">
-                                           <div className="flex items-center gap-4">
-                                               <div className={`p-3 rounded-full ${theme?.class || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}><IconComp size={24} /></div>
-                                               <div><h4 className="font-bold text-slate-800 dark:text-white">{dest.label_en}</h4><p className="text-xs text-slate-500 dark:text-slate-400">{dest.label_ar}</p></div>
+                                       <div key={dest.id} className="flex items-center justify-between p-5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group">
+                                           <div className="flex items-center gap-5">
+                                               <div className={`p-4 rounded-xl shadow-sm ${theme?.class || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}><IconComp size={24} /></div>
+                                               <div><h4 className="font-bold text-lg text-slate-800 dark:text-white">{dest.label_en}</h4><p className="text-sm text-slate-500 dark:text-slate-400">{dest.label_ar}</p></div>
                                            </div>
-                                           <div className="flex items-center gap-3">
-                                               <Badge color="gray">{dest.maxDuration}m</Badge>
-                                               <button onClick={() => { setEditingDest(dest); setFormData(dest); setIsAddingDest(true); }} className="text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-400"><Edit2 size={16} /></button>
-                                               <button onClick={() => handleDeleteDest(dest.id)} className="text-slate-400 hover:text-red-600 dark:hover:text-red-400"><Trash2 size={16} /></button>
+                                           <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                               <Badge color="gray" className="mr-2">{dest.maxDuration}m</Badge>
+                                               <button onClick={() => { setEditingDest(dest); setFormData(dest); setIsAddingDest(true); }} className="p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-400 rounded-lg transition-colors"><Edit2 size={18} /></button>
+                                               <button onClick={() => handleDeleteDest(dest.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-colors"><Trash2 size={18} /></button>
                                            </div>
                                        </div>
                                    );
                                })}
                            </div>
                        </Card>
-                       <Card className="h-fit">
-                           <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white">{t.globalSettings}</h3>
-                           <div className="mb-4">
-                               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">{t.maxPasses}</label>
-                               <div className="flex gap-2">
-                                   <Input type="number" value={maxPasses} onChange={e => setMaxPasses(parseInt(e.target.value))} />
-                                   <Button onClick={handleUpdateEPassSettings}>{t.updateLimit}</Button>
+                       <Card className="h-fit p-8">
+                           <h3 className="font-bold text-xl mb-6 text-slate-800 dark:text-white">{/* Global Settings */}</h3>
+                           <div className="mb-6">
+                               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wide">{t.maxPasses}</label>
+                               <div className="flex gap-3">
+                                   <Input type="number" value={maxPasses} onChange={e => setMaxPasses(parseInt(e.target.value))} className="h-12 text-lg font-bold" />
+                                   <Button onClick={handleUpdateEPassSettings} className="h-12 px-6">{t.updateLimit}</Button>
                                </div>
                            </div>
-                           <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-100 dark:border-yellow-800">
-                               <h4 className="font-bold text-yellow-800 dark:text-yellow-200 text-sm mb-1 flex items-center gap-2"><Megaphone size={16} /> Note</h4>
-                               <p className="text-xs text-yellow-700 dark:text-yellow-300">Changing pass limits applies immediately to all students.</p>
+                           <div className="bg-yellow-50 dark:bg-yellow-900/20 p-5 rounded-2xl border border-yellow-100 dark:border-yellow-800/50">
+                               <h4 className="font-bold text-yellow-800 dark:text-yellow-200 text-sm mb-2 flex items-center gap-2"><Megaphone size={18} /> Note</h4>
+                               <p className="text-xs text-yellow-700 dark:text-yellow-300 leading-relaxed">Changing pass limits applies immediately to all students across the system.</p>
                            </div>
                        </Card>
                    </div>
@@ -1615,57 +1647,57 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
           {/* Timetable Tab */}
           {activeTab === 'timetable' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <Card className="lg:col-span-2">
-                      <div className="flex justify-between items-center mb-6">
-                          <div className="flex gap-2 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
-                              <button onClick={() => setEditingScheduleType('standard')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${editingScheduleType === 'standard' ? 'bg-white dark:bg-slate-600 shadow-sm text-primary dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>{t.standard}</button>
-                              <button onClick={() => setEditingScheduleType('friday')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${editingScheduleType === 'friday' ? 'bg-white dark:bg-slate-600 shadow-sm text-primary dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>{t.friday}</button>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <Card className="lg:col-span-2 p-8">
+                      <div className="flex justify-between items-center mb-8 !bg-transparent">
+                          <div className="flex gap-2 bg-slate-100 dark:bg-slate-700/50 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-600">
+                              <button onClick={() => setEditingScheduleType('standard')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${editingScheduleType === 'standard' ? 'bg-white dark:bg-slate-600 shadow-md text-primary dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50'}`}>{t.standard}</button>
+                              <button onClick={() => setEditingScheduleType('friday')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${editingScheduleType === 'friday' ? 'bg-white dark:bg-slate-600 shadow-md text-primary dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50'}`}>{t.friday}</button>
                           </div>
-                          <div className="flex gap-2">
-                              <Button variant="secondary" onClick={sortSchedule} title={t.sortChrono}><ArrowDownAZ size={18} /></Button>
-                              <Button onClick={handleAddSlot}><Plus size={18} /> {t.addSlot}</Button>
+                          <div className="flex gap-3">
+                              <Button variant="secondary" onClick={sortSchedule} title={t.sortChrono} className="h-11 w-11 p-0 rounded-xl"><ArrowDownAZ size={20} /></Button>
+                              <Button onClick={handleAddSlot} className="h-11 rounded-xl shadow-md"><Plus size={20} className="mr-2" /> {t.addSlot}</Button>
                           </div>
                       </div>
                       
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                           {schedule[editingScheduleType].map((slot, index) => (
-                              <div key={slot.id} className="flex flex-wrap md:flex-nowrap items-center gap-2 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-500 transition-colors group">
-                                  <div className="flex-none w-8 text-center font-bold text-slate-400 dark:text-slate-500 text-xs">#{index + 1}</div>
-                                  <div className="flex-1 min-w-[140px]">
-                                      <Input value={slot.name} onChange={e => handleSlotChange(slot.id, 'name', e.target.value)} placeholder="Period Name" className="h-9 text-sm font-bold" />
+                              <div key={slot.id} className="flex flex-wrap md:flex-nowrap items-center gap-4 p-4 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-white dark:hover:bg-slate-800 hover:shadow-md transition-all group backdrop-blur-sm">
+                                  <div className="flex-none w-10 text-center font-bold text-slate-400 dark:text-slate-500 text-sm">#{index + 1}</div>
+                                  <div className="flex-1 min-w-[160px]">
+                                      <Input value={slot.name} onChange={e => handleSlotChange(slot.id, 'name', e.target.value)} placeholder="Period Name" className="h-10 text-sm font-bold bg-transparent border-slate-300 dark:border-slate-600 focus:bg-white dark:focus:bg-slate-900" />
                                   </div>
-                                  <div className="flex-none w-28">
-                                      <Select value={slot.type} onChange={e => handleSlotChange(slot.id, 'type', e.target.value)} className="h-9 text-xs">
+                                  <div className="flex-none w-32">
+                                      <Select value={slot.type} onChange={e => handleSlotChange(slot.id, 'type', e.target.value)} className="h-10 text-xs bg-transparent border-slate-300 dark:border-slate-600 focus:bg-white dark:focus:bg-slate-900">
                                           <option value="Period">Period</option>
                                           <option value="Break">Break</option>
                                           <option value="Lunch">Lunch</option>
                                       </Select>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                      <Input type="time" value={slot.startTime} onChange={e => handleSlotChange(slot.id, 'startTime', e.target.value)} className="h-9 w-24 text-xs font-mono" />
-                                      <span className="text-slate-400">-</span>
-                                      <Input type="time" value={slot.endTime} onChange={e => handleSlotChange(slot.id, 'endTime', e.target.value)} className="h-9 w-24 text-xs font-mono" />
+                                  <div className="flex items-center gap-3">
+                                      <Input type="time" value={slot.startTime} onChange={e => handleSlotChange(slot.id, 'startTime', e.target.value)} className="h-10 w-28 text-xs font-mono bg-transparent border-slate-300 dark:border-slate-600 focus:bg-white dark:focus:bg-slate-900 text-center" />
+                                      <span className="text-slate-400 font-bold">-</span>
+                                      <Input type="time" value={slot.endTime} onChange={e => handleSlotChange(slot.id, 'endTime', e.target.value)} className="h-10 w-28 text-xs font-mono bg-transparent border-slate-300 dark:border-slate-600 focus:bg-white dark:focus:bg-slate-900 text-center" />
                                   </div>
-                                  <button onClick={() => handleDeleteSlot(slot.id)} className="p-2 text-slate-300 dark:text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"><Trash2 size={16} /></button>
+                                  <button onClick={() => handleDeleteSlot(slot.id)} className="p-2.5 text-slate-300 dark:text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={18} /></button>
                               </div>
                           ))}
                       </div>
                       
-                      <div className="mt-6 flex justify-end">
-                          <Button onClick={saveSchedule} size="lg" className="shadow-lg">{t.saveSchedule}</Button>
+                      <div className="mt-8 flex justify-end">
+                          <Button onClick={saveSchedule} size="lg" className="shadow-lg px-8 h-12 rounded-xl">{t.saveSchedule}</Button>
                       </div>
                   </Card>
                   
-                  <Card className="h-fit bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
-                      <h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-white flex items-center gap-2"><Clock size={20} /> Preview</h3>
-                      <div className="relative pl-4 border-l-2 border-slate-300 dark:border-slate-600 space-y-6">
+                  <Card className="h-fit bg-slate-50/50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-700 p-8 backdrop-blur-sm">
+                      <h3 className="font-bold text-xl mb-8 text-slate-800 dark:text-white flex items-center gap-3"><Clock size={24} className="text-primary" />{/* Live Preview */}</h3>
+                      <div className="relative pl-6 border-l-2 border-dashed border-slate-300 dark:border-slate-600 space-y-8">
                           {schedule[editingScheduleType].map((slot) => (
                               <div key={slot.id} className="relative">
-                                  <div className={`absolute -left-[21px] top-0 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 shadow-sm ${slot.type === 'Period' ? 'bg-blue-500' : slot.type === 'Break' ? 'bg-green-500' : 'bg-orange-500'}`}></div>
-                                  <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mb-1">{slot.startTime} - {slot.endTime}</p>
-                                  <h4 className="font-bold text-sm text-slate-800 dark:text-white">{slot.name}</h4>
-                                  <Badge color={slot.type === 'Period' ? 'blue' : slot.type === 'Break' ? 'green' : 'orange'} className="mt-1 text-[10px]">{slot.type}</Badge>
+                                  <div className={`absolute -left-[31px] top-1 w-4 h-4 rounded-full border-2 border-white dark:border-slate-800 shadow-sm ring-4 ring-slate-50 dark:ring-slate-900 ${slot.type === 'Period' ? 'bg-blue-500' : slot.type === 'Break' ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                                  <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mb-1 font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded inline-block">{slot.startTime} - {slot.endTime}</p>
+                                  <h4 className="font-bold text-base text-slate-800 dark:text-white">{slot.name}</h4>
+                                  <Badge color={slot.type === 'Period' ? 'blue' : slot.type === 'Break' ? 'green' : 'orange'} className="mt-2 text-[10px] uppercase tracking-wide">{slot.type}</Badge>
                               </div>
                           ))}
                       </div>

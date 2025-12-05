@@ -1,39 +1,50 @@
-
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
-// Card
+// Card - Glassmorphic
 export interface CardProps {
   children: React.ReactNode;
   className?: string;
 }
 
 export const Card: React.FC<CardProps> = ({ children, className = "" }) => (
-  <div className={`bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 rounded-xl p-6 ${className}`}>
-    {children}
+  <div className={`
+    relative overflow-hidden
+    bg-white/60 dark:bg-slate-900/50 
+    backdrop-blur-xl backdrop-saturate-150
+    shadow-glass 
+    border border-white/30 dark:border-white/10
+    rounded-[2rem] p-6 transition-all duration-300 ease-spring hover:shadow-glass-hover hover:-translate-y-1
+    ${className}
+  `}>
+    {/* Optional subtle gradient overlay for depth */}
+    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent dark:from-white/5 dark:to-transparent pointer-events-none" />
+    <div className="relative z-10">
+      {children}
+    </div>
   </div>
 );
 
-// Button
+// Button - Pill shaped, soft glow
 export interface ButtonProps extends React.ComponentProps<'button'> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
 }
 
 export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', size = 'md', className = "", ...props }) => {
-  const baseStyle = "rounded-lg font-medium transition-all duration-200 flex items-center gap-2 justify-center disabled:opacity-50";
+  const baseStyle = "font-semibold transition-all duration-300 ease-out flex items-center gap-2 justify-center disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transform tracking-wide";
   
   const sizes = {
-    sm: "px-2 py-1 text-sm",
-    md: "px-4 py-2",
-    lg: "px-6 py-3 text-lg"
+    sm: "px-3 py-1.5 text-xs rounded-full",
+    md: "px-5 py-2.5 text-sm rounded-2xl",
+    lg: "px-8 py-3.5 text-lg rounded-2xl"
   };
 
   const variants = {
-    primary: "bg-primary text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700",
-    secondary: "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600",
-    danger: "bg-danger text-white hover:bg-red-600",
-    ghost: "hover:bg-slate-100 text-slate-600 dark:hover:bg-slate-800 dark:text-slate-400"
+    primary: "bg-primary text-white shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5 border border-white/20 animate-breathing-glow",
+    secondary: "bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 hover:bg-white/80 dark:hover:bg-slate-700/80 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-sm hover:shadow-lg",
+    danger: "bg-danger/80 text-white shadow-lg shadow-danger/30 hover:shadow-danger/50 hover:-translate-y-0.5 border border-white/20 backdrop-blur-md",
+    ghost: "text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 rounded-2xl"
   };
 
   return (
@@ -43,7 +54,7 @@ export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', s
   );
 };
 
-// Badge
+// Badge - Soft translucent pills
 export interface BadgeProps {
   children: React.ReactNode;
   color?: 'blue' | 'green' | 'red' | 'yellow' | 'gray' | 'orange' | 'purple';
@@ -52,38 +63,104 @@ export interface BadgeProps {
 
 export const Badge: React.FC<BadgeProps> = ({ children, color = 'blue', className = "" }) => {
   const colors = {
-    blue: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    green: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    red: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-    yellow: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-    gray: "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300",
-    orange: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
-    purple: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+    blue: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200/50 dark:border-blue-800/50",
+    green: "bg-green-500/10 text-green-700 dark:text-green-300 border-green-200/50 dark:border-green-800/50",
+    red: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-200/50 dark:border-red-800/50",
+    yellow: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 border-yellow-200/50 dark:border-yellow-800/50",
+    gray: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-200/50 dark:border-slate-700/50",
+    orange: "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-200/50 dark:border-orange-800/50",
+    purple: "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-200/50 dark:border-purple-800/50"
   };
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${colors[color] || colors.blue} ${className}`}>
+    <span className={`px-3 py-1 rounded-xl text-xs font-bold border backdrop-blur-sm shadow-sm ${colors[color] || colors.blue} ${className}`}>
       {children}
     </span>
   );
 };
 
-// Input
+// Input - Filled glass style
 export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ className = "", ...props }) => (
-  <input 
-    className={`w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-start placeholder:text-slate-400 dark:placeholder:text-slate-500 ${className}`}
-    {...props}
-  />
+  <div className="relative group">
+    <input 
+      className={`
+        w-full px-4 py-3 
+        bg-white/50 dark:bg-slate-900/50 
+        backdrop-blur-lg
+        border border-slate-200/60 dark:border-slate-700/60 
+        text-slate-900 dark:text-white 
+        rounded-xl 
+        focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 focus:bg-white/80 dark:focus:bg-slate-900/80
+        transition-all duration-300 ease-out
+        placeholder:text-slate-400 dark:placeholder:text-slate-500
+        text-start shadow-inner-light
+        ${className}
+      `}
+      {...props}
+    />
+  </div>
 );
 
-// Select
+// Modal - Glassmorphic
+export interface ModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    title: string;
+    children: React.ReactNode;
+    className?: string;
+}
+
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, className = '' }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 
+                 bg-black/40 backdrop-blur-md
+                 animate-in fade-in duration-300"
+      onClick={onClose}
+    >
+      <div 
+        className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-[2rem] shadow-2xl border border-white/20 dark:border-slate-700
+                   max-h-[90vh] overflow-y-auto w-full max-w-lg
+                   animate-in zoom-in-95 duration-300 ease-spring
+                   ${className}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="relative p-6 border-b border-slate-200/50 dark:border-slate-700/50">
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white pr-10">
+            {title}
+          </h3>
+          <button onClick={onClose} className="absolute right-4 top-4 rounded-full p-2 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all text-slate-500 dark:text-slate-400">
+            <X size={22} />
+          </button>
+        </div>
+        <div className="p-6">{children}</div>
+      </div>
+    </div>
+  );
+};
+
+// Select - Filled glass style
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = ({ className = "", ...props }) => (
   <div className="relative">
     <select 
-      className={`w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none text-start ${className}`}
+      className={`
+        w-full px-4 py-3 
+        bg-white/50 dark:bg-slate-900/50 
+        backdrop-blur-lg
+        border border-slate-200/60 dark:border-slate-700/60 
+        text-slate-900 dark:text-white 
+        rounded-xl
+        focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50
+        transition-all duration-300 ease-out
+        appearance-none text-start shadow-inner-light
+        cursor-pointer hover:bg-white/60 dark:hover:bg-slate-800/60
+        ${className}
+      `}
       {...props}
     />
-    <div className="absolute inset-y-0 right-0 rtl:right-auto rtl:left-0 flex items-center px-2 pointer-events-none text-slate-500">
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+    <div className="absolute inset-y-0 right-0 rtl:right-auto rtl:left-0 flex items-center px-4 pointer-events-none text-slate-500">
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
     </div>
   </div>
 );
@@ -104,23 +181,23 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
   const NextIcon = isRTL ? ChevronLeft : ChevronRight;
 
   return (
-    <div className={`flex justify-center items-center gap-2 mt-4 ${className}`}>
+    <div className={`flex justify-center items-center gap-3 mt-6 ${className}`}>
       <button
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
-        className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur border border-white/20 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 text-slate-600 dark:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300"
       >
-        <PrevIcon size={16} />
+        <PrevIcon size={18} />
       </button>
-      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-        {isRTL ? `${totalPages} / ${currentPage}` : `Page ${currentPage} of ${totalPages}`}
+      <span className="text-sm font-bold text-slate-600 dark:text-slate-400 bg-white/30 dark:bg-slate-900/30 px-4 py-2 rounded-xl backdrop-blur border border-white/10">
+        {isRTL ? `${totalPages} / ${currentPage}` : `${currentPage} of ${totalPages}`}
       </span>
       <button
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
-        className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 backdrop-blur border border-white/20 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 text-slate-600 dark:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300"
       >
-        <NextIcon size={16} />
+        <NextIcon size={18} />
       </button>
     </div>
   );

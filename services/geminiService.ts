@@ -52,9 +52,18 @@ export const generateSchoolInsights = async (
 
     DATA JSON:
     ${JSON.stringify(data, (key, value) => {
-        // Replacer to truncate long lists to save tokens, keep summaries
-        if (key === 'list' && Array.isArray(value) && value.length > 20) return value.slice(0, 20);
-        if (key === 'history' && Array.isArray(value) && value.length > 20) return value.slice(0, 20);
+        // Replacer to truncate long lists to save tokens
+        if (Array.isArray(value)) {
+            // Summary for large arrays of objects
+            if (value.length > 50 && typeof value[0] === 'object') {
+                return {
+                    _summary: `List truncated. Total items: ${value.length}`,
+                    sample: value.slice(0, 10)
+                };
+            }
+            // Truncate generic lists
+            if (value.length > 50) return value.slice(0, 50);
+        }
         return value;
     })}
 

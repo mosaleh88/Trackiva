@@ -4,8 +4,8 @@ import { Card, Button, Select, Badge, Input, Pagination } from './ui';
 import { useStore } from '../services/store';
 import { Language, EPass as EPassType, Student, EPassDestination, UserRole, User } from '../types';
 import { TRANSLATIONS } from '../constants';
-// CHANGED: Replaced 'X' with 'XCircle' and aliased it as 'CloseIcon'
-import { Search, Filter, Ticket, Library, Stethoscope, Armchair, Briefcase, Coffee, Gamepad2, Music, Dumbbell, Beaker, BookOpen, Users, Ban, AlertOctagon, LayoutDashboard, AlertTriangle, Clock, ArrowUp, ArrowDown, ArrowUpDown, XIcon } from 'lucide-react';
+// CHANGED: Replaced 'XIcon' with 'X' as XIcon is not a standard export
+import { Search, Filter, Ticket, Library, Stethoscope, Armchair, Briefcase, Coffee, Gamepad2, Music, Dumbbell, Beaker, BookOpen, Users, Ban, AlertOctagon, LayoutDashboard, AlertTriangle, Clock, ArrowUp, ArrowDown, ArrowUpDown, X } from 'lucide-react';
 import { sendUnauthorizedAlert, sendPassCreatedAlert } from '../services/telegramService';
 
 interface EPassProps {
@@ -37,7 +37,7 @@ const getThemeClasses = (theme: string) => {
 };
 
 // ------------------------------------------
-// Modal Component (UPDATED: Using CloseIcon)
+// Modal Component (UPDATED: Using X icon)
 // ------------------------------------------
 
 interface ModalProps {
@@ -54,33 +54,33 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, classNa
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 
-                 bg-black/50 backdrop-blur-sm
+                 bg-black/40 backdrop-blur-md
                  animate-in fade-in duration-300"
       onClick={onClose}
     >
       <div 
-        className={`bg-white dark:bg-slate-800 rounded-2xl shadow-2xl 
+        className={`bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-[2rem] shadow-2xl border border-white/20 dark:border-slate-700
                    max-h-[90vh] overflow-y-auto w-full max-w-lg
                    animate-in zoom-in-95 duration-300 ease-out
                    ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* header */}
-        <div className="relative p-6 pb-4 border-b dark:border-slate-700">
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white pr-10">
+        <div className="relative p-8 pb-4 border-b border-slate-100 dark:border-slate-700">
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-white pr-10">
             {title}
           </h3>
           <button
             onClick={onClose}
-            className="absolute right-4 top-6 rounded-full p-2 
+            className="absolute right-6 top-7 rounded-full p-2 
                        hover:bg-slate-100 dark:hover:bg-slate-700 
-                       transition-all duration-200"
+                       transition-all duration-200 text-slate-500 dark:text-slate-400"
           >
-            <XIcon size={22} className="text-slate-500 dark:text-slate-400" />
+            <X size={24} />
           </button>
         </div>
 
-        <div className="p-6 pt-4">
+        <div className="p-8 pt-6">
           {children}
         </div>
       </div>
@@ -129,32 +129,32 @@ const IssuePassModal: React.FC<IssuePassModalProps> = ({
 
     return (
         <Modal isOpen={true} onClose={onClose} title={t.issuePassFor || "Issue Pass"} className="w-full max-w-lg">
-            <div className="p-4">
-                <div className="flex justify-between items-center mb-4 pb-2 border-b dark:border-slate-700">
+            <div className="">
+                <div className="flex justify-between items-center mb-6 pb-4 border-b border-dashed border-slate-200 dark:border-slate-700">
                     <h4 className="text-xl font-bold text-slate-800 dark:text-white">
                         {lang === 'en' ? student.name_en : student.name_ar}
                     </h4>
-                    <div className={`text-sm font-bold px-3 py-1 rounded-full ${limitReached && !isOverridden ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300'}`}>
+                    <div className={`text-sm font-bold px-4 py-1.5 rounded-full ${limitReached && !isOverridden ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300'}`}>
                         {t.passes}: {dailyCount}/{maxPasses}
                     </div>
                 </div>
 
                 {limitReached && !isOverridden ? (
-                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg p-6 text-center mb-4">
-                        <div className="flex justify-center mb-3"><Ban size={32} className="text-red-400" /></div>
-                        <p className="text-lg font-bold text-red-800 dark:text-red-300 mb-4">{t.dailyLimit} ({maxPasses})</p>
+                    <div className="bg-red-500/10 dark:bg-red-900/30 border border-red-500/20 backdrop-blur-sm rounded-2xl p-6 text-center mb-4">
+                        <div className="flex justify-center mb-3"><Ban size={40} className="text-red-400" /></div>
+                        <p className="text-lg font-bold text-red-800 dark:text-red-300 mb-6">{t.dailyLimit} ({maxPasses})</p>
                         {/* FIX: Line 93 - Removed variant="default" */}
                         <Button 
                             onClick={() => { handleAllowOverride(student.id); onClose(); }} 
-                            className="w-full bg-red-600 dark:bg-red-700 hover:bg-red-700 text-white shadow-lg h-10 font-bold"
+                            className="w-full bg-red-600 dark:bg-red-700 hover:bg-red-700 text-white shadow-lg h-12 font-bold text-base rounded-xl"
                         >
                             {t.allowAnyway || "Allow Anyway"}
                         </Button>
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                         <p className="text-slate-600 dark:text-slate-300 font-semibold">{t.selectDestination || "Select Destination"}:</p>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-4">
                             {destinations.map((dest: EPassDestination) => {
                                 const IconComp = ICON_MAP[dest.iconName] || Ticket;
                                 return (
@@ -162,10 +162,10 @@ const IssuePassModal: React.FC<IssuePassModalProps> = ({
                                         key={dest.id} 
                                         disabled={isLoading} 
                                         onClick={() => handleCreatePassAndClose(student.id, dest.id)} 
-                                        className={`flex flex-col items-center justify-center p-3 rounded-xl transition-colors gap-1 shadow-md ${getThemeClasses(dest.colorTheme)} disabled:opacity-50`}
+                                        className={`flex flex-col items-center justify-center p-4 rounded-2xl transition-all gap-2 shadow-sm hover:shadow-lg hover:scale-105 active:scale-95 ${getThemeClasses(dest.colorTheme)} disabled:opacity-50 border border-white/20`}
                                     >
-                                        <IconComp size={24} />
-                                        <span className="text-xs font-bold text-center leading-tight mt-1">{lang === 'en' ? dest.label_en : dest.label_ar}</span>
+                                        <IconComp size={28} />
+                                        <span className="text-xs font-bold text-center leading-tight">{lang === 'en' ? dest.label_en : dest.label_ar}</span>
                                     </button>
                                 );
                             })}
@@ -173,9 +173,9 @@ const IssuePassModal: React.FC<IssuePassModalProps> = ({
                         <button 
                             disabled={isLoading} 
                             onClick={() => handleCreatePassAndClose(student.id, UNAUTHORIZED_TYPE)} 
-                            className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl text-sm font-bold transition-colors disabled:opacity-50 shadow-md"
+                            className="w-full flex items-center justify-center gap-3 py-4 bg-red-500/10 dark:bg-red-900/30 hover:bg-red-500/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-500/20 rounded-2xl text-sm font-bold transition-all disabled:opacity-50 shadow-sm hover:shadow-md"
                         >
-                            <AlertTriangle size={16} /> {t.outOfClass} (UNAUTHORIZED)
+                            <AlertTriangle size={18} /> {t.outOfClass} (UNAUTHORIZED)
                         </button>
                     </div>
                 )}
@@ -222,20 +222,20 @@ const StudentEPassCard: React.FC<StudentEPassCardProps> = ({
 }) => {
     const limitReached = dailyCount >= maxPasses;
 
-let cardBorderClass = 'bg-white dark:bg-slate-800 border-2 border-transparent outline-2 outline-transparent shadow-sm hover:shadow-md';
+let cardBorderClass = 'bg-white/70 dark:bg-slate-800/80 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-glass hover:shadow-glass-hover';
 let isDisabled = false;
 
 if (activePass) {
-  if (isUnauthorized) {
-    cardBorderClass = 'bg-red-100 dark:bg-red-900/40 border-2 border-transparent outline-4 outline-red-600 shadow-lg';
-  } else if (isOverdue) {
-    cardBorderClass = 'bg-red-50 dark:bg-red-900/20 border-2 border-transparent outline-4 outline-red-500 shadow-md';
-  } else {
-    cardBorderClass = 'bg-green-50 dark:bg-green-900/20 border-2 border-transparent outline-4 outline-green-500 shadow-md';
-  }
+    if (isUnauthorized) {
+        cardBorderClass = 'bg-red-500/20 dark:bg-red-900/40 border-red-500/30 dark:border-red-700/50 shadow-lg shadow-red-500/10';
+    } else if (isOverdue) {
+        cardBorderClass = 'bg-yellow-500/20 dark:bg-yellow-900/30 border-yellow-500/30 dark:border-yellow-700/50 shadow-md shadow-yellow-500/10';
+    } else {
+        cardBorderClass = 'bg-green-500/20 dark:bg-green-900/40 border-green-500/30 dark:border-green-700/50 shadow-md shadow-green-500/10';
+    }
   isDisabled = true;
 } else if (limitReached && !isOverridden) {
-  cardBorderClass = 'bg-red-50 dark:bg-red-900/20 border-2 border-transparent outline-4 outline-red-400 hover:outline-red-500 shadow-sm hover:shadow-lg';
+  cardBorderClass = 'bg-slate-100/80 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-80 hover:opacity-100';
 }
 
 const handleClick = () => {
@@ -245,31 +245,32 @@ const handleClick = () => {
 };
 
     return (
-  <div
-  key={student.id}
-  onClick={handleClick}
-  className={`
-    ${isDisabled ? 'cursor-default' : 'cursor-pointer'}
-    group relative min-h-[120px] rounded-xl
-    border-2 border-transparent ${cardBorderClass}
-    p-3 sm:p-4 flex flex-col
-    select-none overflow-visible
-    will-change-transform
-    transition-all duration-300 ease-out
-    hover:scale-[1.045] hover:shadow-2xl hover:z-10
-    active:scale-[0.985] active:duration-100
-  `}
->
-  {/* This inner wrapper ensures content never overflows and adapts perfectly */}
-  <div className="flex-1 flex flex-col min-w-0">
+      <div
+        key={student.id}
+        onClick={handleClick}
+        className={`
+          ${isDisabled ? 'cursor-default' : 'cursor-pointer'}
+          group relative min-h-[140px]
+          select-none
+          will-change-transform
+          transition-transform duration-300 ease-spring
+          hover:scale-[1.03] hover:z-10
+          active:scale-[0.98]
+        `}
+      >
+        {/* This inner wrapper now holds the background, border, shadow, and rounding */}
+        <div className={`absolute inset-0 rounded-3xl ${cardBorderClass} transition-all duration-300 ease-spring`}></div>
+        
+        {/* This inner wrapper ensures content never overflows and adapts perfectly */}
+        <div className="relative z-10 flex-1 flex flex-col min-w-0 p-5 h-full">
     
     {/* Header – always visible and properly spaced */}
-    <div className="flex justify-between items-start gap-2 mb-2">
+    <div className="flex justify-between items-start gap-2 mb-3">
       <div className="flex-1 min-w-0">
-        <h4 className="font-bold text-slate-800 dark:text-white text-sm sm:text-base leading-tight truncate">
+        <h4 className="font-bold text-slate-800 dark:text-white text-base leading-tight truncate">
           {lang === 'en' ? student.name_en : student.name_ar}
         </h4>
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1 opacity-80">
           #{student.studentNumber}
         </p>
       </div>
@@ -277,86 +278,85 @@ const handleClick = () => {
       <div className="shrink-0">
         {activePass ? (
           isUnauthorized ? (
-            <Badge color="red" className="animate-pulse text-[10px] sm:text-xs font-bold px-1.5 py-0.5">
+            <Badge color="red" className="animate-pulse text-[10px] sm:text-xs font-bold px-2 py-1 shadow-sm">
               {t.unauthorized}
             </Badge>
           ) : (
             <Badge
               color={isOverdue ? 'red' : 'green'}
-              className="animate-pulse text-[10px] sm:text-xs font-bold px-1.5 py-0.5"
+              className="animate-pulse text-[10px] sm:text-xs font-bold px-2 py-1 shadow-sm"
             >
               {isOverdue ? t.passOverdue : t.passActive}
             </Badge>
           )
         ) : (
           <div className={`
-            text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full
+            text-[10px] font-bold px-2.5 py-1 rounded-full border
             ${limitReached && !isOverridden
-              ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-              : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+              ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800'
+              : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
             }
           `}>
-            {t.passes}: {dailyCount}/{maxPasses}
+            {dailyCount}/{maxPasses}
           </div>
         )}
       </div>
     </div>
 
     {/* Main Content Area – takes remaining space and handles overflow */}
-    <div className="flex-1 flex items-center justify-center mt-2">
+    <div className="flex-1 flex items-center justify-center mt-1">
       {isUnauthorized && activePass ? (
-        <div className="w-full text-center space-y-1.5">
-          <p className="text-xs font-bold text-red-900 dark:text-red-200 uppercase tracking-wider">
+        <div className="w-full text-center space-y-2">
+          <p className="text-xs font-bold text-red-900 dark:text-red-200 uppercase tracking-widest">
             {t.outOfClass}
           </p>
-          <p className="text-xl sm:text-2xl font-mono font-bold text-red-900 dark:text-red-100">
+          <p className="text-3xl font-mono font-bold text-red-900 dark:text-red-100 tracking-tight">
             {getElapsed(activePass.startTime)}
           </p>
           <Button
             onClick={(e) => { e.stopPropagation(); handleComplete(activePass.id); }}
-            className="w-full text-xs h-8 sm:h-9 bg-red-600 hover:bg-red-700 text-white font-bold"
+            className="w-full text-xs h-10 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-500/30"
           >
             {t.studentReturned}
           </Button>
         </div>
       ) : activePass && activeDestDetails ? (
-        <div className="w-full text-center space-y-1.5">
-          <p className={`text-xs sm:text-sm font-bold ${isOverdue ? 'text-red-800 dark:text-red-300' : 'text-green-800 dark:text-green-300'}`}>
+        <div className="w-full text-center space-y-2">
+          <p className={`text-sm font-bold ${isOverdue ? 'text-yellow-800 dark:text-yellow-300' : 'text-green-800 dark:text-green-300'}`}>
             {lang === 'en' ? activeDestDetails.label_en : activeDestDetails.label_ar}
           </p>
-          <p className={`text-2xl sm:text-3xl font-mono font-bold ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+          <p className={`text-3xl font-mono font-bold tracking-tight ${isOverdue ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}`}>
             {getElapsed(activePass.startTime)}
           </p>
           <Button
             onClick={(e) => { e.stopPropagation(); handleComplete(activePass.id); }}
-            className={`w-full text-xs h-8 sm:h-9 font-bold text-white shadow-md ${
-              isOverdue ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
+            className={`w-full text-xs h-10 font-bold text-white shadow-lg rounded-xl transition-all hover:-translate-y-0.5 ${
+              isOverdue ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30'
             }`}
           >
             {t.endPass}
           </Button>
         </div>
       ) : limitReached && !isOverridden ? (
-        <div className="text-center space-y-2">
-          <Ban size={28} className="mx-auto text-red-500 dark:text-red-400" />
-          <p className="text-xs font-bold text-red-800 dark:text-red-300">
-            {t.dailyLimitReached || 'Daily Limit Reached'}
-          </p>
-          <p className="text-xs text-red-700 dark:text-red-400">
-            {dailyCount} / {maxPasses} {t.passesUsed}
+        <div className="text-center space-y-1">
+          <Ban size={32} className="mx-auto text-slate-400/80 dark:text-slate-500/60 mb-2" />
+          <p className="text-xs font-bold text-slate-500/80 dark:text-slate-400/80 uppercase tracking-wide">
+            {t.dailyLimitReached}
           </p>
         </div>
       ) : (
-        <div className="text-center">
-          <Ticket size={28} className="mx-auto text-blue-500 dark:text-blue-400 mb-1 opacity-70" />
-          <p className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400">
-            {t.clickToIssuePass || 'Tap to Issue Pass'}
+        <div className="text-center opacity-60 group-hover:opacity-100 transition-opacity">
+          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-2 text-blue-500 dark:text-blue-400">
+             <Ticket size={24} />
+          </div>
+          <p className="text-xs font-bold text-blue-600 dark:text-blue-400">
+            {t.clickToIssuePass}
           </p>
         </div>
       )}
     </div>
-  </div>
-</div>
+        </div>
+      </div>
 );
 };
 
@@ -366,7 +366,6 @@ const handleClick = () => {
 // ------------------------------------------
 
 export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUserId }) => {
-// ... (The rest of the component logic remains the same)
   const t = TRANSLATIONS[lang];
   const store = useStore();
   const [activeTab, setActiveTab] = useState<'issue' | 'dashboard'>('issue');
@@ -535,26 +534,23 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
   const getElapsed = (start: number) => `${Math.floor((Date.now() - start) / 60000)}m`;
   const getDestinationDetails = (id: string) => destinations.find(d => d.id === id) || destinations[0];
 
-  // Removed getThemeClasses from here, it's now a standalone helper.
-
-
   const renderIssuePass = () => {
       const isSelectionActive = searchTerm || (selectedGender && selectedGrade && selectedSection);
       return (
         <div className="flex-1 flex gap-6 min-h-0 overflow-hidden">
-            <div className="flex-1 overflow-y-auto pr-2 rtl:pr-0 rtl:pl-2">
+            <div className="flex-1 overflow-y-auto pr-2 rtl:pr-0 rtl:pl-2 scrollbar-none">
                 {!isSelectionActive ? (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
-                        <Filter size={48} className="opacity-20 mb-4" />
-                        <p>{t.selectClassMsg}</p>
+                    <div className="h-full flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl bg-slate-50/50 dark:bg-slate-900/30">
+                        <Filter size={64} className="opacity-20 mb-6" />
+                        <p className="text-lg font-medium">{t.selectClassMsg}</p>
                     </div>
                 ) : filteredStudents.length === 0 ? (
                     <div className="h-64 flex items-center justify-center text-slate-400"><p>{t.noStudentsFound}</p></div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 
-                gap-5 
-                p-4 
-                overflow-hidden 
+                gap-6 
+                p-8
+                pb-32
                 [transform:translateZ(0)] 
                 [&>*]:!overflow-visible">
   {filteredStudents.map(student => {
@@ -617,179 +613,179 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
   };
 
   const renderDashboard = () => (
-      <div className="flex-1 overflow-y-auto space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                  <div><p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.totalActive}</p><h3 className="text-3xl font-bold text-blue-600 dark:text-blue-400">{passes.length}</h3></div>
-                  <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400"><Ticket size={24} /></div>
+      <div className="flex-1 overflow-y-auto space-y-8 scrollbar-none p-12 pb-48">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white/80 dark:bg-slate-800/80 p-6 rounded-3xl border border-white/40 dark:border-white/10 shadow-glass flex items-center justify-between backdrop-blur-md">
+                  <div><p className="text-sm text-slate-500 dark:text-slate-400 mb-1 font-medium">{t.totalActive}</p><h3 className="text-4xl font-bold text-blue-600 dark:text-blue-400">{passes.length}</h3></div>
+                  <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm"><Ticket size={32} /></div>
               </div>
-              <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                  <div><p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.totalOverdue}</p><h3 className="text-3xl font-bold text-red-600 dark:text-red-400">{totalOverdue}</h3></div>
-                  <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400"><Clock size={24} /></div>
+              <div className="bg-white/80 dark:bg-slate-800/80 p-6 rounded-3xl border border-white/40 dark:border-white/10 shadow-glass flex items-center justify-between backdrop-blur-md">
+                  <div><p className="text-sm text-slate-500 dark:text-slate-400 mb-1 font-medium">{t.totalOverdue}</p><h3 className="text-4xl font-bold text-red-600 dark:text-red-400">{totalOverdue}</h3></div>
+                  <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400 shadow-sm"><Clock size={32} /></div>
               </div>
-              <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                  <div><p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.outOfClass}</p><h3 className="text-3xl font-bold text-orange-600 dark:text-orange-400">{destinationStats['UNAUTHORIZED'] || 0}</h3></div>
-                  <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400"><AlertOctagon size={24} /></div>
+              <div className="bg-white/80 dark:bg-slate-800/80 p-6 rounded-3xl border border-white/40 dark:border-white/10 shadow-glass flex items-center justify-between backdrop-blur-md">
+                  <div><p className="text-sm text-slate-500 dark:text-slate-400 mb-1 font-medium">{t.outOfClass}</p><h3 className="text-4xl font-bold text-orange-600 dark:text-orange-400">{destinationStats['UNAUTHORIZED'] || 0}</h3></div>
+                  <div className="w-16 h-16 rounded-2xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 shadow-sm"><AlertOctagon size={32} /></div>
               </div>
           </div>
           <div>
-              <h3 className="font-bold text-slate-800 dark:text-white mb-3 text-lg">{t.destinationBreakdown}</h3>
+              <h3 className="font-bold text-slate-800 dark:text-white mb-4 text-xl">{t.destinationBreakdown}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {destinations.map((dest: EPassDestination) => {
                       const count = destinationStats[dest.id] || 0;
                       const IconComp = ICON_MAP[dest.iconName] || Ticket;
                       return (
-                          <div key={dest.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md transition-shadow">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getThemeClasses(dest.colorTheme)}`}><IconComp size={20} /></div>
+                          <div key={dest.id} className="bg-white/70 dark:bg-slate-800/70 p-5 rounded-2xl border border-white/30 dark:border-slate-700 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all backdrop-blur-md">
+                              <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm ${getThemeClasses(dest.colorTheme)} border border-white/30`}><IconComp size={22} /></div>
                               <span className="text-sm font-bold text-slate-700 dark:text-slate-200 text-center leading-tight">{lang === 'en' ? dest.label_en : dest.label_ar}</span>
-                              <Badge color={count > 0 ? 'blue' : 'gray'} className="text-xs">{count}</Badge>
+                              <Badge color={count > 0 ? (dest.colorTheme as any) : 'gray'} className="text-sm px-3 py-0.5">{count}</Badge>
                           </div>
                       )
                   })}
               </div>
           </div>
-          <Card>
-              <h3 className="font-bold text-slate-800 dark:text-white mb-4 text-lg">{t.activeStudentList}</h3>
-              <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                      <thead>
-                          <tr className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 text-sm border-b border-slate-200 dark:border-slate-700">
-                              <th className="p-3 rounded-tl-lg text-start">{t.studentName}</th>
-                              <th className="p-3 text-start">{t.grade}</th>
-                              <th className="p-3 text-start">{t.issuedBy}</th>
-                              <th className="p-3 text-start">{t.where}</th>
-                              <th 
-                                  className="p-3 text-start cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none"
-                                  onClick={() => handleSort('startTime')}
-                              >
-                                  <div className="flex items-center gap-2">
-                                      {t.startTime}
-                                      {sortConfig?.key === 'startTime' ? (
-                                          sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
-                                      ) : (
-                                          <ArrowUpDown size={14} className="text-slate-300" />
-                                      )}
-                                  </div>
-                              </th>
-                              <th className="p-3 text-start">{t.timeElapsed}</th>
-                              <th className="p-3 text-center rounded-tr-lg">{t.actions}</th>
-                          </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                          {paginatedPasses.length === 0 ? (
-                              <tr><td colSpan={7} className="p-8 text-center text-slate-400 italic">No active passes</td></tr>
-                          ) : (
-                              paginatedPasses.map(pass => {
-                                  const student = students.find(s => s.id === pass.studentId);
-                                  const issuer = users.find(u => u.id === pass.teacherId);
-                                  const isUnauthorized = pass.type === UNAUTHORIZED_TYPE;
-                                  let destLabel = t.unauthorized;
-                                  let destColor = 'red';
-                                  if (!isUnauthorized) {
-                                      const dest = getDestinationDetails(pass.type);
-                                      destLabel = lang === 'en' ? dest.label_en : dest.label_ar;
-                                      destColor = dest.colorTheme;
-                                  }
-                                  const elapsed = getElapsed(pass.startTime);
-                                  const isOverdue = !isUnauthorized && parseInt(elapsed) > (getDestinationDetails(pass.type).maxDuration);
-                                  return (
-                                      <tr key={pass.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                          <td className="p-3">
-                                              <div className="font-bold text-slate-800 dark:text-white">{lang === 'en' ? student?.name_en : student?.name_ar}</div>
-                                              <div className="text-xs text-slate-400 font-mono">{student?.studentNumber}</div>
-                                          </td>
-                                          <td className="p-3"><Badge color="gray">{student?.grade} - {student?.section}</Badge></td>
-                                          <td className="p-3 text-sm text-slate-600 dark:text-slate-300">{issuer ? issuer.name : <span className="text-slate-300">-</span>}</td>
-                                          <td className="p-3"><Badge color={isUnauthorized ? 'red' : (destColor as any)}>{destLabel}</Badge></td>
-                                          <td className="p-3 text-sm text-slate-600 dark:text-slate-300 font-mono">{new Date(pass.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                                          <td className="p-3"><span className={`font-mono font-bold ${isOverdue || isUnauthorized ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{elapsed}</span></td>
-                                          <td className="p-3 text-center">
-                                            {/* End Pass button color is purple */}
-<Button
-  onClick={(e) => {
-    e.stopPropagation();
-    handleComplete(pass.id);
-  }}
-  className="text-xs h-8 px-3 bg-blue-600 text-white hover:bg-blue-700 
-             dark:bg-blue-500 dark:hover:bg-blue-600 
-             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 
-             focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900"
->
-  {t.endPass}
-</Button>                                       </td>
-                                      </tr>
-                                  )
-                              })
-                          )}
-                      </tbody>
-                  </table>
+          <Card className="!overflow-visible">
+              <div className="overflow-hidden rounded-[2rem]">
+                  <h3 className="font-bold text-slate-800 dark:text-white mb-6 text-xl px-2 pt-6 pl-6">{t.activeStudentList}</h3>
+                  <div className="overflow-x-auto pb-6">
+                      <table className="w-full text-left border-collapse">
+                          <thead className="sticky top-0 z-10">
+                              <tr className="bg-slate-50/50 dark:bg-slate-700/30 text-slate-500 dark:text-slate-400 text-sm border-b border-slate-100 dark:border-slate-700/50">
+                                  <th className="p-4 rounded-tl-2xl text-start">{t.studentName}</th>
+                                  <th className="p-4 text-start">{t.grade}</th>
+                                  <th className="p-4 text-start">{t.issuedBy}</th>
+                                  <th className="p-4 text-start">{t.where}</th>
+                                  <th 
+                                      className="p-4 text-start cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-700/50 transition-colors select-none"
+                                      onClick={() => handleSort('startTime')}
+                                  >
+                                      <div className="flex items-center gap-2">
+                                          {t.startTime}
+                                          {sortConfig?.key === 'startTime' ? (
+                                              sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                                          ) : (
+                                              <ArrowUpDown size={14} className="text-slate-300" />
+                                          )}
+                                      </div>
+                                  </th>
+                                  <th className="p-4 text-start">{t.timeElapsed}</th>
+                                  <th className="p-4 text-center rounded-tr-2xl">{t.actions}</th>
+                              </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100/50 dark:divide-slate-700/50">
+                              {paginatedPasses.length === 0 ? (
+                                  <tr><td colSpan={7} className="p-12 text-center text-slate-400 italic">No active passes</td></tr>
+                              ) : (
+                                  paginatedPasses.map(pass => {
+                                      const student = students.find(s => s.id === pass.studentId);
+                                      const issuer = users.find(u => u.id === pass.teacherId);
+                                      const isUnauthorized = pass.type === UNAUTHORIZED_TYPE;
+                                      let destLabel = t.unauthorized;
+                                      let destColor = 'red';
+                                      if (!isUnauthorized) {
+                                          const dest = getDestinationDetails(pass.type);
+                                          destLabel = lang === 'en' ? dest.label_en : dest.label_ar;
+                                          destColor = dest.colorTheme;
+                                      }
+                                      const elapsed = getElapsed(pass.startTime);
+                                      const isOverdue = !isUnauthorized && parseInt(elapsed) > (getDestinationDetails(pass.type).maxDuration);
+                                      return ( // Added backdrop-blur to table rows
+                                          <tr key={pass.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                              <td className="p-4">
+                                                  <div className="font-bold text-slate-800 dark:text-white">{lang === 'en' ? student?.name_en : student?.name_ar}</div>
+                                                  <div className="text-xs text-slate-400 font-mono mt-0.5">{student?.studentNumber}</div>
+                                              </td>
+                                              <td className="p-4"><Badge color="gray">{student?.grade} - {student?.section}</Badge></td>
+                                              <td className="p-4 text-sm text-slate-600 dark:text-slate-300">{issuer ? issuer.name : <span className="text-slate-300">-</span>}</td>
+                                              <td className="p-4"><Badge color={isUnauthorized ? 'red' : (destColor as any)}>{destLabel}</Badge></td>
+                                              <td className="p-4 text-sm text-slate-600 dark:text-slate-300 font-mono">{new Date(pass.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                              <td className="p-4"><span className={`font-mono font-bold ${isUnauthorized ? 'text-red-600 dark:text-red-400' : isOverdue ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}`}>{elapsed}</span></td>
+                                              <td className="p-4 text-center">
+                                                {/* End Pass button color is purple */}
+    <Button
+      onClick={(e) => {
+        e.stopPropagation();
+        handleComplete(pass.id);
+      }}
+      variant="secondary"
+      className="text-xs h-9 px-4"
+    >
+      {t.endPass}
+    </Button>                                       </td>
+                                          </tr>
+                                      )
+                                  })
+                              )}
+                          </tbody>
+                      </table>
+                  </div>
+                  <Pagination 
+                      currentPage={dashboardPage}
+                      totalPages={totalDashboardPages}
+                      onPageChange={setDashboardPage}
+                      className="p-4 pt-6 border-t border-slate-100 dark:border-slate-700"
+                  />
               </div>
-              <Pagination 
-                  currentPage={dashboardPage}
-                  totalPages={totalDashboardPages}
-                  onPageChange={setDashboardPage}
-                  className="p-4 border-t border-slate-100 dark:border-slate-700"
-              />
           </Card>
       </div>
   );
 
   return (
     <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
-      <Card className="shrink-0 pb-2">
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center border-b border-slate-100 dark:border-slate-700 pb-4 mb-4">
-             <div className="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+      <Card className="shrink-0 !p-2">
+        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+             <div className="flex gap-2 bg-slate-100/50 dark:bg-slate-900/50 p-1.5 rounded-2xl">
                 <button 
   onClick={() => setActiveTab('issue')}
   className={`
-    px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300
+    flex-1 lg:flex-none px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300
     ${activeTab === 'issue' 
-      ? 'bg-white dark:bg-slate-700 shadow-lg text-blue-600 dark:text-blue-400 scale-105' 
-      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:scale-105'
+      ? 'bg-white dark:bg-slate-800 shadow-lg text-primary' 
+      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:backdrop-blur-md'
     }
   `}
 >
-                    <div className="flex items-center gap-2"><Ticket size={16} /> {t.issuePass}</div>
+                    <div className="flex items-center gap-2"><Ticket size={18} /> {t.issuePass}</div>
                 </button>
                 <button 
   onClick={() => setActiveTab('dashboard')}
   className={`
-    px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300
+    flex-1 lg:flex-none px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300
     ${activeTab === 'dashboard' 
-      ? 'bg-white dark:bg-slate-700 shadow-lg text-blue-600 dark:text-blue-400 scale-105' 
-      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:scale-105'
+      ? 'bg-white dark:bg-slate-800 shadow-lg text-primary' 
+      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:backdrop-blur-md'
     }
   `}
 >
-                    <div className="flex items-center gap-2"><LayoutDashboard size={16} /> {t.activityMonitor}</div>
+                    <div className="flex items-center gap-2"><LayoutDashboard size={18} /> {t.activityMonitor}</div>
                 </button>
              </div>
             {activeTab === 'issue' && (
                 <div className="flex flex-wrap gap-3 items-end w-full lg:w-auto">
                      <div className="flex gap-2 w-full lg:w-auto">
-                        <div className="w-1/3 lg:w-32">
-                            <Select value={selectedGender} onChange={(e) => { setSelectedGender(e.target.value); setSelectedGrade(""); setSelectedSection(""); }} className="text-sm py-1.5">
+                        <div className="w-1/3 lg:w-28">
+                            <Select value={selectedGender} onChange={(e) => { setSelectedGender(e.target.value); setSelectedGrade(""); setSelectedSection(""); }} className="text-sm py-2 h-10">
                                 <option value="">{t.gender}</option>
                                 <option value="Male">{t.male}</option>
                                 <option value="Female">{t.female}</option>
                             </Select>
                         </div>
-                        <div className="w-1/3 lg:w-24">
-                            <Select value={selectedGrade} onChange={(e) => { setSelectedGrade(e.target.value); setSelectedSection(""); }} disabled={!selectedGender} className="text-sm py-1.5">
+                        <div className="w-1/3 lg:w-28">
+                            <Select value={selectedGrade} onChange={(e) => { setSelectedGrade(e.target.value); setSelectedSection(""); }} disabled={!selectedGender} className="text-sm py-2 h-10">
                                 <option value="">{t.grade}</option>
                                 {availableGrades.map(g => <option key={g} value={g}>{g}</option>)}
                             </Select>
                         </div>
-                        <div className="w-1/3 lg:w-24">
-                            <Select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} disabled={!selectedGrade} className="text-sm py-1.5">
+                        <div className="w-1/3 lg:w-28">
+                            <Select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} disabled={!selectedGrade} className="text-sm py-2 h-10">
                                 <option value="">{t.section}</option>
                                 {availableSections.map(s => <option key={s} value={s}>{s}</option>)}
                             </Select>
                         </div>
                     </div>
-                    <div className="w-full lg:w-48 relative">
-                        <Search className={`absolute top-2 text-slate-400 ${lang === 'ar' ? 'right-3' : 'left-3'}`} size={14} />
-                        <Input placeholder={t.searchPlaceholder} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={`text-sm py-1.5 ${lang === 'ar' ? 'pr-9' : 'pl-9'}`} />
+                    <div className="w-full lg:w-56 relative">
+                        <Search className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${lang === 'ar' ? 'right-3' : 'left-3'}`} size={18} />
+                        <Input placeholder={t.searchPlaceholder} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={`text-sm h-10 ${lang === 'ar' ? 'pr-10' : 'pl-10'}`} />
                     </div>
                 </div>
             )}
