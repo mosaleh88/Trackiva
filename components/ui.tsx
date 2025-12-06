@@ -14,12 +14,12 @@ export const Card: React.FC<CardProps> = ({ children, className = "" }) => (
     backdrop-blur-xl backdrop-saturate-150
     shadow-glass 
     border border-white/30 dark:border-white/10
-    rounded-[2rem] p-6 transition-all duration-300 ease-spring hover:shadow-glass-hover hover:-translate-y-1
+    rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 transition-all duration-300 ease-spring hover:shadow-glass-hover hover:-translate-y-1
     ${className}
   `}>
     {/* Optional subtle gradient overlay for depth */}
     <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent dark:from-white/5 dark:to-transparent pointer-events-none" />
-    <div className="relative z-10">
+    <div className="relative z-10 h-full w-full">
       {children}
     </div>
   </div>
@@ -28,7 +28,7 @@ export const Card: React.FC<CardProps> = ({ children, className = "" }) => (
 // Button - Pill shaped, soft glow
 export interface ButtonProps extends React.ComponentProps<'button'> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg'| 'icon';
 }
 
 export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', size = 'md', className = "", ...props }) => {
@@ -36,8 +36,9 @@ export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', s
   
   const sizes = {
     sm: "px-3 py-1.5 text-xs rounded-full",
-    md: "px-5 py-2.5 text-sm rounded-2xl",
-    lg: "px-8 py-3.5 text-lg rounded-2xl"
+    md: "px-4 md:px-5 py-2 md:py-2.5 text-sm rounded-2xl",
+    lg: "px-6 md:px-8 py-3 md:py-3.5 text-lg rounded-2xl",
+    icon: "h-11 w-11 p-0 rounded-xl",
   };
 
   const variants = {
@@ -72,7 +73,7 @@ export const Badge: React.FC<BadgeProps> = ({ children, color = 'blue', classNam
     purple: "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-200/50 dark:border-purple-800/50"
   };
   return (
-    <span className={`px-3 py-1 rounded-xl text-xs font-bold border backdrop-blur-sm shadow-sm ${colors[color] || colors.blue} ${className}`}>
+    <span className={`px-2 md:px-3 py-1 rounded-xl text-[10px] md:text-xs font-bold border backdrop-blur-sm shadow-sm ${colors[color] || colors.blue} ${className}`}>
       {children}
     </span>
   );
@@ -83,7 +84,7 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ c
   <div className="relative group">
     <input 
       className={`
-        w-full px-4 py-3 
+        w-full px-4 py-2.5 md:py-3 
         bg-white/50 dark:bg-slate-900/50 
         backdrop-blur-lg
         border border-slate-200/60 dark:border-slate-700/60 
@@ -93,6 +94,7 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({ c
         transition-all duration-300 ease-out
         placeholder:text-slate-400 dark:placeholder:text-slate-500
         text-start shadow-inner-light
+        text-base md:text-sm
         ${className}
       `}
       {...props}
@@ -145,7 +147,7 @@ export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (
   <div className="relative">
     <select 
       className={`
-        w-full px-4 py-3 
+        w-full px-4 py-2.5 md:py-3 
         bg-white/50 dark:bg-slate-900/50 
         backdrop-blur-lg
         border border-slate-200/60 dark:border-slate-700/60 
@@ -155,6 +157,7 @@ export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (
         transition-all duration-300 ease-out
         appearance-none text-start shadow-inner-light
         cursor-pointer hover:bg-white/60 dark:hover:bg-slate-800/60
+        text-base md:text-sm
         ${className}
       `}
       {...props}

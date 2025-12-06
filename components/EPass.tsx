@@ -757,20 +757,20 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
                 <div className="flex flex-wrap gap-3 items-end w-full lg:w-auto">
                      <div className="flex gap-2 w-full lg:w-auto">
                         <div className="w-1/3 lg:w-28">
-                            <Select value={selectedGender} onChange={(e) => { setSelectedGender(e.target.value); setSelectedGrade(""); setSelectedSection(""); }} className="text-sm py-2 h-10">
+                            <Select value={selectedGender} onChange={(e) => { setSelectedGender(e.target.value); setSelectedGrade(""); setSelectedSection(""); }} className="text-sm py-2 h-11">
                                 <option value="">{t.gender}</option>
                                 <option value="Male">{t.male}</option>
                                 <option value="Female">{t.female}</option>
                             </Select>
                         </div>
                         <div className="w-1/3 lg:w-28">
-                            <Select value={selectedGrade} onChange={(e) => { setSelectedGrade(e.target.value); setSelectedSection(""); }} disabled={!selectedGender} className="text-sm py-2 h-10">
+                            <Select value={selectedGrade} onChange={(e) => { setSelectedGrade(e.target.value); setSelectedSection(""); }} disabled={!selectedGender} className="text-sm py-2 h-11">
                                 <option value="">{t.grade}</option>
                                 {availableGrades.map(g => <option key={g} value={g}>{g}</option>)}
                             </Select>
                         </div>
                         <div className="w-1/3 lg:w-28">
-                            <Select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} disabled={!selectedGrade} className="text-sm py-2 h-10">
+                            <Select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} disabled={!selectedGrade} className="text-sm py-2 h-11">
                                 <option value="">{t.section}</option>
                                 {availableSections.map(s => <option key={s} value={s}>{s}</option>)}
                             </Select>

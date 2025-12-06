@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge } from './ui';
 import { useStore } from '../services/store';
@@ -8,7 +7,6 @@ import {
   Search, ArrowRight, UserCheck, LogOut, Clock, MapPin, Bus, User as UserIcon, X, Filter, AlertTriangle, CheckCircle2, Info, Users,
   Stethoscope, Home, Thermometer, FileText, Plane, MoreHorizontal 
 } from 'lucide-react';
-// import { sendEarlyLeaveAlert } from '../services/telegramService';
 
 interface ReceptionProps {
   lang: Language;
@@ -38,7 +36,7 @@ export const Reception: React.FC<ReceptionProps> = ({ lang, currentUser }) => {
   const [searchNumber, setSearchNumber] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [siblings, setSiblings] = useState<Student[]>([]);
-  const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [isFilterOpen, setIsFilterOpen] = useState(false); // Default closed to save space on mobile
 
   // Form States
   const [reasonSelect, setReasonSelect] = useState("");
@@ -114,211 +112,231 @@ export const Reception: React.FC<ReceptionProps> = ({ lang, currentUser }) => {
 
   const currentStudent = students.find(s => s.id === selectedStudentId);
   const themeColor = mode === 'LateArrival' ? 'blue' : 'orange';
-  const themeBg = mode === 'LateArrival' ? 'bg-blue-50/50 dark:bg-slate-900/50' : 'bg-orange-50/50 dark:bg-slate-900/50';
 
   return (
-    <div className="h-[calc(100vh-9rem)] min-h-[600px] flex gap-8 overflow-hidden">
+    <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-8.5rem)] h-auto gap-4 lg:gap-6 animate-in fade-in duration-500">
+      
       {/* Sidebar: Student Finder */}
-      <div className="w-96 flex flex-col bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-3xl shadow-glass border border-white/40 dark:border-white/10 overflow-hidden shrink-0 transition-all duration-300">
-        {/* Mode Toggles */}
-        <div className="p-3 grid grid-cols-2 gap-2 bg-white/30 dark:bg-slate-800/30 border-b border-white/20 dark:border-slate-700/50">
-            <button onClick={() => handleModeSwitch('LateArrival')} className={`flex flex-col items-center justify-center py-4 px-2 rounded-2xl transition-all duration-300 ${mode === 'LateArrival' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-md ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-500 dark:text-slate-400 hover:bg-white/40 dark:hover:bg-slate-800/40'}`}><Clock size={24} className="mb-1.5" /><span className="text-xs font-bold uppercase tracking-wide">{t.lateArrival}</span></button>
-            <button onClick={() => handleModeSwitch('EarlyLeave')} className={`flex flex-col items-center justify-center py-4 px-2 rounded-2xl transition-all duration-300 ${mode === 'EarlyLeave' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-md ring-1 ring-black/5 dark:ring-white/10' : 'text-slate-500 dark:text-slate-400 hover:bg-white/40 dark:hover:bg-slate-800/40'}`}><LogOut size={24} className="mb-1.5" /><span className="text-xs font-bold uppercase tracking-wide">{t.earlyLeave}</span></button>
-        </div>
-        
-        <div className="p-5 space-y-4 border-b border-white/20 dark:border-slate-700/50">
-            <div className="relative group">
-                <Search className={`absolute top-3.5 text-slate-400 group-focus-within:text-primary transition-colors ${lang === 'ar' ? 'right-4' : 'left-4'}`} size={20} />
-                <input autoFocus type="text" placeholder={t.searchPlaceholder} className={`w-full h-12 bg-white/50 dark:bg-slate-800/50 border border-white/30 dark:border-slate-600 text-slate-900 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all font-mono text-sm shadow-inner ${lang === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'}`} value={searchNumber} onChange={(e) => { setSearchNumber(e.target.value); setSelectedStudentId(""); }} />
-            </div>
-            
-            {/* Filter By Section: Now collapsible */}
-            <div className="border border-white/30 dark:border-slate-700/50 rounded-2xl bg-white/30 dark:bg-slate-800/30 overflow-hidden">
+      <Card className="w-full lg:w-96 !p-0 h-[500px] lg:h-full shrink-0 transition-all duration-300">
+        <div className="flex flex-col h-full">
+            {/* Header Tabs */}
+            <div className="grid grid-cols-2 bg-slate-100/50 dark:bg-slate-900/50 p-2 gap-2 border-b border-white/20 dark:border-white/10 shrink-0">
                 <button 
-                    onClick={() => setIsFilterOpen(!isFilterOpen)} 
-                    className="w-full flex justify-between items-center px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 transition-colors hover:bg-white/40 dark:hover:bg-slate-700/40"
+                    onClick={() => handleModeSwitch('LateArrival')} 
+                    className={`flex flex-col items-center justify-center py-3 rounded-xl transition-all duration-300 ${mode === 'LateArrival' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:bg-white/50'}`}
                 >
-                    <div className="flex items-center gap-2">
-                        <Filter size={16} /> <span>{t.filterBy}</span>
-                    </div>
-                    <ArrowRight size={16} className={`text-slate-400 transition-transform duration-300 ${isFilterOpen ? 'rotate-90' : 'rotate-0'}`} />
+                    <Clock size={20} className="mb-1" />
+                    <span className="text-[10px] font-bold uppercase">{t.lateArrival}</span>
                 </button>
-                
-                <div className={`overflow-hidden transition-all duration-300 ease-spring ${isFilterOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="p-4 space-y-3 pt-0">
-                        <div className="h-px w-full bg-slate-200/50 dark:bg-slate-700/50 mb-3"></div>
-                        <Select value={selectedGender} onChange={(e) => { setSelectedGender(e.target.value); setSelectedGrade(""); setSelectedSection(""); }} className="bg-white/60 dark:bg-slate-800/60 text-sm py-2 h-10"><option value="">{t.gender}</option><option value="Male">{t.male}</option><option value="Female">{t.female}</option></Select>
-                        <div className="grid grid-cols-2 gap-3"><Select value={selectedGrade} onChange={(e) => { setSelectedGrade(e.target.value); setSelectedSection(""); }} disabled={!selectedGender} className="bg-white/60 dark:bg-slate-800/60 text-sm py-2 h-10"><option value="">{t.grade}</option>{availableGrades.map(g => <option key={g} value={g}>{g}</option>)}</Select><Select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} disabled={!selectedGrade} className="bg-white/60 dark:bg-slate-800/60 text-sm py-2 h-10"><option value="">{t.section}</option>{availableSections.map(s => <option key={s} value={s}>{s}</option>)}</Select></div>
-                        {(selectedGender || selectedGrade || selectedSection) && <button onClick={handleReset} className="w-full text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 py-2 rounded-lg mt-1 transition-colors">{t.clearFilters}</button>}
-                    </div>
+                <button 
+                    onClick={() => handleModeSwitch('EarlyLeave')} 
+                    className={`flex flex-col items-center justify-center py-3 rounded-xl transition-all duration-300 ${mode === 'EarlyLeave' ? 'bg-white dark:bg-slate-800 shadow-sm text-orange-600 dark:text-orange-400' : 'text-slate-400 hover:bg-white/50'}`}
+                >
+                    <LogOut size={20} className="mb-1" />
+                    <span className="text-[10px] font-bold uppercase">{t.earlyLeave}</span>
+                </button>
+            </div>
+
+            {/* Search & Filter */}
+            <div className="p-4 space-y-3 bg-white/30 dark:bg-slate-800/30 border-b border-white/10 shrink-0">
+                <div className="relative">
+                    <Search className={`absolute top-3 text-slate-400 ${lang === 'ar' ? 'right-3' : 'left-3'}`} size={18} />
+                    <input 
+                        type="text" 
+                        placeholder={t.searchPlaceholder} 
+                        className={`w-full h-10 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-${themeColor}-500/50 text-sm ${lang === 'ar' ? 'pr-10' : 'pl-10'}`} 
+                        value={searchNumber} 
+                        onChange={(e) => { setSearchNumber(e.target.value); setSelectedStudentId(""); }} 
+                    />
                 </div>
-            </div>
-        </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50/30 dark:bg-slate-900/30 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
-             {!isCriteriaActive ? <div className="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center"><Search size={64} className="opacity-20 mb-4" /><p className="text-sm font-medium">{t.selectClassMsg}</p></div> : filteredStudents.length === 0 ? <div className="p-8 text-center text-slate-400"><p>{t.noStudentsFound}</p></div> : filteredStudents.map(s => (<button key={s.id} onClick={() => setSelectedStudentId(s.id)} className={`w-full text-start p-4 rounded-2xl border transition-all duration-200 group ${selectedStudentId === s.id ? `bg-white dark:bg-slate-700 border-${themeColor}-500 ring-2 ring-${themeColor}-500/30 shadow-lg z-10 scale-[1.02]` : 'bg-white/80 dark:bg-slate-800/80 border-transparent hover:border-slate-200 dark:hover:border-slate-600 shadow-sm hover:shadow-md'}`}><div className="flex justify-between items-start"><div><p className={`font-bold text-sm ${selectedStudentId === s.id ? `text-${themeColor}-700 dark:text-${themeColor}-400` : 'text-slate-700 dark:text-slate-200'}`}>{lang === 'en' ? s.name_en : s.name_ar}</p><p className="text-xs text-slate-400 font-mono mt-0.5">{s.studentNumber}</p></div><Badge color="gray" className="text-[10px] px-2">{s.grade}-{s.section}</Badge></div></button>))}
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className={`flex-1 rounded-[2.5rem] shadow-glass border border-white/40 dark:border-white/10 flex flex-col overflow-hidden ${themeBg} backdrop-blur-xl transition-colors duration-500`}>
-        {/* Header */}
-        <div className="h-20 shrink-0 border-b border-white/20 dark:border-slate-700/50 flex items-center justify-between px-8 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md">
-            <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full shadow-[0_0_10px_currentColor] ${mode === 'LateArrival' ? 'bg-blue-500 text-blue-500' : 'bg-orange-500 text-orange-500'}`}></div>
-                <span className="font-bold text-lg text-slate-700 dark:text-slate-200 uppercase tracking-widest">{mode === 'LateArrival' ? t.lateArrival : t.earlyLeave}</span>
-            </div>
-            {currentStudent && <Badge color={mode === 'LateArrival' ? 'blue' : 'yellow'} className="shadow-sm text-lg px-4 py-1.5">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Badge>}
-        </div>
-
-        {!currentStudent ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 animate-in fade-in zoom-in-95 duration-500">
-                <div className="w-40 h-40 rounded-full bg-white/50 dark:bg-slate-800/50 flex items-center justify-center mb-6 shadow-inner border border-white/20 dark:border-white/5">
-                    <UserCheck size={80} className="opacity-30" />
-                </div>
-                <h2 className="text-3xl font-bold text-slate-600 dark:text-slate-300 mb-2">{t.readyToProcess}</h2>
-                <p className="text-lg opacity-70 font-medium">{t.selectStudentMsg}</p>
-            </div>
-        ) : (
-            <div className="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-8 duration-300 relative">
-                {/* Overlay for Last Log Success */}
-                {lastLog && (
-                    <div className="absolute inset-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center animate-in zoom-in fade-in duration-300">
-                        <div className="bg-green-100 dark:bg-green-900/30 p-6 rounded-full mb-6 shadow-xl border-4 border-white dark:border-slate-800">
-                            <CheckCircle2 size={80} className="text-green-600 dark:text-green-400" />
+                <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-white/40 dark:bg-slate-900/40 overflow-hidden">
+                    <button onClick={() => setIsFilterOpen(!isFilterOpen)} className="w-full flex justify-between items-center px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300">
+                        <span className="flex items-center gap-2"><Filter size={14} /> {t.filterBy}</span>
+                        <ArrowRight size={14} className={`transition-transform duration-300 ${isFilterOpen ? 'rotate-90' : ''}`} />
+                    </button>
+                    <div className={`transition-all duration-300 overflow-hidden ${isFilterOpen ? 'max-h-60' : 'max-h-0'}`}>
+                        <div className="p-3 space-y-2 pt-0">
+                            <Select value={selectedGender} onChange={(e) => { setSelectedGender(e.target.value); setSelectedGrade(""); }} className="h-11 text-sm py-2"><option value="">{t.gender}</option><option value="Male">{t.male}</option><option value="Female">{t.female}</option></Select>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Select value={selectedGrade} onChange={(e) => setSelectedGrade(e.target.value)} disabled={!selectedGender} className="h-11 text-sm py-2"><option value="">{t.grade}</option>{availableGrades.map(g => <option key={g} value={g}>{g}</option>)}</Select>
+                                <Select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} disabled={!selectedGrade} className="h-11 text-sm py-2"><option value="">{t.section}</option>{availableSections.map(s => <option key={s} value={s}>{s}</option>)}</Select>
+                            </div>
+                            {(selectedGender || selectedGrade) && <button onClick={handleReset} className="w-full text-[10px] text-red-500 font-bold hover:underline py-1">{t.clearFilters}</button>}
                         </div>
-                        <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-2">{mode === 'LateArrival' ? t.confirmLate : t.earlyLeave} Logged!</h2>
-                        <p className="text-slate-500 dark:text-slate-400 font-mono text-lg">{new Date(lastLog.timestamp).toLocaleTimeString()}</p>
                     </div>
+                </div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin min-h-0">
+                {!isCriteriaActive ? (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center opacity-60">
+                        <Search size={40} className="mb-2" />
+                        <p className="text-xs font-medium">{t.selectClassMsg}</p>
+                    </div>
+                ) : filteredStudents.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 text-sm">{t.noStudentsFound}</div>
+                ) : (
+                    filteredStudents.map(s => (
+                        <button 
+                            key={s.id} 
+                            onClick={() => setSelectedStudentId(s.id)} 
+                            className={`w-full text-start p-3 rounded-xl border transition-all duration-200 group flex items-center gap-3
+                                ${selectedStudentId === s.id 
+                                    ? `bg-${themeColor}-50 dark:bg-${themeColor}-900/20 border-${themeColor}-200 dark:border-${themeColor}-800 ring-1 ring-${themeColor}-500/20` 
+                                    : 'bg-white/60 dark:bg-slate-800/60 border-transparent hover:bg-white dark:hover:bg-slate-700'
+                                }
+                            `}
+                        >
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${selectedStudentId === s.id ? `bg-${themeColor}-100 text-${themeColor}-600` : 'bg-slate-100 text-slate-500'}`}>
+                                {s.grade}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className={`font-bold text-sm truncate ${selectedStudentId === s.id ? `text-${themeColor}-700 dark:text-${themeColor}-300` : 'text-slate-700 dark:text-slate-200'}`}>
+                                    {lang === 'en' ? s.name_en : s.name_ar}
+                                </p>
+                                <p className="text-xs text-slate-400 font-mono">{s.studentNumber}</p>
+                            </div>
+                            {selectedStudentId === s.id && <CheckCircle2 size={18} className={`text-${themeColor}-500`} />}
+                        </button>
+                    ))
                 )}
+            </div>
+        </div>
+      </Card>
 
-                {/* Student Info Card */}
-                <div className="p-8 pb-6 shrink-0">
-                    <div className="bg-white/60 dark:bg-slate-800/60 rounded-[2rem] p-6 border border-white/40 dark:border-white/10 shadow-sm flex items-start gap-6 backdrop-blur-md">
-                        <div className="w-24 h-24 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 shadow-inner border-2 border-white dark:border-slate-600">
-                            <UserIcon size={48} />
-                        </div>
-                        <div className="flex-1 pt-1">
-                            <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-1">{lang === 'en' ? currentStudent.name_en : currentStudent.name_ar}</h2>
-                            <div className="flex flex-wrap gap-2 mb-3">
-                                <Badge color="gray" className="text-sm px-3 py-1">ID: {currentStudent.studentNumber}</Badge>
-                                <Badge color="blue" className="text-sm px-3 py-1">{currentStudent.grade} - {currentStudent.section}</Badge>
-                                <Badge color="gray" className="text-sm px-3 py-1">{currentStudent.gender}</Badge>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-700/50 px-3 py-1.5 rounded-lg border border-white/20 dark:border-white/5">
-                                    <Bus size={16} className={currentStudent.transportMode === 'Bus' ? 'text-yellow-500' : 'text-slate-400'} />
-                                    <span>{currentStudent.transportMode} {currentStudent.busRoute ? `(${currentStudent.busRoute})` : ''}</span>
-                                </div>
-                                {currentStudent.isWatchlisted && (
-                                    <div className="flex items-center gap-2 text-sm font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-lg border border-red-100 dark:border-red-900/50 animate-pulse">
-                                        <AlertTriangle size={16} /> Targeted Student
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+      {/* Main Content: Action Area */}
+      <Card className={`flex-1 !p-0 relative overflow-hidden transition-colors duration-500 min-h-[500px] lg:min-h-0 lg:h-full ${mode === 'LateArrival' ? 'bg-blue-50/30' : 'bg-orange-50/30'}`}>
+        <div className="flex flex-col h-full relative">
+            {/* Header */}
+            <div className={`h-16 shrink-0 flex items-center justify-between px-6 border-b border-white/20 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md`}>
+                <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${mode === 'LateArrival' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
+                        {mode === 'LateArrival' ? <Clock size={20} /> : <LogOut size={20} />}
                     </div>
-                    {/* Siblings Alert */}
-                    {siblings.length > 0 && (
-                        <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
-                            {siblings.map(sib => (
-                                <div key={sib.id} className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2 rounded-xl border border-indigo-100 dark:border-indigo-800/50 shrink-0">
-                                    <Users size={14} className="text-indigo-500" />
-                                    <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">{lang === 'en' ? sib.name_en : sib.name_ar}</span>
-                                    <span className="text-[10px] text-indigo-400">({sib.grade}-{sib.section})</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    <h2 className="font-bold text-lg text-slate-800 dark:text-white">
+                        {mode === 'LateArrival' ? t.confirmLate : t.earlyLeave}
+                    </h2>
                 </div>
+                {currentStudent && <Badge color={mode === 'LateArrival' ? 'blue' : 'orange'} className="text-sm font-mono">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Badge>}
+            </div>
 
-                {/* Content Body */}
-                <div className="flex-1 px-8 pb-8 overflow-y-auto">
-                    {mode === 'LateArrival' ? (
-                        <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-[2rem] p-8 border border-blue-100 dark:border-blue-800/30 flex flex-col items-center justify-center h-full text-center space-y-4">
-                            <Clock size={64} className="text-blue-400 dark:text-blue-500 opacity-80 mb-2" />
-                            <h3 className="text-2xl font-bold text-blue-900 dark:text-blue-100">{t.confirmLate}</h3>
-                            <p className="text-blue-700 dark:text-blue-300 max-w-md">{t.confirmLateMsg}</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-6 h-full flex flex-col">
-                            {/* Transport Conflict Alert */}
-                            {currentStudent.transportMode === 'Bus' && (
-                                <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 rounded-2xl p-4 flex items-start gap-3 animate-in slide-in-from-top-2">
-                                    <AlertTriangle className="text-orange-500 shrink-0 mt-0.5" size={20} />
-                                    <div>
-                                        <h4 className="font-bold text-orange-800 dark:text-orange-200 text-sm">{t.transportConflict}</h4>
-                                        <p className="text-xs text-orange-600 dark:text-orange-300 mt-1">{t.busSchedule}: {currentStudent.busRoute || 'Assigned'}</p>
-                                    </div>
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 relative min-h-0">
+                {!currentStudent ? (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-400 animate-in fade-in zoom-in-95">
+                        <UserCheck size={64} className="opacity-20 mb-4" />
+                        <p className="text-lg font-medium">{t.selectStudentMsg}</p>
+                    </div>
+                ) : (
+                    <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 max-w-3xl mx-auto pb-10">
+                        
+                        {/* Student Identity Card */}
+                        <div className="bg-white/60 dark:bg-slate-800/60 rounded-2xl p-6 border border-white/40 dark:border-white/10 shadow-sm backdrop-blur-md">
+                            <div className="flex items-start gap-5">
+                                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 shadow-inner shrink-0">
+                                    <UserIcon size={32} />
                                 </div>
-                            )}
-
-                            <div className="bg-white/60 dark:bg-slate-800/60 rounded-[2rem] p-6 border border-white/40 dark:border-white/10 shadow-sm space-y-6 flex-1 backdrop-blur-md">
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide ml-1">{t.reason}</label>
-                                    <div className="grid grid-cols-3 gap-3 mb-3">
-                                        {EARLY_LEAVE_REASONS.map(r => {
-                                            const Icon = REASON_ICONS[r] || MoreHorizontal;
-                                            const isSelected = reasonSelect === r;
-                                            return (
-                                                <button 
-                                                    key={r} 
-                                                    onClick={() => setReasonSelect(r)} 
-                                                    className={`
-                                                        flex flex-col items-center justify-center p-3 h-24 rounded-xl transition-all duration-200 border
-                                                        ${isSelected 
-                                                            ? 'bg-orange-500 text-white shadow-lg scale-105 border-orange-600 font-bold' 
-                                                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-orange-900/20 border-slate-200 dark:border-slate-700 shadow-sm'
-                                                        }
-                                                    `}
-                                                >
-                                                    <Icon size={24} className={`mb-2 ${isSelected ? 'text-white' : 'text-slate-400 dark:text-slate-500'}`} />
-                                                    <span className="text-[10px] sm:text-xs text-center leading-tight font-medium">{r}</span>
-                                                </button>
-                                            )
-                                        })}
+                                <div className="flex-1">
+                                    <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{lang === 'en' ? currentStudent.name_en : currentStudent.name_ar}</h3>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        <Badge color="gray">ID: {currentStudent.studentNumber}</Badge>
+                                        <Badge color="blue">{currentStudent.grade} - {currentStudent.section}</Badge>
+                                        {currentStudent.transportMode === 'Bus' && <Badge color="yellow" className="flex items-center gap-1"><Bus size={12} /> {currentStudent.busRoute}</Badge>}
                                     </div>
-                                    {reasonSelect === 'Other' && (
-                                        <Input placeholder={t.pleaseSpecify} value={reasonText} onChange={(e) => setReasonText(e.target.value)} autoFocus className="bg-white dark:bg-slate-900" />
+                                    {currentStudent.isWatchlisted && (
+                                        <div className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-lg border border-red-100 animate-pulse">
+                                            <AlertTriangle size={14} /> Targeted Student
+                                        </div>
                                     )}
                                 </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide ml-1">{t.pickupBy}</label>
-                                        <Select value={pickedBy} onChange={(e) => setPickedBy(e.target.value)} className="bg-white dark:bg-slate-900">
-                                            <option value="">{t.selectRelation}</option>
-                                            {PICKUP_RELATIONS.map(r => <option key={r} value={r}>{r}</option>)}
-                                        </Select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide ml-1">{t.pickupId}</label>
-                                        <Input placeholder="ID Number / Emirates ID" value={pickerId} onChange={(e) => setPickerId(e.target.value)} className="bg-white dark:bg-slate-900" />
-                                    </div>
-                                </div>
-
-                                <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl flex items-center gap-3 border border-blue-100 dark:border-blue-800/30">
-                                    <Info size={20} className="text-blue-500 shrink-0" />
-                                    <p className="text-xs text-blue-700 dark:text-blue-300 font-medium leading-relaxed">{t.autoAttendance}</p>
-                                </div>
                             </div>
                         </div>
-                    )}
-                </div>
 
-                {/* Footer Actions */}
-                <div className="p-8 pt-0 mt-auto">
-                    <Button 
-                        onClick={handleLog} 
-                        disabled={isLoading || (mode === 'EarlyLeave' && (!reasonSelect || !pickedBy))} 
-                        className={`w-full h-16 text-lg font-bold shadow-xl rounded-2xl transition-all hover:scale-[1.02] active:scale-95 ${mode === 'LateArrival' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/30' : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-orange-500/30'}`}
-                    >
-                        {isLoading ? 'Processing...' : mode === 'LateArrival' ? t.confirmLate : t.checkOut}
-                    </Button>
-                </div>
+                        {/* Action Form */}
+                        {mode === 'LateArrival' ? (
+                            <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl p-8 border border-blue-100 dark:border-blue-800/30 text-center">
+                                <Clock size={48} className="text-blue-400 mx-auto mb-4" />
+                                <p className="text-blue-800 dark:text-blue-200 font-medium text-lg">{t.confirmLateMsg}</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {currentStudent.transportMode === 'Bus' && (
+                                    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4 flex gap-3 text-orange-800 dark:text-orange-200">
+                                        <AlertTriangle size={20} className="shrink-0" />
+                                        <div>
+                                            <p className="font-bold text-sm">{t.transportConflict}</p>
+                                            <p className="text-xs opacity-80 mt-0.5">{t.busSchedule}: {currentStudent.busRoute}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 mb-2 uppercase ml-1">{t.reason}</label>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                            {EARLY_LEAVE_REASONS.map(r => {
+                                                const Icon = REASON_ICONS[r] || MoreHorizontal;
+                                                return (
+                                                    <button 
+                                                        key={r} 
+                                                        onClick={() => setReasonSelect(r)}
+                                                        className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-2 text-center h-24 justify-center ${reasonSelect === r ? 'bg-orange-500 text-white border-orange-600 shadow-md transform scale-105' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-orange-300'}`}
+                                                    >
+                                                        <Icon size={20} />
+                                                        <span className="text-xs font-bold leading-tight">{r}</span>
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                    {reasonSelect === 'Other' && (
+                                        <Input placeholder={t.pleaseSpecify} value={reasonText} onChange={(e) => setReasonText(e.target.value)} autoFocus />
+                                    )}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase ml-1">{t.pickupBy}</label>
+                                            <Select value={pickedBy} onChange={(e) => setPickedBy(e.target.value)}>
+                                                <option value="">{t.selectRelation}</option>
+                                                {PICKUP_RELATIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase ml-1">{t.pickupId}</label>
+                                            <Input placeholder="Emirates ID / Phone" value={pickerId} onChange={(e) => setPickerId(e.target.value)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
-        )}
-      </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-white/20 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md mt-auto shrink-0">
+                <Button 
+                    onClick={handleLog} 
+                    disabled={!currentStudent || isLoading || (mode === 'EarlyLeave' && (!reasonSelect || !pickedBy))}
+                    className={`w-full h-14 text-lg font-bold shadow-lg rounded-xl ${mode === 'LateArrival' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'}`}
+                >
+                    {isLoading ? <span className="animate-pulse">Processing...</span> : (mode === 'LateArrival' ? t.confirmLate : t.checkOut)}
+                </Button>
+            </div>
+
+            {/* Success Overlay */}
+            {lastLog && (
+                <div className="absolute inset-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+                    <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6 shadow-lg animate-bounce">
+                        <CheckCircle2 size={48} />
+                    </div>
+                    <h2 className="text-3xl font-bold text-slate-800 dark:text-white">Success!</h2>
+                    <p className="text-slate-500 mt-2 font-medium">{mode === 'LateArrival' ? 'Late Arrival Logged' : 'Student Checked Out'}</p>
+                </div>
+            )}
+        </div>
+      </Card>
     </div>
   );
 };

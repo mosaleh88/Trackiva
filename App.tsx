@@ -167,7 +167,7 @@ const App = () => {
   const activeIndex = visibleNavItems.findIndex(item => item.id === activeTab);
 
   return (
-    <div className={`h-screen w-screen p-3 md:p-4 gap-4 flex overflow-hidden ${isRTL ? 'flex-row-reverse' : 'flex-row'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`h-[100dvh] w-full p-2 lg:p-4 gap-3 lg:gap-4 flex overflow-hidden ${isRTL ? 'flex-row-reverse' : 'flex-row'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       
       {/* Mobile Overlay */}
       {sidebarOpen && (
@@ -179,16 +179,18 @@ const App = () => {
 
       {/* Floating Sidebar */}
       <aside className={`
-        fixed lg:static inset-y-4 z-50 h-[calc(100vh-2rem)]
-        ${isCollapsed ? 'w-24' : 'w-72'} 
+        fixed lg:static 
+        inset-y-2 lg:inset-y-0 z-50 
+        ${isRTL ? 'right-2 lg:right-auto' : 'left-2 lg:left-auto'}
+        ${isCollapsed ? 'w-20 lg:w-24' : 'w-72'} 
         bg-white/60 dark:bg-slate-900/70 backdrop-blur-2xl
         border border-white/20 dark:border-white/5
-        shadow-2xl rounded-[2.5rem]
+        shadow-2xl rounded-[2rem] lg:rounded-[2.5rem]
         transition-[width,transform] duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-4' : (isRTL ? 'translate-x-[110%]' : '-translate-x-[110%]')}
+        ${sidebarOpen ? 'translate-x-0' : (isRTL ? 'translate-x-[120%]' : '-translate-x-[120%]')}
         lg:translate-x-0
-        ${isRTL ? 'left-auto right-4' : 'left-4'}
         flex flex-col shrink-0 overflow-hidden
+        lg:h-full max-h-[calc(100dvh-1rem)] lg:max-h-full
       `}>
             {/* Sidebar Header */}
             <div className={`h-20 flex items-center justify-center shrink-0 transition-all duration-300 ${isCollapsed ? 'justify-center' : 'px-6'}`}>
@@ -323,7 +325,7 @@ const App = () => {
         {/* Top Bar - Glassmorphic */}
         <header className={`h-16 shrink-0 flex items-center justify-between px-2 md:px-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <div className="flex items-center gap-4">
-                <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl shadow-sm text-slate-600 dark:text-slate-300">
+                <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl shadow-sm text-slate-600 dark:text-slate-300 active:scale-95 transition-transform">
                     <Menu size={24} />
                 </button>
                 <div className="hidden md:block">
@@ -361,8 +363,8 @@ const App = () => {
         </header>
 
         {/* Content Container */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 md:p-6 scrollbar-none">
-            <div className="max-w-7xl mx-auto w-full pb-12 animate-fade-in">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 lg:p-6 scrollbar-none">
+            <div className="max-w-7xl mx-auto w-full pb-12 animate-fade-in h-full">
                 {activeTab === 'dashboard' && <Dashboard role={currentUser.role} lang={lang} />}
                 {activeTab === 'attendance' && <Attendance lang={lang} currentUser={currentUser} />}
                 {activeTab === 'reception' && <Reception lang={lang} currentUser={currentUser} />}
