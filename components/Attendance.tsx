@@ -326,7 +326,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
       )}
 
       {/* Controls Header */}
-      <Card className="space-y-4">
+      <Card className="space-y-1">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {/* Date Picker */}
             <div>
@@ -529,7 +529,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
                                     </div>
                                 </td>
                                 <td className="p-3 align-top">
-                                    <div className="flex justify-center gap-1 flex-wrap">
+                                    <div className="flex justify-center gap-3 flex-wrap">
                                         <button 
                                             className={`w-8 h-8 rounded-lg transition-all flex items-center justify-center font-bold text-xs ${marked[student.id] === AttendanceStatus.PRESENT ? 'bg-green-500 text-white shadow-md scale-105' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 dark:hover:text-green-400'}`}
                                             onClick={() => handleMark(student.id, AttendanceStatus.PRESENT)}

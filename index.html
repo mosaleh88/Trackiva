@@ -2,10 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>Trackiva - Smart School Management</title>
 
@@ -27,6 +24,52 @@
 
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+/* PERMANENT 80% "ZOOM-OUT" EFFECT – NO BLANK SPACE! */
+html {
+  transform: scale(0.80);
+  transform-origin: top left;
+  width: 125vw;
+  height: 125vh;
+  overflow: hidden;
+}
+
+body {
+  width: 125vw;
+  height: 125vh;
+  min-height: 125vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* THIS IS THE CRUCIAL FIX – YOUR APP WAS TOO SHORT! */
+#root,
+#root > div,
+.h-\[100dvh\],
+.h-screen,
+div[class*="h-[100dvh]"] {
+  height: 125vh !important;
+  min-height: 125vh !important;
+}
+
+/* Responsive scaling */
+@media (max-width: 1024px) {
+  html, body, #root, #root > div, .h-\[100dvh\], div[class*="h-[100dvh]"] {
+    transform: scale(0.90);
+    width: 111.111vw;
+    height: 111.111vh;
+  }
+}
+
+@media (max-width: 640px) {
+  html, body, #root, #root > div, .h-\[100dvh\], div[class*="h-[100dvh]"] {
+    transform: scale(1);
+    width: 100vw;
+    height: 100vh;
+  }
+}
+</style>
 
   <!-- Global Base Styles -->
   <style>
@@ -98,6 +141,7 @@
 
   <!-- Gradient Background + UI Polish -->
   <style>
+    
     /* LIGHT MODE */
     body:not(.dark) {
       background-color: #eef2ff;
@@ -156,7 +200,8 @@
     "react/": "https://aistudiocdn.com/react@^19.2.1/",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
     "vite": "https://aistudiocdn.com/vite@^7.2.6",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "url": "https://aistudiocdn.com/url@^0.11.4"
   }
 }
 </script>

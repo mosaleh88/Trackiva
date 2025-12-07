@@ -1,4 +1,5 @@
 
+
 import { 
   LayoutDashboard, 
   Users, 
@@ -311,6 +312,9 @@ export const TRANSLATIONS = {
     watchlistDesc: "Dedicated notifications for students marked as 'Targeted/Watchlisted'.",
     notificationRules: "E-Pass Notification Rules",
     enableNotificationsFor: "Enable Notifications For:",
+    // Emergency Alerts
+    emergencyAlerts: "Emergency Alerts",
+    emergencyAlertsDesc: "Critical alerts triggered from the Clinic dashboard.",
     // Parent Notification
     parentNotifications: "Parent Notifications",
     parentNotificationsDesc: "Configure Telegram alerts for specific students to notify parents directly.",
@@ -620,6 +624,9 @@ aiError: 'فشل إنشاء الرؤى الذكية. حاول مرة أخرى.',
     watchlistDesc: "إشعارات مخصصة للطلاب المحدد عليهم كـ 'مستهدف/قائمة مراقبة'.",
     notificationRules: "قواعد إشعارات التصاريح",
     enableNotificationsFor: "تفعيل الإشعارات لـ:",
+    // Emergency Alerts
+    emergencyAlerts: "تنبيهات الطوارئ",
+    emergencyAlertsDesc: "تنبيهات حرجة يتم إطلاقها من لوحة العيادة.",
     // Parent Notification
     parentNotifications: "إشعارات أولياء الأمور",
     parentNotificationsDesc: "تكوين تنبيهات تيليجرام لطلاب معينين لإخطار الآباء مباشرة.",

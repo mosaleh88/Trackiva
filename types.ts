@@ -155,6 +155,10 @@ export interface AppSettings {
   watchlistBotToken?: string;
   watchlistChatId?: string;
 
+  // Emergency Alerts
+  emergencyBotToken?: string;
+  emergencyChatId?: string;
+
   // Notification Toggles (Key = Pass Type ID or 'UNAUTHORIZED', Value = Enabled)
   notificationRules: Record<string, boolean>;
 

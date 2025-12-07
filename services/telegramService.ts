@@ -1,4 +1,3 @@
-
 import { store } from './store';
 import { Student, EPassDestination, User } from '../types';
 
@@ -165,4 +164,29 @@ Please initiate the required intervention protocol.
     `;
 
     await sendTelegramMessage(message, token, socialWorker.telegramChatId);
+};
+
+export const sendEmergencyAlert = async (message?: string) => {
+    const settings = store.getSettings();
+    const token = settings.emergencyBotToken || settings.telegramBotToken;
+    const chatId = settings.emergencyChatId;
+
+    if (!token || !chatId) {
+        console.warn("Emergency Alert credentials not configured.");
+        return;
+    }
+
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    const alertMessage = `
+🚨 <b>CRITICAL EMERGENCY ALERT</b> 🚨
+
+<b>Time:</b> ${timestamp}
+<b>Location:</b> School Clinic
+
+<i>The Clinic Staff has triggered an Emergency Alert. Immediate assistance is required.</i>
+${message ? `\n<b>Details:</b> ${message}` : ''}
+    `;
+
+    await sendTelegramMessage(alertMessage, token, chatId);
 };

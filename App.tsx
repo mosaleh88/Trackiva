@@ -364,7 +364,8 @@ const App = () => {
 
         {/* Content Container */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 lg:p-6 scrollbar-none">
-            <div className="max-w-7xl mx-auto w-full pb-12 animate-fade-in h-full">
+            {/* REMOVED max-w constraints to allow full-width scaling per request */}
+            <div className="w-full pb-12 animate-fade-in h-full">
                 {activeTab === 'dashboard' && <Dashboard role={currentUser.role} lang={lang} />}
                 {activeTab === 'attendance' && <Attendance lang={lang} currentUser={currentUser} />}
                 {activeTab === 'reception' && <Reception lang={lang} currentUser={currentUser} />}

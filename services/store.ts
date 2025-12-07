@@ -1,3 +1,5 @@
+
+
 import { useState, useEffect } from 'react';
 import {
   Student,
@@ -812,6 +814,15 @@ class SupabaseStore {
     } catch (e) { console.error("Failed to send e-pass alert:", e); }
   }
   
+  async triggerEmergencyAlert(message?: string) {
+    try {
+      const { sendEmergencyAlert } = await import('./telegramService');
+      await sendEmergencyAlert(message);
+    } catch (e) {
+      console.error("Failed to trigger emergency alert:", e);
+    }
+  }
+
   async checkAttendanceAlert(studentId: string, triggerRecordId?: string) {
     const student = this.data.students.find(s => s.id === studentId);
     if (!student) return;

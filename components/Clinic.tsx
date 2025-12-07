@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge, Pagination } from './ui';
 import { useStore } from '../services/store';
@@ -100,7 +102,11 @@ export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
           setSelectedStudentId(""); setLinkedPassId(""); setFormData({ symptom: '', severity: 'Low', outcome: 'ReturnToClass' }); setEmergencyMode(false);
       } catch (e) { console.error(e); alert("Error saving visit"); } finally { setIsLoading(false); }
   };
-  const handleConfirmEmergency = () => { setEmergencyMode(true); setShowEmergencyModal(false); };
+  const handleConfirmEmergency = async () => { 
+      setEmergencyMode(true); 
+      setShowEmergencyModal(false); 
+      await store.triggerEmergencyAlert(); // Trigger the alert
+  };
 
   const renderVisitForm = () => {
       const student = students.find(s => s.id === selectedStudentId);

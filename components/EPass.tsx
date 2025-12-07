@@ -530,7 +530,7 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
   const renderIssuePass = () => {
       const isSelectionActive = searchTerm || (selectedGender && selectedGrade && selectedSection);
       return (
-        <div className="flex-1 flex gap-6 min-h-0 overflow-hidden">
+        <div className="flex-1 flex gap-6 min-h-0">
             <div className="flex-1 overflow-y-auto pr-2 rtl:pr-0 rtl:pl-2 scrollbar-none">
                 {!isSelectionActive ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl bg-slate-50/50 dark:bg-slate-900/30">
@@ -725,66 +725,126 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
 
   return (
     <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
-      <Card className="shrink-0 !p-2">
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-             <div className="flex gap-2 bg-slate-100/50 dark:bg-slate-900/50 p-1.5 rounded-2xl">
-                <button 
-  onClick={() => setActiveTab('issue')}
-  className={`
-    flex-1 lg:flex-none px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300
-    ${activeTab === 'issue' 
-      ? 'bg-white dark:bg-slate-800 shadow-lg text-primary' 
-      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:backdrop-blur-md'
-    }
-  `}
->
-                    <div className="flex items-center gap-2"><Ticket size={18} /> {t.issuePass}</div>
-                </button>
-                <button 
-  onClick={() => setActiveTab('dashboard')}
-  className={`
-    flex-1 lg:flex-none px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300
-    ${activeTab === 'dashboard' 
-      ? 'bg-white dark:bg-slate-800 shadow-lg text-primary' 
-      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:backdrop-blur-md'
-    }
-  `}
->
-                    <div className="flex items-center gap-2"><LayoutDashboard size={18} /> {t.activityMonitor}</div>
-                </button>
-             </div>
-            {activeTab === 'issue' && (
-                <div className="flex flex-wrap gap-3 items-end w-full lg:w-auto">
-                     <div className="flex gap-2 w-full lg:w-auto">
-                        <div className="w-1/3 lg:w-28">
-                            <Select value={selectedGender} onChange={(e) => { setSelectedGender(e.target.value); setSelectedGrade(""); setSelectedSection(""); }} className="text-sm py-2 h-11">
-                                <option value="">{t.gender}</option>
-                                <option value="Male">{t.male}</option>
-                                <option value="Female">{t.female}</option>
-                            </Select>
-                        </div>
-                        <div className="w-1/3 lg:w-28">
-                            <Select value={selectedGrade} onChange={(e) => { setSelectedGrade(e.target.value); setSelectedSection(""); }} disabled={!selectedGender} className="text-sm py-2 h-11">
-                                <option value="">{t.grade}</option>
-                                {availableGrades.map(g => <option key={g} value={g}>{g}</option>)}
-                            </Select>
-                        </div>
-                        <div className="w-1/3 lg:w-28">
-                            <Select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} disabled={!selectedGrade} className="text-sm py-2 h-11">
-                                <option value="">{t.section}</option>
-                                {availableSections.map(s => <option key={s} value={s}>{s}</option>)}
-                            </Select>
-                        </div>
-                    </div>
-                    <div className="w-full lg:w-56 relative">
-                        <Search className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${lang === 'ar' ? 'right-3' : 'left-3'}`} size={18} />
-                        <Input placeholder={t.searchPlaceholder} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className={`text-sm h-10 ${lang === 'ar' ? 'pr-10' : 'pl-10'}`} />
-                    </div>
-                </div>
-            )}
+  <Card className="shrink-0 !p-2">
+    <div className="flex flex-col md:flex-row gap-5 items-start md:items-center justify-between">
+      
+      {/* Tabs */}
+      <div className="flex gap-2 bg-slate-100/50 dark:bg-slate-900/50 p-1.5 rounded-2xl shrink-0 w-full md:w-auto">
+        <button
+          onClick={() => setActiveTab('issue')}
+          className={`
+            flex-1 md:flex-none px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2
+            ${activeTab === 'issue'
+              ? 'bg-white dark:bg-slate-800 shadow-lg text-primary shadow-primary/20'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50'
+            }
+          `}
+        >
+          <Ticket size={18} />
+          {t.issuePass}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          className={`
+            flex-1 md:flex-none px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2
+            ${activeTab === 'dashboard'
+              ? 'bg-white dark:bg-slate-800 shadow-lg text-primary shadow-primary/20'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50'
+            }
+          `}
+        >
+          <LayoutDashboard size={18} />
+          {t.activityMonitor}
+        </button>
+      </div>
+
+      {/* Filters + Search – Only visible in Issue tab */}
+      {activeTab === 'issue' && (
+        <div className="flex flex-col sm:flex-row gap-3 items-end w-full md:w-auto min-w-0">
+          
+          {/* Grade / Section / Gender Selects */}
+          <div className="flex gap-2 w-full sm:w-auto">
+            <div className="w-full sm:w-28">
+              <Select
+                value={selectedGender}
+                onChange={(e) => {
+                  setSelectedGender(e.target.value);
+                  setSelectedGrade("");
+                  setSelectedSection("");
+                }}
+                className="h-11 text-sm rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/30 dark:border-white/10"
+              >
+                <option value="">{t.gender}</option>
+                <option value="Male">{t.male}</option>
+                <option value="Female">{t.female}</option>
+              </Select>
+            </div>
+
+            <div className="w-full sm:w-28">
+              <Select
+                value={selectedGrade}
+                onChange={(e) => {
+                  setSelectedGrade(e.target.value);
+                  setSelectedSection("");
+                }}
+                disabled={!selectedGender}
+                className="h-11 text-sm rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/30 dark:border-white/10 disabled:opacity-50"
+              >
+                <option value="">{t.grade}</option>
+                {availableGrades.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </Select>
+            </div>
+
+            <div className="w-full sm:w-28">
+              <Select
+                value={selectedSection}
+                onChange={(e) => setSelectedSection(e.target.value)}
+                disabled={!selectedGrade}
+                className="h-11 text-sm rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/30 dark:border-white/10 disabled:opacity-50"
+              >
+                <option value="">{t.section}</option>
+                {availableSections.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </Select>
+            </div>
+          </div>
+
+          {/* Search Bar – Compact & Beautiful */}
+          <div className="w-full sm:w-64 relative">
+            <Search
+              className={`absolute top-1/2 -translate-y-1/2 text-slate-400 transition-colors pointer-events-none
+                ${lang === 'ar' ? 'right-3' : 'left-3'}
+              `}
+              size={17}
+            />
+            <Input
+              placeholder={t.searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`
+                h-11 pl-11 pr-4 text-sm w-full rounded-xl
+                bg-white/70 dark:bg-slate-900/70 
+                backdrop-blur-md border border-white/30 dark:border-white/10
+                focus:ring-2 focus:ring-primary/40 focus:border-primary/50
+                placeholder:text-slate-400
+                shadow-sm focus:shadow-md transition-all
+                ${lang === 'ar' ? 'pr-11 pl-4' : 'pl-11 pr-4'}
+              `}
+            />
+          </div>
         </div>
-      </Card>
-      {activeTab === 'issue' ? renderIssuePass() : renderDashboard()}
+      )}
     </div>
+  </Card>
+
+  {/* Main Content */}
+  <div className="flex-1 min-h-0">
+    {activeTab === 'issue' ? renderIssuePass() : renderDashboard()}
+  </div>
+</div>
   );
 };

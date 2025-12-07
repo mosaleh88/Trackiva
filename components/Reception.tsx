@@ -114,7 +114,7 @@ export const Reception: React.FC<ReceptionProps> = ({ lang, currentUser }) => {
   const themeColor = mode === 'LateArrival' ? 'blue' : 'orange';
 
   return (
-    <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-8.5rem)] h-auto gap-4 lg:gap-6 animate-in fade-in duration-500">
+    <div className="flex flex-col lg:flex-row lg:h-[calc(125vh-8.5rem)] h-auto gap-4 lg:gap-6 animate-in fade-in duration-500">
       
       {/* Sidebar: Student Finder */}
       <Card className="w-full lg:w-96 !p-0 h-[500px] lg:h-full shrink-0 transition-all duration-300">
@@ -156,7 +156,7 @@ export const Reception: React.FC<ReceptionProps> = ({ lang, currentUser }) => {
                         <ArrowRight size={14} className={`transition-transform duration-300 ${isFilterOpen ? 'rotate-90' : ''}`} />
                     </button>
                     <div className={`transition-all duration-300 overflow-hidden ${isFilterOpen ? 'max-h-60' : 'max-h-0'}`}>
-                        <div className="p-3 space-y-2 pt-0">
+                        <div className="p-3 space-y-2 pt-2 ">
                             <Select value={selectedGender} onChange={(e) => { setSelectedGender(e.target.value); setSelectedGrade(""); }} className="h-11 text-sm py-2"><option value="">{t.gender}</option><option value="Male">{t.male}</option><option value="Female">{t.female}</option></Select>
                             <div className="grid grid-cols-2 gap-2">
                                 <Select value={selectedGrade} onChange={(e) => setSelectedGrade(e.target.value)} disabled={!selectedGender} className="h-11 text-sm py-2"><option value="">{t.grade}</option>{availableGrades.map(g => <option key={g} value={g}>{g}</option>)}</Select>

@@ -1,10 +1,14 @@
 
+
+
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge, Pagination } from './ui';
 import { store } from '../services/store';
 import { Student, Language, UserRole, TimeSlot, EPassDestination, RolePermissions, AssignedClass, User, AttendanceConfig, AcademicCalendar, CalendarEvent } from '../types';
 import { TRANSLATIONS, ROLES_LIST, AVAILABLE_ICONS, COLOR_THEMES, NAV_ITEMS, generateDefaultPermissions } from '../constants';
-import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, Search, Filter, ArrowUpDown, CreditCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, Download, Loader2, ListChecks, Megaphone, Calendar } from 'lucide-react';
+import { Users, GraduationCap, Upload, Trash2, Edit2, Plus, Search, Filter, ArrowUpDown, CreditCard, X, Printer, Clock, ArrowDownAZ, Ticket, Settings, Shield, Check, ShieldAlert, MessageCircle, Bell, LogOut, Eye, Download, Loader2, ListChecks, Megaphone, Calendar, Siren } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -110,6 +114,10 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
   const [wlTelegramToken, setWlTelegramToken] = useState("");
   const [wlTelegramChatId, setWlTelegramChatId] = useState("");
 
+  // Emergency Alert Settings
+  const [emTelegramToken, setEmTelegramToken] = useState("");
+  const [emTelegramChatId, setEmTelegramChatId] = useState("");
+
   // Notification Rules
   const [notificationRules, setNotificationRules] = useState<Record<string, boolean>>({});
   
@@ -188,6 +196,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
     setAttTelegramToken(settings.attendanceBotToken || "");
     setWlTelegramToken(settings.watchlistBotToken || "");
     setWlTelegramChatId(settings.watchlistChatId || "");
+    setEmTelegramToken(settings.emergencyBotToken || "");
+    setEmTelegramChatId(settings.emergencyChatId || "");
     setNotificationRules(settings.notificationRules || {});
     setRolePermissions(settings.rolePermissions || generateDefaultPermissions());
     setAttendanceRules(settings.attendanceSettings || { 
@@ -665,6 +675,8 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           attendanceBotToken: attTelegramToken,
           watchlistBotToken: wlTelegramToken,
           watchlistChatId: wlTelegramChatId,
+          emergencyBotToken: emTelegramToken,
+          emergencyChatId: emTelegramChatId,
           notificationRules: notificationRules
       });
       alert("Notification credentials saved successfully!");
@@ -987,117 +999,176 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
           </Card>
 
           {/* Students Management */}
-          {activeTab === 'students' && (
-              <div className="space-y-6">
-                  {(isAddingStudent || editingStudent) && renderStudentForm()}
-                  
-                  {/* Toolbar */}
-                  <Card className="flex flex-col md:flex-row gap-4 justify-between items-center p-6 !bg-transparent">
-                      <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-                           <div className="relative group w-full sm:w-64">
-                               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={20} />
-                               <Input placeholder={t.searchPlaceholder} className="pl-12 h-12" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                           </div>
-                           <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-900/50 p-2 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-lg">
-                               <Select value={filterGrade} onChange={e => setFilterGrade(e.target.value)} className="w-28 h-10 bg-transparent border-none focus:ring-0">
-                                   <option value="All">{t.allGrades}</option>
-                                   {uniqueGrades.map(g => <option key={g} value={g}>{g}</option>)}
-                               </Select>
-                               <Select value={filterSection} onChange={e => setFilterSection(e.target.value)} className="w-28 h-10 bg-transparent border-none focus:ring-0">
-                                   <option value="All">{t.allSections}</option>
-                                   {uniqueSections.map(s => <option key={s} value={s}>{s}</option>)}
-                               </Select>
-                               <Select value={filterGender} onChange={e => setFilterGender(e.target.value)} className="w-28 h-10 bg-transparent border-none focus:ring-0">
-                                   <option value="All">{t.allGenders}</option>
-                                   <option value="Male">{t.male}</option>
-                                   <option value="Female">{t.female}</option>
-                               </Select>
-                           </div>
-                     
-                      
-                      <div className="flex gap-3 w-full md:w-auto justify-end">
-                          <label className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors shadow-sm h-11">
-                              <Upload size={18} />
-                              <span className="text-sm font-bold">{isUploading ? t.uploading : t.upload}</span>
-                              <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleBulkUpload} disabled={isUploading} />
-                          </label>
-                          <Button onClick={handleDownloadTemplate} variant="secondary" className="px-4 h-11 rounded-xl">
-                              <Download size={18} />
-                          </Button>
-                          <Button
-  onClick={() => {
-    setIsAddingStudent(true);
-    setFormData({});
-  }}
-  className="h-11 w-11 rounded-xl shadow-md"
-  size="icon"         
-  title={t.addStudent}
->
-  <Plus className="h-5 w-5" />
-</Button>
-                      </div>
-                       </div>
-                  </Card>
+{activeTab === 'students' && (
+  <div className="space-y-6">
+    {(isAddingStudent || editingStudent) && renderStudentForm()}
 
-                  {/* Table */}
-                  <Card className="p-0 overflow-hidden !bg-transparent">
-                      <div className="overflow-x-auto">
-                          <table className="w-full text-left border-collapse">
-                              <thead className="bg-slate-50/50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs uppercase border-b border-slate-100 dark:border-slate-800/50">
-                                  <tr className="[&>th]:p-5 [&>th]:font-bold [&>th]:cursor-pointer [&>th]:select-none [&>th:hover]:bg-slate-100/50 dark:[&>th:hover]:bg-slate-800/50">
-                                      <th onClick={() => setSortBy('number')}>
-                                          <div className="flex items-center gap-2">
-                                              ID {sortBy === 'number' && <ArrowUpDown size={14} />}
-                                          </div>
-                                      </th>
-                                      <th onClick={() => setSortBy('name')}>
-                                          <div className="flex items-center gap-2">
-                                              {t.studentName} {sortBy === 'name' && <ArrowUpDown size={14} />}
-                                          </div>
-                                      </th>
-                                      <th onClick={() => setSortBy('grade')}>
-                                          <div className="flex items-center gap-2">
-                                              {t.grade} {sortBy === 'grade' && <ArrowUpDown size={14} />}
-                                          </div>
-                                      </th>
-                                      <th className="p-5 font-bold">{t.transport}</th>
-                                      <th className="p-5 font-bold text-center">{t.actions}</th>
-                                  </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 text-sm">
-                                  {paginatedStudents.length === 0 ? (
-                                      <tr><td colSpan={5} className="p-12 text-center text-slate-400 italic">No students found</td></tr>
-                                  ) : (
-                                      paginatedStudents.map(student => (
-                                          <tr key={student.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                                              <td className="p-5 font-mono text-slate-500 dark:text-slate-400">{student.studentNumber}</td>
-                                              <td className="p-5 font-bold text-slate-700 dark:text-slate-200">
-                                                  {lang === 'en' ? student.name_en : student.name_ar}
-                                                  {student.isWatchlisted && <Eye className="inline ml-2 text-red-500 w-4 h-4 animate-pulse" />}
-                                              </td>
-                                              <td className="p-5"><Badge color="blue">{student.grade} - {student.section}</Badge></td>
-                                              <td className="p-5 text-slate-600 dark:text-slate-300 font-medium">{student.transportMode}</td>
-                                              <td className="p-5 flex justify-center gap-2">
-                                                  <button onClick={() => setViewingCard(student)} className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg transition-colors" title="ID Card"><CreditCard size={18} /></button>
-                                                  <button onClick={() => { setEditingStudent(student); setFormData(student); setIsAddingStudent(false); }} className="p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-lg transition-colors"><Edit2 size={18} /></button>
-                                                  <button onClick={() => handleDeleteStudent(student.id)} className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg transition-colors"><Trash2 size={18} /></button>
-                                              </td>
-                                          </tr>
-                                      ))
-                                  )}
-                              </tbody>
-                          </table>
-                      </div>
-                      
-                      <Pagination 
-                          currentPage={studentPage}
-                          totalPages={totalStudentPages}
-                          onPageChange={setStudentPage}
-                          className="p-5 border-t border-slate-100 dark:border-slate-800/50"
-                      />
-                  </Card>
-              </div>
-          )}
+    {/* Toolbar – One unbreakable row */}
+    <Card className="shrink-0 !p-4 !bg-transparent border-0">
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        
+        {/* Search + Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center w-full md:w-auto">
+          
+          {/* Search */}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+            <Input
+              placeholder={t.searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-11 pl-11 pr-4 text-sm rounded-xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/30 dark:border-white/10 shadow-sm focus:shadow focus:ring-2 focus:ring-primary/40 transition-all"
+            />
+          </div>
+
+          {/* Grade / Section / Gender Filters */}
+          <div className="flex gap-2 bg-white/60 dark:bg-slate-900/60 p-2 rounded-2xl border border-white/30 dark:border-white/10 backdrop-blur-md shadow-sm">
+            <Select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} className="w-28 h-10 text-sm bg-transparent border-none focus:ring-0">
+              <option value="All">{t.allGrades}</option>
+              {uniqueGrades.map((g) => <option key={g} value={g}>{g}</option>)}
+            </Select>
+            <Select value={filterSection} onChange={(e) => setFilterSection(e.target.value)} className="w-28 h-10 text-sm bg-transparent border-none focus:ring-0">
+              <option value="All">{t.allSections}</option>
+              {uniqueSections.map((s) => <option key={s} value={s}>{s}</option>)}
+            </Select>
+            <Select value={filterGender} onChange={(e) => setFilterGender(e.target.value)} className="w-28 h-10 text-sm bg-transparent border-none focus:ring-0">
+              <option value="All">{t.allGenders}</option>
+              <option value="Male">{t.male}</option>
+              <option value="Female">{t.female}</option>
+            </Select>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 w-full md:w-auto justify-start md:justify-end">
+          <label className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-all shadow-sm h-11">
+            <Upload size={18} />
+            <span className="text-sm font-bold">{isUploading ? t.uploading : t.upload}</span>
+            <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleBulkUpload} disabled={isUploading} />
+          </label>
+
+          <Button onClick={handleDownloadTemplate} variant="secondary" className="h-11 px-4 rounded-xl shadow-sm">
+            <Download size={18} />
+          </Button>
+
+          <Button
+            onClick={() => {
+              setIsAddingStudent(true);
+              setFormData({});
+            }}
+            size="icon"
+            variant="primary"
+            className="h-11 w-11 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+            title={t.addStudent}
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+    </Card>
+
+    {/* Table – Beautiful rounded corners + glass effect */}
+    <Card className="overflow-hidden !p-0 !bg-transparent border-0">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead className="
+            bg-slate-100/70 dark:bg-slate-900/80 
+            text-slate-600 dark:text-slate-300 
+            text-xs uppercase tracking-wider
+            sticky top-0 z-10 backdrop-blur-sm
+          ">
+            <tr className="
+              [&>th]:p-5 [&>th]:font-bold [&>th]:cursor-pointer [&>th]:select-none
+              [&>th:hover]:bg-slate-200/50 dark:[&>th:hover]:bg-slate-800/70
+              [&>th:first-child]:rounded-tl-2xl
+              [&>th:last-child]:rounded-tr-2xl
+            ">
+              <th onClick={() => setSortBy('number')}>
+                <div className="flex items-center gap-2">
+                  ID {sortBy === 'number' && <ArrowUpDown size={14} />}
+                </div>
+              </th>
+              <th onClick={() => setSortBy('name')}>
+                <div className="flex items-center gap-2">
+                  {t.studentName} {sortBy === 'name' && <ArrowUpDown size={14} />}
+                </div>
+              </th>
+              <th onClick={() => setSortBy('grade')}>
+                <div className="flex items-center gap-2">
+                  {t.grade} {sortBy === 'grade' && <ArrowUpDown size={14} />}
+                </div>
+              </th>
+              <th>{t.transport}</th>
+              <th className="text-center">{t.actions}</th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 text-sm bg-white/30 dark:bg-slate-900/20">
+            {paginatedStudents.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="p-16 text-center text-slate-400 italic">
+                  {t.noStudentsFound || "No students found"}
+                </td>
+              </tr>
+            ) : (
+              paginatedStudents.map((student) => (
+                <tr key={student.id} className="hover:bg-white/50 dark:hover:bg-slate-800/30 transition-colors">
+                  <td className="p-5 font-mono text-slate-500 dark:text-slate-400">
+                    {student.studentNumber}
+                  </td>
+                  <td className="p-5 font-bold text-slate-700 dark:text-slate-200">
+                    {lang === 'en' ? student.name_en : student.name_ar}
+                    {student.isWatchlisted && <Eye className="inline ml-2 text-red-500 w-4 h-4 animate-pulse" />}
+                  </td>
+                  <td className="p-5">
+                    <Badge color="blue">{student.grade} - {student.section}</Badge>
+                  </td>
+                  <td className="p-5 text-slate-600 dark:text-slate-300 font-medium">
+                    {student.transportMode}
+                  </td>
+                  <td className="p-5">
+                    <div className="flex justify-center gap-3">
+                      <button
+                        onClick={() => setViewingCard(student)}
+                        className="p-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl transition-all"
+                        title="ID Card"
+                      >
+                        <CreditCard size={18} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingStudent(student);
+                          setFormData(student);
+                          setIsAddingStudent(false);
+                        }}
+                        className="p-2.5 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-xl transition-all"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteStudent(student.id)}
+                        className="p-2.5 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl transition-all"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <Pagination
+        currentPage={studentPage}
+        totalPages={totalStudentPages}
+        onPageChange={setStudentPage}
+        className="border-t border-slate-100 dark:border-slate-800/50"
+      />
+    </Card>
+  </div>
+)}
 
           {/* User Management */}
           {activeTab === 'users' && (
@@ -1240,7 +1311,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                            <div className="p-4 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-2xl shadow-sm"><MessageCircle size={32} /></div>
                            <div><h3 className="font-bold text-2xl text-slate-800 dark:text-white">{t.parentNotifications}</h3><p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{t.parentNotificationsDesc}</p></div>
                       </div>
-                      <div className="relative max-w-xl mb-8">
+                      <div className="relative mb-8">
                            <Search className="absolute left-4 top-3.5 text-slate-400" size={20} />
                            <Input placeholder={t.searchStudent} className="pl-12 h-12 text-lg rounded-xl" value={parentSearch} onChange={e => setParentSearch(e.target.value)} />
                            {parentSearch && (
@@ -1322,6 +1393,14 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                                    <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.chatId} (Private Channel)</label><Input value={wlTelegramChatId} onChange={e => setWlTelegramChatId(e.target.value)} className="font-mono text-sm" /></div>
                                </div>
                            </Card>
+                           <Card className="p-8">
+                               <h3 className="font-bold text-xl mb-4 flex items-center gap-3 text-slate-800 dark:text-white"><Siren size={24} className="text-red-600" /> {t.emergencyAlerts}</h3>
+                               <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">{t.emergencyAlertsDesc}</p>
+                               <div className="space-y-5">
+                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.botToken}</label><Input type="password" value={emTelegramToken} onChange={e => setEmTelegramToken(e.target.value)} className="font-mono text-sm" /></div>
+                                   <div><label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">{t.chatId} (Emergency Channel)</label><Input value={emTelegramChatId} onChange={e => setEmTelegramChatId(e.target.value)} className="font-mono text-sm" /></div>
+                               </div>
+                           </Card>
                       </div>
                   </div>
                   <div className="flex justify-end pt-4"><Button onClick={handleUpdateNotificationSettings} size="lg" className="px-8 shadow-lg">{t.saveCredentials}</Button></div>
@@ -1330,7 +1409,7 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
 
           {/* Attendance Rules Tab */}
           {activeTab === 'attendance_rules' && ( 
-              <Card className="max-w-3xl mx-auto p-8">
+              <Card className="p-8">
                   <div className="flex items-center gap-6 mb-8"><div className="p-4 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl shadow-sm"><ListChecks size={32} /></div><div><h3 className="font-bold text-2xl text-slate-800 dark:text-white">{t.attendanceRules}</h3><p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{t.attendanceRulesDesc}</p></div></div>
                   
                   <div className="space-y-8">
@@ -1664,7 +1743,6 @@ export const Management: React.FC<ManagementProps> = ({ lang }) => {
                               <button onClick={() => setEditingScheduleType('friday')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${editingScheduleType === 'friday' ? 'bg-white dark:bg-slate-600 shadow-md text-primary dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-600/50'}`}>{t.friday}</button>
                           </div>
                           <div className="flex gap-3">
-                              <Button variant="secondary" onClick={sortSchedule} title={t.sortChrono} className="h-11 w-11 p-0 rounded-xl"><ArrowDownAZ size={20} /></Button>
                               <Button onClick={handleAddSlot} className="h-11 rounded-xl shadow-md"><Plus size={20} className="mr-2" /> {t.addSlot}</Button>
                           </div>
                       </div>

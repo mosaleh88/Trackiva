@@ -141,7 +141,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
         </div>
 
         <div className="w-full max-w-md perspective-1000">
-          <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-3xl rounded-[2.5rem] shadow-glass p-10 border border-white/40 dark:border-white/10 transition-transform duration-500">
+          <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-3xl rounded-[2.5rem] shadow-glass p-10 border border-white/60 dark:border-white/20 transition-transform duration-500 shadow-[inset_0_1px_4px_0_rgba(255,255,255,0.1)]">
             
             {/* Language & Back */}
             <div className="flex justify-between items-center mb-10">
@@ -168,8 +168,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
             {view === 'login' && (
               <form onSubmit={handleLogin} className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
                 <div className="text-center mb-8">
-                  <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-3 tracking-tight">{t.welcome || 'Welcome Back'}</h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-lg font-medium">{t.loginDescription || 'Sign in to your school account'}</p>
+                  <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-3 tracking-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.1)] dark:[text-shadow:none]">{t.welcome || 'Welcome Back'}</h2>
+                  <p className="text-slate-500 dark:text-slate-400 text-lg font-medium [text-shadow:0_1px_2px_rgba(0,0,0,0.05)] dark:[text-shadow:none]">{t.loginDescription || 'Sign in to your school account'}</p>
                 </div>
 
                 <div className="space-y-6">
