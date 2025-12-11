@@ -4,7 +4,7 @@ import { useStore } from '../services/store';
 import { Student, Language, User } from '../types';
 import { TRANSLATIONS, EARLY_LEAVE_REASONS, PICKUP_RELATIONS } from '../constants';
 import { 
-  Search, ArrowRight, UserCheck, LogOut, Clock, MapPin, Bus, User as UserIcon, X, Filter, AlertTriangle, CheckCircle2, Info, Users,
+  Search, ArrowRight, UserCheck, LogOut, Clock, Bus, User as UserIcon, Filter, AlertTriangle, CheckCircle2,
   Stethoscope, Home, Thermometer, FileText, Plane, MoreHorizontal 
 } from 'lucide-react';
 
@@ -117,8 +117,8 @@ export const Reception: React.FC<ReceptionProps> = ({ lang, currentUser }) => {
     <div className="flex flex-col lg:flex-row lg:h-[calc(125vh-8.5rem)] h-auto gap-4 lg:gap-6 animate-in fade-in duration-500">
       
       {/* Sidebar: Student Finder */}
-      <Card className="w-full lg:w-96 !p-0 h-[500px] lg:h-full shrink-0 transition-all duration-300">
-        <div className="flex flex-col h-full">
+      <Card className="w-full lg:w-96 !p-0 h-[500px] lg:h-full shrink-0 transition-all duration-300 ">
+        <div className="flex flex-col h-full ">
             {/* Header Tabs */}
             <div className="grid grid-cols-2 bg-slate-100/50 dark:bg-slate-900/50 p-2 gap-2 border-b border-white/20 dark:border-white/10 shrink-0">
                 <button 

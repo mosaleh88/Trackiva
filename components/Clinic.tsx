@@ -1,11 +1,10 @@
 
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, Button, Input, Select, Badge, Pagination } from './ui';
 import { useStore } from '../services/store';
-import { Language, ClinicVisit, Student, EPass, User } from '../types';
+import { Language, ClinicVisit, User } from '../types';
 import { TRANSLATIONS, CLINIC_SYMPTOMS } from '../constants';
-import { Stethoscope, Activity, AlertTriangle, Search, User as UserIcon, ArrowRight, Siren, FileText, Coffee, Plus, X, Clock } from 'lucide-react';
+import { AlertTriangle, Search, User as UserIcon, ArrowRight, Siren, FileText, Coffee, Plus, X, Clock } from 'lucide-react';
 
 interface ClinicProps {
   lang: Language;
@@ -20,6 +19,7 @@ export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
   const [activeTab, setActiveTab] = useState<'queue' | 'history'>('queue');
   const [isLoading, setIsLoading] = useState(false);
   
+  const [admissionTab, setAdmissionTab] = useState<'queue' | 'walkin'>('queue');
   // Form & Filter States
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [searchStudent, setSearchStudent] = useState("");
@@ -140,10 +140,25 @@ export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
                   </div>
               </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card className="flex items-center gap-5 min-w-0 p-6"><div className="p-4 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl shadow-sm"><Stethoscope size={28} /></div><div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t.todayVisits}</p><h3 className="text-3xl font-bold text-slate-800 dark:text-white mt-1">{todayVisits.length}</h3></div></Card>
-              <Card className="flex items-center gap-5 min-w-0 p-6"><div className="p-4 bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-2xl shadow-sm"><Activity size={28} /></div><div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t.incomingPatients}</p><h3 className="text-3xl font-bold text-slate-800 dark:text-white mt-1">{incomingStudents.length}</h3></div></Card>
-              <Card className="flex items-center gap-5 min-w-0 p-6"><div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-2xl shadow-sm"><Siren size={28} /></div><div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t.sentHome}</p><h3 className="text-3xl font-bold text-slate-800 dark:text-white mt-1">{todayVisits.filter(v => v.outcome === 'SentHome').length}</h3></div></Card>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-24">
+              <Card className="flex items-end justify-between min-w-0 p-6">
+                  <div className="flex-1">
+                      <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t.todayVisits}</p>
+                      <h3 className="text-3xl font-bold text-slate-800 dark:text-white mt-1">{todayVisits.length}</h3>
+                  </div>
+              </Card>
+              <Card className="flex items-end justify-between min-w-0 p-6">
+                  <div className="flex-1">
+                      <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t.incomingPatients}</p>
+                      <h3 className="text-3xl font-bold text-slate-800 dark:text-white mt-1">{incomingStudents.length}</h3>
+                  </div>
+              </Card>
+              <Card className="flex items-end justify-between min-w-0 p-6">
+                  <div className="flex-1">
+                      <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t.sentHome}</p>
+                      <h3 className="text-3xl font-bold text-slate-800 dark:text-white mt-1">{todayVisits.filter(v => v.outcome === 'SentHome').length}</h3>
+                  </div>
+              </Card>
               <button onClick={() => setShowEmergencyModal(true)} className="flex flex-col items-center justify-center bg-red-600 text-white rounded-3xl hover:bg-red-700 transition-all shadow-xl shadow-red-600/30 group min-w-0 hover:scale-105 active:scale-95 duration-300"><AlertTriangle size={32} className="mb-2 group-hover:animate-pulse" /><span className="font-bold uppercase text-sm tracking-wider">{t.emergencyAlert}</span></button>
           </div>
           {epidemicAlert.length > 0 && <div className="bg-red-50/80 dark:bg-red-900/30 border border-red-200 dark:border-red-800 p-6 rounded-3xl flex items-start gap-4 animate-in slide-in-from-top backdrop-blur-sm shadow-lg shadow-red-900/10"><div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-xl"><AlertTriangle className="text-red-600 dark:text-red-400 shrink-0" size={24} /></div><div><h4 className="font-bold text-lg text-red-800 dark:text-red-200">{t.epidemicWarning}</h4><p className="text-slate-700 dark:text-slate-300 mt-1">{t.epidemicMsg} {epidemicAlert.map(([s, c]) => `${s} (${c})`).join(', ')}</p></div></div>}
@@ -156,17 +171,27 @@ export const Clinic: React.FC<ClinicProps> = ({ lang, currentUser }) => {
           {activeTab === 'queue' && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4">
                   <div className="lg:col-span-1 space-y-4">
-                      <div className="flex items-center justify-between px-2"><h3 className="font-bold text-slate-700 dark:text-slate-200 text-lg">{t.incomingPatients}</h3><Badge color="blue" className="text-sm px-3">{incomingStudents.length}</Badge></div>
-                      {incomingStudents.length === 0 ? <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl text-slate-400 bg-white/30 dark:bg-slate-800/30 backdrop-blur-sm"><Coffee size={40} className="mx-auto mb-3 opacity-30" /><p className="font-medium">{t.noIncoming}</p></div> : incomingStudents.map(({ pass, student }) => (<div key={pass.id} className="bg-white/70 dark:bg-slate-800/70 border border-white/40 dark:border-slate-700 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all flex justify-between items-center backdrop-blur-xl"><div><h4 className="font-bold text-slate-800 dark:text-white text-lg">{lang === 'en' ? student?.name_en : student?.name_ar}</h4><p className="text-sm text-slate-500 dark:text-slate-400 font-mono mt-1 flex items-center gap-1"><Clock size={12} /> {new Date(pass.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p></div><Button size="sm" className="rounded-xl px-4" onClick={() => handleAdmitFromQueue(student!.id, pass.id)}>{t.admitPatient} <ArrowRight size={16} className="ml-1" /></Button></div>))}
-                      <Card className="mt-6 border-slate-200/60 dark:border-slate-700/60 relative overflow-visible">
-                           <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2"><Plus size={16} className="text-primary" /> {t.admitWalkIn}</p>
-                           <div className="grid grid-cols-3 gap-3 mb-3">
-                               <Select value={walkInGender} onChange={(e) => { setWalkInGender(e.target.value); setWalkInGrade(""); setWalkInSection(""); }} className="text-sm py-2"><option value="">{t.gender}</option><option value="Male">{t.male}</option><option value="Female">{t.female}</option></Select>
-                               <Select value={walkInGrade} onChange={(e) => { setWalkInGrade(e.target.value); setWalkInSection(""); }} disabled={!walkInGender} className="text-sm py-2"><option value="">{t.grade}</option>{walkInAvailableGrades.map(g => <option key={g} value={g}>{g}</option>)}</Select>
-                               <Select value={walkInSection} onChange={(e) => setWalkInSection(e.target.value)} disabled={!walkInGrade} className="text-sm py-2"><option value="">{t.section}</option>{walkInAvailableSections.map(s => <option key={s} value={s}>{s}</option>)}</Select>
-                           </div>
-                           <div className="relative"><Search className="absolute left-3.5 top-3 text-slate-400" size={18} /><Input placeholder={t.searchPlaceholder} className="pl-10" value={searchStudent} onChange={e => setSearchStudent(e.target.value)} />{searchStudent && <button onClick={() => setSearchStudent("")} className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"><X size={18} /></button>}</div>
-                           {(searchStudent || (walkInGender && walkInGrade && walkInSection)) && <div className="mt-2 bg-white/90 dark:bg-slate-900/90 border border-slate-200/50 dark:border-slate-700/50 rounded-2xl max-h-60 overflow-y-auto shadow-xl backdrop-blur-xl absolute z-20 w-full left-0 right-0 p-2">{filteredWalkInStudents.length === 0 ? <div className="p-4 text-sm text-slate-400 text-center">No students found</div> : filteredWalkInStudents.map(s => (<button key={s.id} onClick={() => { setSelectedStudentId(s.id); setSearchStudent(""); setWalkInGender(""); setWalkInGrade(""); setWalkInSection(""); }} className="w-full text-left px-4 py-3 hover:bg-blue-50/50 dark:hover:bg-slate-800/50 rounded-xl text-sm flex justify-between items-center transition-colors group"><span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-primary">{s.name_en}</span><span className="text-xs text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">{s.studentNumber}</span></button>))}</div>}
+                      <Card className="border-slate-200/60 dark:border-slate-700/60 relative overflow-visible">
+                          <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl inline-flex items-center gap-1 mb-4">
+                              <button onClick={() => setAdmissionTab('queue')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${admissionTab === 'queue' ? 'bg-white dark:bg-slate-700 text-primary shadow' : 'text-slate-500 dark:text-slate-400'}`}>{t.incomingPatients} <Badge color="blue" className="text-xs px-2">{incomingStudents.length}</Badge></button>
+                              <button onClick={() => setAdmissionTab('walkin')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${admissionTab === 'walkin' ? 'bg-white dark:bg-slate-700 text-primary shadow' : 'text-slate-500 dark:text-slate-400'}`}>{t.admitWalkIn}</button>
+                          </div>
+                          {admissionTab === 'queue' && (
+                              <div className="space-y-3">
+                                  {incomingStudents.length === 0 ? <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl text-slate-400"><Coffee size={32} className="mx-auto mb-3 opacity-30" /><p className="font-medium text-sm">{t.noIncoming}</p></div> : incomingStudents.map(({ pass, student }) => (<div key={pass.id} className="bg-white/70 dark:bg-slate-800/70 border border-white/40 dark:border-slate-700 p-4 rounded-xl shadow-sm hover:shadow-md transition-all flex justify-between items-center backdrop-blur-xl"><div><h4 className="font-bold text-slate-800 dark:text-white">{lang === 'en' ? student?.name_en : student?.name_ar}</h4><p className="text-sm text-slate-500 dark:text-slate-400 font-mono mt-1 flex items-center gap-1.5"><Clock size={12} /> {new Date(pass.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p></div><Button size="sm" className="rounded-lg px-3" onClick={() => handleAdmitFromQueue(student!.id, pass.id)}> <ArrowRight size={16} className="ml-1" /></Button></div>))}
+                              </div>
+                          )}
+                          {admissionTab === 'walkin' && (
+                              <div className="space-y-3">
+                                  <div className="grid grid-cols-3 gap-3">
+                                      <Select value={walkInGender} onChange={(e) => { setWalkInGender(e.target.value); setWalkInGrade(""); setWalkInSection(""); }} className="text-sm py-2"><option value="">{t.gender}</option><option value="Male">{t.male}</option><option value="Female">{t.female}</option></Select>
+                                      <Select value={walkInGrade} onChange={(e) => { setWalkInGrade(e.target.value); setWalkInSection(""); }} disabled={!walkInGender} className="text-sm py-2"><option value="">{t.grade}</option>{walkInAvailableGrades.map(g => <option key={g} value={g}>{g}</option>)}</Select>
+                                      <Select value={walkInSection} onChange={(e) => setWalkInSection(e.target.value)} disabled={!walkInGrade} className="text-sm py-2"><option value="">{t.section}</option>{walkInAvailableSections.map(s => <option key={s} value={s}>{s}</option>)}</Select>
+                                  </div>
+                                  <div className="relative"><Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><Input placeholder={t.searchPlaceholder} className="pl-10" value={searchStudent} onChange={e => setSearchStudent(e.target.value)} />{searchStudent && <button onClick={() => setSearchStudent("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><X size={18} /></button>}</div>
+                                  {(searchStudent || (walkInGender && walkInGrade && walkInSection)) && <div className="mt-1 bg-white/90 dark:bg-slate-900/90 border border-slate-200/50 dark:border-slate-700/50 rounded-xl max-h-60 overflow-y-auto shadow-lg backdrop-blur-xl p-1.5 space-y-1">{filteredWalkInStudents.length === 0 ? <div className="p-4 text-sm text-slate-400 text-center">No students found</div> : filteredWalkInStudents.map(s => (<button key={s.id} onClick={() => { setSelectedStudentId(s.id); setSearchStudent(""); setWalkInGender(""); setWalkInGrade(""); setWalkInSection(""); }} className="w-full text-left px-3 py-2.5 hover:bg-blue-50/50 dark:hover:bg-slate-800/50 rounded-lg text-sm flex justify-between items-center transition-colors group"><span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-primary">{s.name_en}</span><span className="text-xs text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700">{s.studentNumber}</span></button>))}</div>}
+                              </div>
+                          )}
                       </Card>
                   </div>
                   <div className="lg:col-span-2">{selectedStudentId ? renderVisitForm() : <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl text-slate-400 bg-white/30 dark:bg-slate-800/30 backdrop-blur-sm min-h-[400px]"><div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4"><FileText size={40} className="opacity-40" /></div><p className="text-lg font-medium">Select a student to log a visit</p></div>}</div>

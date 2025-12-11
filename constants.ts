@@ -216,6 +216,7 @@ export const TRANSLATIONS = {
     familyId: "Family ID (Sibling Link)",
     siblings: "Siblings Detected",
     // Attendance
+    attendanceOverview: "Attendance Overview",
     date: "Date",
     period: "Period",
     weekend: "Weekend",
@@ -236,6 +237,7 @@ export const TRANSLATIONS = {
     saveReason: "Save Reason",
     // E-Pass
     passes: "Passes",
+    noActivePasses:"No Active Passes",
     passActive: "Pass Active",
     passOverdue: "Pass Overdue",
     endPass: "End Pass",
@@ -524,6 +526,7 @@ aiError: 'فشل إنشاء الرؤى الذكية. حاول مرة أخرى.',
     familyId: "رقم العائلة (ربط الإخوة)",
     siblings: "تم اكتشاف إخوة",
     // Attendance
+    attendanceOverview: "نظرة عامة على الحضور",
     date: "التاريخ",
     period: "الحصة",
     weekend: "عطلة نهاية الأسبوع",
@@ -544,6 +547,7 @@ aiError: 'فشل إنشاء الرؤى الذكية. حاول مرة أخرى.',
     saveReason: "حفظ السبب",
     // E-Pass
     passes: "التصاريح",
+    noActivePasses:"لا يوجد تصاريح نشطة",
     passActive: "تصريح نشط",
     passOverdue: "تصريح متأخر",
     endPass: "إنهاء التصريح",

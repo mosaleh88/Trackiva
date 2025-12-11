@@ -1,12 +1,12 @@
 import React from 'react';
-import { Card, Button, Badge } from './ui';
-import { UserRole, Language, EPassDestination } from '../types';
+import { Card } from './ui';
+import { UserRole, Language } from '../types';
 import { useStore } from '../services/store';
 import { TRANSLATIONS } from '../constants';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend 
 } from 'recharts';
-import { AlertTriangle, Activity, Users, Clock, Stethoscope, LogOut, Ticket, UserX, AlertOctagon, CheckCircle2, UserCheck } from 'lucide-react';
+import { AlertTriangle, Activity, Users, Clock, Stethoscope, LogOut, Ticket, UserX,Ban} from 'lucide-react';
 
 interface DashboardProps {
   role: UserRole;
@@ -51,9 +51,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
      };
   });
 
-  if (passData.length === 0) {
-      passData.push({ name: 'No Active Passes', value: 1, color: '#94a3b8' });
-  }
 
   return (
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
@@ -65,12 +62,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
             <div className="flex items-baseline gap-2">
                 <h3 className="text-3xl font-bold text-slate-800 dark:text-white">{onCampusCount}</h3>
                 <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">/ {summary.totalStudents}</span>
-                <span className="text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-lg ml-1">
+                <span className="text-xs font-bold text-green-600  dark:bg-green-900/30 px-2 py-1 rounded-lg ml-1">
                     {((onCampusCount / (summary.totalStudents || 1)) * 100).toFixed(0)}%
                 </span>
             </div>
           </div>
-          <div className="p-4 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-2xl shadow-sm">
+<div className="p-4 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-2xl shadow-sm inline-flex items-center justify-center">
             <Users size={28} />
           </div>
         </Card>
@@ -88,7 +85,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
                 )}
             </div>
           </div>
-          <div className="p-4 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl shadow-sm">
+          <div className="p-4 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl shadow-sm inline-flex items-center justify-center">
             <Ticket size={28} />
           </div>
         </Card>
@@ -98,7 +95,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-1 font-medium">{t.clinic} {t.todayVisits}</p>
             <h3 className="text-3xl font-bold text-slate-800 dark:text-white">{summary.clinicVisitsToday}</h3>
           </div>
-          <div className="p-4 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-2xl shadow-sm">
+          <div className="p-4 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-2xl shadow-sm inline-flex items-center justify-center">
             <Stethoscope size={28} />
           </div>
         </Card>
@@ -112,7 +109,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
                 <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">{summary.earlyLeaveToday}</span>
             </div>
           </div>
-          <div className="p-4 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-2xl shadow-sm">
+          <div className="p-4 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-2xl shadow-sm inline-flex items-center justify-center">
             <Clock size={28} />
           </div>
         </Card>
@@ -207,7 +204,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
 
         {/* Center: Attendance Horizontal Stacked Bar (3 Groups) */}
         <Card className="lg:col-span-1 h-full flex flex-col justify-center min-h-[24rem] min-w-0 p-8">
-          <h3 className="font-bold text-xl mb-8 text-slate-800 dark:text-white">Attendance Overview</h3>
+          <h3 className="font-bold text-xl mb-8 text-slate-800 dark:text-white">{t.attendanceOverview}</h3>
           
           <div className="flex-1 flex flex-col justify-center">
               {/* Progress Bar - 3 Segments */}
@@ -223,7 +220,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
                   <div className="flex flex-col p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <div className="flex items-center gap-2 mb-2">
                           <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm"></div>
-                          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wide">{t.onCampus}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wide">{t.present}</span>
                       </div>
                       <span className="text-3xl font-bold text-slate-800 dark:text-white">{onCampusCount}</span>
                   </div>
@@ -294,7 +291,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
 
         <Legend
           verticalAlign="bottom"
-          height={36}
+          height={10}
           iconType="circle"
           iconSize={8}
           wrapperStyle={{
@@ -309,14 +306,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, lang }) => {
     </ResponsiveContainer>
 
     {/* Absolute Center Content (Perfect Alignment) */}
-    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-      <p className="text-5xl font-bold text-slate-800 dark:text-white">
-        {summary.activePasses}
-      </p>
-      <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-widest mt-2">
-        Active
-      </p>
-    </div>
+   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              {summary.activePasses > 0 ? (
+                <>
+                  <div className="text-4xl font-extrabold text-slate-800 dark:text-white drop-shadow-lg">
+                    {summary.activePasses}
+                  </div>
+                  <div className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest mt-3 opacity-90">
+                    {summary.activePasses === 1 ? t.passes : t.passes}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="p-6 rounded-full bg-slate-100/80 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200 dark:border-slate-700 shadow-inner">
+                    <Ban size={48} className="text-slate-400 dark:text-slate-600" />
+                  </div>
+                  <div className="mt-5 text-1xl font-bold text-slate-500 dark:text-slate-400">
+                    {t.noActivePasses || "No Active Passes"}
+                  </div>
+                </>
+              )}
+            </div>
   </div>
 </Card>
 

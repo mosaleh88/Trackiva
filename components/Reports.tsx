@@ -6,8 +6,8 @@ import { Language, Student, User } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { 
   BarChart3, Calendar, Download, Filter, Search, User as UserIcon, LayoutDashboard, 
-  Activity, Ticket, DoorOpen, ChevronDown, ChevronRight, Printer, Stethoscope, 
-  Clock, AlertTriangle, CheckCircle2, ArrowRight, BrainCircuit, Loader2, 
+ Ticket, DoorOpen, ChevronDown, ChevronRight, Printer, Stethoscope, 
+  Clock, BrainCircuit, Loader2, 
   MousePointerClick, ArrowUpDown, FileText
 } from 'lucide-react';
 import { 
@@ -367,7 +367,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
             <Input type="date" value={state.filters.endDate} onChange={e => handleFilterChange(tabName, 'endDate', e.target.value)} className="h-12" />
           </div>
 
-          <Button onClick={() => generateReport(tabName)} disabled={state.loading} className="h-12 px-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg">
+          <Button onClick={() => generateReport(tabName)} disabled={state.loading} className="h-12 px-8 hover:from-blue-700 hover:to-indigo-700 shadow-lg">
             {state.loading ? <Loader2 className="animate-spin mr-2" size={20} /> : <Filter size={18} className="mr-2"/>}
             {t.generate}
           </Button>
@@ -1065,14 +1065,15 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
       <div className="space-y-8">
         {/* Search & Date Range */}
         <Card>
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center relative z-10">
             <div className="flex-1 relative z-30 w-full">
+              
               <div className={`relative transition-all ${isSearchDropdownOpen ? 'shadow-2xl rounded-2xl' : ''}`}>
-                <Search className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${lang === 'ar' ? 'right-4' : 'left-4'}`} size={22} />
+                <Search className={`absolute top-1/2 -translate-y-1/2  ${lang === 'ar' ? 'right-4' : 'left-4'}`} size={22} />
                 <Input
                   type="text"
                   placeholder={t.searchStudent || "Search student..."}
-                  className={`w-full h-16 bg-transparent outline-none text-lg font-medium text-slate-800 dark:text-white ${lang === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'}`}
+                  className={`w-full h-14 bg-transparent outline-none text-lg font-medium text-slate-800 dark:text-white ${lang === 'ar' ? 'pr-12 pl-4' : 'pl-12 pr-4'}`}
                   value={search360}
                   onChange={e => {
                     setSearch360(e.target.value);
@@ -1083,7 +1084,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                   onBlur={() => setTimeout(() => setIsSearchDropdownOpen(false), 200)}
                 />
                 {isSearchDropdownOpen && search360 && (
-                  <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-b-2xl shadow-2xl mt-1 z-40 max-h-80 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-b-2xl shadow-2xl mt-1 z-40  overflow-y-auto">
                     {filteredSearchStudents.map(s => (
                       <button
                         key={s.id}
@@ -1091,7 +1092,6 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
                           setSelectedSearchStudent(s);
                           setSearch360(lang === 'en' ? s.name_en : s.name_ar);
                           setIsSearchDropdownOpen(false);
-                          // REMOVED: handleGenerate360() — only on Generate button
                         }}
                         className="w-full text-start px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-0"
                       >
@@ -1108,7 +1108,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto items-center">
-              <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-lg border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-2 flex items-center gap-2 h-16">
+              <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-lg border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-2 flex items-center gap-2 h-14">
                 <Calendar size={20} className="text-slate-400" />
                 <input type="date" value={student360StartDate} onChange={e => setStudent360StartDate(e.target.value)} className="text-sm font-medium bg-transparent border-none outline-none text-slate-700 dark:text-slate-200 w-32" />
                 <span className="text-slate-400">—</span>
@@ -1118,7 +1118,7 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
               <Button
                 onClick={handleGenerate360}
                 disabled={!selectedSearchStudent || isGenerating360}
-                className="h-16 px-10 text-lg font-bold w-full lg:w-auto"
+                className="h-14 px-10 text-lg font-bold w-full lg:w-auto"
               >
                 {isGenerating360 ? <Loader2 className="animate-spin mr-3" size={24} /> : <MousePointerClick className="mr-3" size={24} />}
                 {t.generate}
@@ -1431,21 +1431,21 @@ export const Reports: React.FC<ReportsProps> = ({ lang, currentUser }) => {
   };
 
   return (
-    <div className="space-y-8 pb-12">
-      <Card className="!p-2">
-        <div className="p-2 rounded-2xl bg-slate-100/50 dark:bg-slate-900/50">
+   <div className="space-y-8 pb-12">
+      <Card className="!p-4">
+        <div className="rounded-1xl bg-slate-100/50 dark:bg-slate-900/50">
           <div className="flex flex-wrap gap-2">
             {TABS.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-3 px-4 py-4 rounded-xl text-base font-bold transition-all duration-300 ${
+                className={`flex-1 flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
                   activeTab === tab.id 
                     ? 'bg-white dark:bg-slate-800 text-primary shadow-lg' 
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:backdrop-blur-md'
                 }`}
               >
-                <tab.icon size={20} />
+                <tab.icon size={18} /> {/* Optional: Reduced icon size to match smaller text */}
                 <span className="hidden sm:inline">{t[tab.labelKey as keyof typeof t] || tab.labelKey}</span>
               </button>
             ))}

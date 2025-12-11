@@ -326,7 +326,7 @@ export const Attendance: React.FC<AttendanceProps> = ({ lang, currentUser }) => 
       )}
 
       {/* Controls Header */}
-      <Card className="space-y-1">
+      <Card className="!p-4">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {/* Date Picker */}
             <div>

@@ -106,7 +106,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
 
   return (
     <div 
-      className={`min-h-screen flex bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 ${isRTL ? 'flex-row-reverse' : ''}`} 
+      className={`min-h-screen flex dark:from-slate-900 dark:to-slate-950 ${isRTL ? 'flex-row-reverse' : ''}`} 
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Left: Branding */}
@@ -135,10 +135,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, lang, setLang, isPassword
       {/* Right: Form */}
       <div className="flex-1 flex items-center justify-center p-6 relative">
         {/* Mobile Background Shapes */}
-        <div className="lg:hidden absolute top-0 left-0 w-full h-full overflow-hidden -z-10 bg-slate-50 dark:bg-slate-900">
-             <div className="absolute top-[-10%] right-[-10%] w-72 h-72 bg-blue-500/20 rounded-full blur-3xl"></div>
-             <div className="absolute bottom-[-10%] left-[-10%] w-72 h-72 bg-purple-500/20 rounded-full blur-3xl"></div>
-        </div>
+        
 
         <div className="w-full max-w-md perspective-1000">
           <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-3xl rounded-[2.5rem] shadow-glass p-10 border border-white/60 dark:border-white/20 transition-transform duration-500 shadow-[inset_0_1px_4px_0_rgba(255,255,255,0.1)]">

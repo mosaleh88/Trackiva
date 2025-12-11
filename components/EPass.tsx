@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, Button, Select, Badge, Input, Pagination } from './ui'; 
 import { useStore } from '../services/store';
-import { Language, EPass as EPassType, Student, EPassDestination, UserRole, User } from '../types';
+import { Language, EPass as EPassType, Student, EPassDestination, UserRole } from '../types';
 import { TRANSLATIONS } from '../constants';
 // CHANGED: Replaced 'XIcon' with 'X' as XIcon is not a standard export
 import { Search, Filter, Ticket, Library, Stethoscope, Armchair, Briefcase, Coffee, Gamepad2, Music, Dumbbell, Beaker, BookOpen, Users, Ban, AlertOctagon, LayoutDashboard, AlertTriangle, Clock, ArrowUp, ArrowDown, ArrowUpDown, X } from 'lucide-react';
@@ -608,15 +608,15 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
   const renderDashboard = () => (
       <div className="flex-1 overflow-y-auto space-y-8 scrollbar-none p-12 pb-48">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white/80 dark:bg-slate-800/80 p-6 rounded-3xl border border-white/40 dark:border-white/10 shadow-glass flex items-center justify-between backdrop-blur-md">
+              <div className="bg-white/80 dark:bg-slate-800/80 p-6 rounded-3xl border border-white/40 dark:border-white/10 shadow-glass flex items-center justify-between backdrop-blur-md hover:shadow-lg hover:-translate-y-1 transition-all">
                   <div><p className="text-sm text-slate-500 dark:text-slate-400 mb-1 font-medium">{t.totalActive}</p><h3 className="text-4xl font-bold text-blue-600 dark:text-blue-400">{passes.length}</h3></div>
                   <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm"><Ticket size={32} /></div>
               </div>
-              <div className="bg-white/80 dark:bg-slate-800/80 p-6 rounded-3xl border border-white/40 dark:border-white/10 shadow-glass flex items-center justify-between backdrop-blur-md">
+              <div className="bg-white/80 dark:bg-slate-800/80 p-6 rounded-3xl border border-white/40 dark:border-white/10 shadow-glass flex items-center justify-between backdrop-blur-md hover:shadow-lg hover:-translate-y-1 transition-all">
                   <div><p className="text-sm text-slate-500 dark:text-slate-400 mb-1 font-medium">{t.totalOverdue}</p><h3 className="text-4xl font-bold text-red-600 dark:text-red-400">{totalOverdue}</h3></div>
                   <div className="w-16 h-16 rounded-2xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400 shadow-sm"><Clock size={32} /></div>
               </div>
-              <div className="bg-white/80 dark:bg-slate-800/80 p-6 rounded-3xl border border-white/40 dark:border-white/10 shadow-glass flex items-center justify-between backdrop-blur-md">
+              <div className="bg-white/80 dark:bg-slate-800/80 p-6 rounded-3xl border border-white/40 dark:border-white/10 shadow-glass flex items-center justify-between backdrop-blur-md hover:shadow-lg hover:-translate-y-1 transition-all">
                   <div><p className="text-sm text-slate-500 dark:text-slate-400 mb-1 font-medium">{t.outOfClass}</p><h3 className="text-4xl font-bold text-orange-600 dark:text-orange-400">{destinationStats['UNAUTHORIZED'] || 0}</h3></div>
                   <div className="w-16 h-16 rounded-2xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 shadow-sm"><AlertOctagon size={32} /></div>
               </div>
@@ -724,8 +724,8 @@ export const EPass: React.FC<EPassProps> = ({ lang, currentUserRole, currentUser
   );
 
   return (
-    <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
-  <Card className="shrink-0 !p-2">
+    <div className="space-y-8 h-[calc(100vh-8rem)] flex flex-col">
+  <Card className="shrink-0 !p-1">
     <div className="flex flex-col md:flex-row gap-5 items-start md:items-center justify-between">
       
       {/* Tabs */}

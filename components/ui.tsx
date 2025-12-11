@@ -14,7 +14,7 @@ export const Card: React.FC<CardProps> = ({ children, className = "" }) => (
     backdrop-blur-xl backdrop-saturate-150
     shadow-glass 
     border border-white/30 dark:border-white/10
-    rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 transition-all duration-300 ease-spring hover:shadow-glass-hover hover:-translate-y-1
+    rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-4 transition-all duration-300 ease-spring hover:shadow-glass-hover hover:-translate-y-1
     ${className}
   `}>
     {/* Optional subtle gradient overlay for depth */}

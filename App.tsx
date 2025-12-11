@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { UserRole, Language, User } from './types';
-import { ROLES_LIST, NAV_ITEMS, TRANSLATIONS } from './constants';
+import React, { useState, useEffect } from 'react';
+import { Language, User } from './types';
+import { NAV_ITEMS, TRANSLATIONS } from './constants';
 import { store } from './services/store';
 import { Dashboard } from './components/Dashboard';
 import { Attendance } from './components/Attendance';
@@ -10,7 +10,7 @@ import { Management } from './components/Management';
 import { Clinic } from './components/Clinic';
 import { Reports } from './components/Reports';
 import { Login } from './components/Login';
-import { Menu, Globe, LogOut, UserCircle, Loader2, ChevronLeft, ChevronRight, Moon, Sun, LayoutGrid } from 'lucide-react';
+import { Menu, Globe, LogOut, UserCircle, Loader2, Moon, Sun, LayoutGrid } from 'lucide-react';
 import { supabase } from './services/supabase';
 
 const App = () => {
